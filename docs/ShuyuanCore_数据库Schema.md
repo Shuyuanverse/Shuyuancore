@@ -373,4 +373,3 @@ applied_at INTEGER NOT NULL
 | curator\_runs | idx\_curator\_runs | 查Curator运行记录 |
 | drift\_records | idx\_drift\_persona | 按人格查漂移记录 |
 *文档结束 | ShuyuanCore 数据库 Schema v1.0 | 2026-05-26*
-本内容由 Coze AI 生成，请遵循相关法律法规及《人工智能生成合成内容标识办法》使用与传播。
