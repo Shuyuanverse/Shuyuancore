@@ -981,4 +981,3 @@ MCP服务器列表
 | v1.0 | 2026-05-26 | 初始版本，覆盖全部11个模块60+接口 |
 | v1.0-rev2 | 2026-05-26 | 修订：认证章节补充用户数据隔离说明；游标分页补充cursor编码格式；PATCH /memory/core明确不会置空未提供字段；搜索接口cursor格式说明；jobs错误码8001补充完整示例含reason；approve/deny补充Idempotency-Key请求头提示；config脱敏规则明确api*key*env返回原值；/config/reload补充错误响应（文件不存在/YAML解析失败）；DELETE /conversations补充ChromaDB异步清理要求；/identities响应增加profile*id字段；/skills/curate dry*run模式返回preview预览；/memory/search补充relevance范围0~1 |
 *文档结束 | ShuyuanCore API 接口文档 v1.0 | 2026-05-26*
-本内容由 Coze AI 生成，请遵循相关法律法规及《人工智能生成合成内容标识办法》使用与传播。
