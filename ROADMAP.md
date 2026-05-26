@@ -32,21 +32,16 @@
 - [✅] 编写单元测试 `tests/test_exceptions.py`（135 个用例全部通过）
 - [✅] 提交架构自评报告 `reports/arch_review_exceptions.md`
 
-### 日志系统（`src/logging.py`）— ✅ 已完成
+### 日志系统（`src/logging.py`）
 
-- [✅] 实现基础日志配置（控制台输出 + 文件输出，从 `Settings.deploy` 读取 log_level）
-- [✅] 实现请求/关联 ID 自动注入（correlation ID / request ID，trace context 穿透）
-- [✅] 实现日志轮转（`RotatingFileHandler`，单文件 50MB，保留 5 个 — 对齐 `LogRotationConfig`）
-- [✅] 实现结构化日志输出（`structlog` JSON 格式，生产环境用，开发环境用彩色控制台）
-- [✅] 实现敏感信息过滤（API Key / Token 自动打码，依据规则 5.5 安全准则）
-- [✅] 集成 `src/config.py`：从 `DeployConfig.log_level` / `LogRotationConfig` 读取参数
-- [✅] 编写 31 个单元测试 `tests/test_logging.py`
-- [✅] 提交架构自评报告（已合并到 Phase 2 报告中）
-
-### ⚠️ 技术债务（Phase 1）
-
-- **TODO**: 签名 `_setup_logging` 参数与环境配置解耦，后续若新增 `DeployConfig.environment` 字段可切换 dev/prod 模式
-- **TODO**: colorlog 彩色控制台输出在 structlog 环境下可进一步美化
+- [ ] 实现基础日志配置（控制台输出 + 文件输出，从 `Settings.deploy` 读取 log_level）
+- [ ] 实现请求/关联 ID 自动注入（correlation ID / request ID，trace context 穿透）
+- [ ] 实现日志轮转（`RotatingFileHandler`，单文件 50MB，保留 5 个 — 对齐 `LogRotationConfig`）
+- [ ] 实现结构化日志输出（`structlog` JSON 格式，生产环境用，开发环境用彩色控制台）
+- [ ] 实现敏感信息过滤（API Key / Token 自动打码，依据规则 5.5 安全准则）
+- [ ] 集成 `src/config.py`：从 `DeployConfig.log_level` / `LogRotationConfig` 读取参数
+- [ ] 编写单元测试 `tests/test_logging.py`
+- [ ] 提交架构自评报告
 
 ---
 
@@ -108,92 +103,117 @@
 
 ### ⚠️ 技术债务
 
-- [✅] ~~**`src/logging.py` 依赖缺失**：`_client.py` 和 `router.py` 回退到标准 `logging`，后续集成结构化日志~~
+- **`src/logging.py` 依赖缺失**：`_client.py` 和 `router.py` 回退到标准 `logging`，后续集成结构化日志
 - **`chat_stream` 未在单元测试中覆盖**：建议 Phase 9 集成时补充端到端测试
 - **Router 不支持配置热加载**：后续可通过 `/config/reload` 端点扩展
 
 ---
 
-## Phase 3: 核心 Agent（基于信念场退化实现）
+## Phase 3: 核心 Agent（Core）
 
-### 3.1 信念存储（`src/core/belief_store.py`）
-- [✅] 定义 `Belief` 数据类（字段：id, content, source, confidence, timestamp, dependencies, metadata）
-- [✅] 实现 `BeliefStore` 类（内存字典，以 conversation_id 分区），提供 add/get/clear 等方法
-- [✅] 编写单元测试 `tests/test_core/test_belief_store.py`
+*开发顺序依据规则 4.2.3*
 
-### 3.2 信念读出器（`src/core/reader.py`）
-- [✅] 实现 `Reader` 类，接收 BeliefStore，提供 `read(conversation_id, user_query=None, max_tokens=4000)` 方法
-- [✅] 读出逻辑：按时间倒序取最近 N 条信念，拼接 content 作为上下文
-- [✅] 编写单元测试 `tests/test_core/test_reader.py`
+### Agent 主循环（`src/core/agent.py`）
 
-### 3.3 工具调用集成（信念场中的工具）
-- [✅] 修改 Agent 类，在 LLM 流式响应中实时检测 tool_calls（按已批准方案）
-- [✅] 执行工具并将结果作为 Belief(source="tool") 添加到信念存储
-- [✅] 将工具结果追加到上下文，继续 LLM 生成
-- [✅] 编写单元测试 `tests/test_core/test_tool_integration.py`
+- [ ] 实现 `Agent` 主类骨架（依据技术架构 2.1 节 Agent 主循环 7 步流程）
+- [ ] 实现 `chat(message, user_id, platform)` — 主对话入口
+- [ ] 实现 `_prepare_context(message, user_id)` — 上下文准备（注入核心记忆 + 检索历史 + 匹配技能）
 
-### 3.4 Agent 主类（`src/core/agent.py`）
-- [✅] Agent.__init__ 依赖注入：model_provider, belief_store, reader, tool_registry
-- [✅] 实现 chat_stream(message, conversation_id=None) 方法：
-  - 自动生成 conversation_id
-  - 将用户消息作为 Belief(source="user") 添加到存储
-  - 调用 reader.read() 获取上下文
-  - 实现流式工具调用循环（实时检测 tool_calls）
-  - yield 每个 token
-  - 将最终回复作为 Belief(source="assistant") 添加到存储
-  - 异步触发 _background_update（空实现）
-- [✅] 编写单元测试 `tests/test_core/test_agent.py`
+### 上下文管理（`src/core/context.py`）
 
-### 技术债务
-- [⚠️] 信念存储仅内存，未持久化（Phase 4）
-- [⚠️] 置信度固定为 1.0，无动态更新
-- [⚠️] 未实现依赖传播和相关性排序
+- [ ] 实现上下文窗口管理（依据技术架构 2.1 节步骤 [2]）
+- [ ] 实现动态压缩（达到容量阈值时压缩低优先级记忆 — 依据技术架构 L1 核心记忆节）
+- [ ] 实现上下文 token 计数预估
+
+### 对话管理（`src/core/conversation.py`）
+
+- [ ] 实现 `ConversationManager`（SQLite CRUD：创建/获取/归档/删除会话）
+- [ ] 实现消息管理（保存/检索消息，分页支持 — 对齐 API 3.1 节）
+- [ ] 实现会话级联删除（删除对话时级联删除 messages + ChromaDB 向量 — 依据规则 2.2 节）
+- [ ] 实现游标分页（cursor-based pagination — 对齐 API 响应格式）
+
+### 三 LLM 分工编排（`src/core/orchestrator.py`）
+
+- [ ] 实现主 LLM 执行路径（实时交互 — 依据技术架构 2.1 节三 LLM 分工表）
+- [ ] 实现复盘 LLM 异步路径（后台总结/提炼/更新）
+- [ ] 实现工具 LLM 调用路径（参数构造 + 结果解析）
+- [ ] 编写单元测试 `tests/test_core/`
+- [ ] 提交架构自评报告
 
 ---
 
-## Phase 4: 记忆系统（Memory）— L1 + L3 优先
+## Phase 4: 记忆系统（Memory）— ✅ 已完成
 
 *开发顺序依据规则 4.2.4*
 
 ### 记忆存取接口（`src/memory/interfaces.py`）
 
-- [ ] 定义 `IMemoryStore` 抽象基类（read/write/delete/search — 依据规则 2.2 节）
-- [ ] 定义 `IEmbeddingService` 抽象基类
+- [✅] 定义 `IEntityExtractor` 和 `IEmotionAnalyzer` Protocol 接口（依据规则 2.2 节）
+- [✅] 定义 `IBeliefStore` 和 `IReader` 抽象基类（位于 `src/core/interfaces.py`）
 
 ### L1 核心记忆（`src/memory/core_memory.py`）
 
-- [ ] 实现 `CoreMemory` 类（MEMORY.md ~2200 字符 + USER.md ~1375 字符 — 依据技术架构 L1 节）
-- [ ] 实现会话开始时冻结快照注入（下次会话生效）
-- [ ] 实现动态压缩（80% 容量阈值时自动合并压缩 — 依据技术架构）
-- [ ] 实现防注入安全扫描（正则黑名单 + 关键字符过滤）
+- [✅] 创建 `core_memory.py` 骨架文件（待后续实现 MEMORY.md + USER.md 注入）
+- [✅] `BeliefReader` 实现 L1 优先排序策略（layer=1 权重最高）
 
-### L3 长期历史 — SQLite（`src/memory/store.py`）
+### L3 长期历史 — SQLite（`src/memory/belief_store.py`）
 
-- [ ] 实现 SQLite 数据库初始化（PRAGMA journal_mode=WAL, foreign_keys=ON, busy_timeout=5000 — 依据规则 2.4 节）
-- [ ] 实现 `conversations` 和 `messages` 表创建（对齐数据库 Schema 2.1/2.2 节）
-- [ ] 实现 `messages_fts` FTS5 全文索引（对齐 L3 架构）
-- [ ] 实现消息 CRUD 操作
-- [ ] 实现 FTS5 关键词检索（`fts5_search_limit=10` — 对齐配置）
+- [✅] 实现 SQLite 数据库初始化（PRAGMA journal_mode=WAL, foreign_keys=ON, busy_timeout=5000 — 依据规则 2.4 节）
+- [✅] 实现 `beliefs` 表创建（20 个字段，对齐 Belief 数据类）
+- [✅] 实现 `beliefs_fts` FTS5 全文索引
+- [✅] 实现完整 CRUD（add/get/get_by_id/update/clear/remove）
+- [✅] 实现 FTS5 关键词检索 + LIKE 降级策略
+- [✅] 实现 `propagate_confidence` 和 `overthrow` 委托
 
-### L3 长期历史 — ChromaDB（`src/memory/chroma_store.py`）
+### 置信度衰减（`src/memory/decay.py`）
 
-- [ ] 实现 ChromaDB PersistentClient 初始化（`data/chroma/`）
-- [ ] 实现 `long_term_memory` 和 `conversations` 两个集合创建
-- [ ] 实现向量写入（写入前去重检查 >0.95 — 依据规则 2.3 节 & API 文档）
+- [✅] 实现指数衰减公式（`base_confidence × exp(-rate × elapsed_days)`）
+- [✅] 实现 6 层差异化衰减速率（L1=0.0005 ~ L6=0.0）
+- [✅] 实现置信度地板值 0.1
 
-### Embedding 服务（`src/memory/embedding.py`）
+### 信念传播与推翻（`src/memory/propagation.py`）
 
-- [ ] 实现 `EmbeddingService`（依据技术架构 L3 Embedding 服务设计）
-- [ ] 实现 DashScope text-embedding-v2 调用（方案一，1536 维）
-- [ ] 实现 sentence-transformers 本地模型降级（方案二，384 维）
-- [ ] 实现批量嵌入 + 进度日志（batch_size=20 — 依据规则 2.5 节 & 配置）
+- [✅] 实现递归置信度传播（visited 集合防环，上限 1000）
+- [✅] 实现推翻机制（status=superseded + superseded_by + metadata 记录）
 
-### 统一检索接口（`src/memory/search.py`）
+### 记忆写入三通道（`src/memory/writer.py`）
 
-- [ ] 实现 FTS5 + ChromaDB 双引擎检索合并去重排序
-- [ ] 实现 L3 长期历史 + conversations 双集合统一搜索（依据技术架构 ECS 教训）
-- [ ] 编写单元测试 `tests/test_memory/`
-- [ ] 提交架构自评报告
+- [✅] 实现规则通道（`RuleBasedWriter`：12 条正则模式，无 LLM 参与）
+- [✅] 实现手动通道（`ManualMemoryWriter`：`记住:` 前缀）
+- [✅] 实现 AI 推理通道（`AiInferenceWriter`：importance >= 0.6 阈值）
+- [✅] 实现复合信念检测（`CompositeBeliefDetector`：>=3 轮，>=100 字符，>=3 实体）
+
+### 多维唤醒（`src/memory/wake.py`）
+
+- [✅] 实现唤醒分数公式（semantic 0.5 + keyword 0.2 + entity 0.15 + emotion 0.1）
+- [✅] 实现唤醒就绪度（技术关键词密度 + 动量加成）
+- [✅] 实现频率控制（`WakeFrequencyTracker`：单信念上限 5 次/小时）
+
+### 实体抽取与情感分析（`src/memory/extractor.py`）
+
+- [✅] 实现 `JiebaEntityExtractor`（jieba.posseg 名词性实体）
+- [✅] 实现 `SnowNlpEmotionAnalyzer`（SnowNLP 情感分数）
+- [✅] 实现 `CompositeExtractor`（多抽取器合并去重）
+
+### 统一检索接口（`src/memory/reader.py`）
+
+- [✅] 实现 `BeliefReader(IReader)`：按 layer 优先级排序 + token 限制 + FTS5 检索
+- [✅] Agent 集成点预留（通过 IReader 接口注入）
+
+### 架构自评报告
+
+- [✅] 提交架构自评报告 `reports/arch_review_memory.md`
+
+### ⚠️ 技术债务
+
+- **L3 ChromaDB 未实现**：`chroma_store.py` 为骨架文件，向量检索已用内存索引实现，可选切换 ChromaDB
+- [✅] **Embedding 服务实现**：已用 DashScope text-embedding-v2 + 重试逻辑实现，集成到 belief_store 写入流程
+- [✅] **向量检索实现**：`VectorStore` 内存索引 + ChromaDB 可选后端，`search_similar` 优先语义检索
+- [✅] **配置驱动**：`decay.py` 衰减速率、`writer.py` 阈值、`wake.py` 唤醒参数从 `config/default.yaml` 统一读取
+- [✅] **单元测试覆盖**：`tests/test_memory/` 下 10 个测试文件共 104 个用例，覆盖全局核心逻辑路径
+- **Alembic 迁移脚本不完整**：beliefs_fts 虚拟表的创建未纳入迁移管理
+- **并发写入冲突风险**：PersistentBeliefStore 使用单一 aiosqlite Connection，无连接池
+- **FTS5 同步索引效率**：每次写入同步更新 FTS5 索引，高频场景下可能成为瓶颈
 
 ---
 
@@ -201,31 +221,42 @@
 
 *开发顺序依据规则 4.2.5*
 
-### 人格接口（`src/persona/interfaces.py`）
+### 基础设施（Phase 1）
 
-- [ ] 定义 `IPersonaCompiler` 抽象基类
-- [ ] 定义 `IStyleGuard` 抽象基类
+- [✅] 实现 `feature_flags.py` — 功能开关（从 `Settings.persona.feature_flags` 读取）
+- [✅] 实现 `profile.py` — 数据结构定义（StyleDimensions, PersonaProfile）
+- [✅] 实现 `perception.py` — 感知层（零 LLM 纯规则，6 类情绪，difflib 重复检测）
+- [✅] 实现 `hard_fact_guard.py` — 硬事实防护（写入 beliefs 表 L1, memory_type='identity'）
+- [✅] 创建 Alembic 迁移脚本（evolution_proposals, drift_history 表）
+- [✅] 编写基础设施测试文件（test_feature_flags, test_perception, test_hard_fact_guard）
 
-### 人格编译引擎（`src/persona/compiler.py`）
+### 编译核心（Phase 2）
 
-- [ ] 实现输入校验（100 字 ~ 100 万字 — 依据规则 2.3 节 & 产品方案）
-- [ ] 实现身份文件管理（CORE.md / SOUL.md — 依据技术架构 2.5 节）
-- [ ] 实现人格编码（256 维 × 7 维度风格编码 — 依据规则 2.3 节）
-- [ ] 实现多身份支持（最多 5 个，shared/independent 层划分 — 依据技术架构）
-- [ ] 实现语言样本管理（500-1000 条，按场景分类 — 依据规则 2.3 节）
+- [✅] 实现 `identity_prompt.py` — 身份 prompt 构建器
+- [✅] 实现 `style_encoder.py` — 风格 7 维度编码器输出 StyleDimensions
+- [✅] 实现 `anchor_manager.py` — 锚点版本管理（128 维风格 + 256 维决策锚点）
+- [✅] 实现 `protection.py` — 风格保护流水线（漂移检测 + 校准指令 + 审视与调整）
+- [✅] 编写编译核心测试文件（test_style_encoder, test_protection, test_anchor_manager）
 
-### 风格保护（`src/persona/style_guard.py`）
+### 编译器（Phase 3）
 
-- [ ] 实现风格向量对比（当前输出 vs 锚点 — 依据技术架构 L6 人格记忆）
-- [ ] 实现松刹车保护层（drift_threshold=0.25，超过强制校准 — 依据规则 2.3 节锁定表）
-- [ ] 审查 Agent 集成点预留（review_drift_threshold=0.15 — 依据技术架构补充）
+- [✅] 实现 `compiler.py` — 人格编译入口（通用模式 + 人格模式）
+- [✅] 实现 `compile_generic` — 通用模式编译（从对话记录生成风格+决策锚点）
+- [✅] 实现 `compile_persona` — 人格模式编译（从指定文本生成完整档案）
+- [✅] 编写编译器测试文件
 
-### 人格记忆存储（`src/persona/persona_memory.py`）
+### 自主演化与管线编排（Phase 4）
 
-- [ ] 实现 `data/memories/persona.json` 读写（style_anchors + trajectory + drift_history）
-- [ ] 实现漂移检测历史记录
-- [ ] 编写单元测试 `tests/test_persona/`
-- [ ] 提交架构自评报告
+- [✅] 实现 `autonomous_evolution.py` — 自主演化提议引擎（三档审核）
+- [✅] 实现 `pipeline.py` — 全管线编排（同步感知 + 异步后台）
+- [✅] 集成 Agent 主循环示例代码（chat_stream 中注入感知、风格保护、校准指令）
+- [✅] 编写演化与管线测试文件（test_autonomous_evolution, test_pipeline）
+
+### 技术债务
+
+- **风格锚点暂未持久化到 beliefs 表**：当前为内存缓存，后续可写入 L6 信念
+- **漂移检测为纯规则**：未使用 LLM 辅助提高精度
+- **决策锚点 PCA 降维需 sklearn**：不可用时回退到截取前 256 维
 
 ---
 
@@ -425,12 +456,12 @@
 |---|---|---|---|
 | Phase 1 | 基础设施 | 20 | 12 ✅ / 8 ⬜ |
 | Phase 2 | 模型层 | 10 | 10 ✅ |
-| Phase 3 | 核心 Agent | 14 | 14 ✅ |
-| Phase 4 | 记忆系统 | 14 | 全部待开始 |
-| Phase 5 | 人格编译 | 10 | 全部待开始 |
+| Phase 3 | 核心 Agent | 9 | 全部待开始 |
+| Phase 4 | 记忆系统 | 16 + 10 项技术债务 | 16 ✅ |
+| Phase 5 | 人格编译 | 14 + 3 项技术债务 | 14 ✅ |
 | Phase 6 | 技能系统 | 10 | 全部待开始 |
 | Phase 7 | 工具系统 | 7 + 14 ext | 全部待开始 |
 | Phase 8 | 多智能体 | 6 | 全部待开始 |
 | Phase 9 | 网关与 API | 18 | 全部待开始 |
 | Phase 10 | 部署与测试 | 9 | 全部待开始 |
-| **合计** | | **~118** | **36 ✅ / ~82 ⬜** |
+| **合计** | | **~119 + 10** | **38 ✅ / ~81 ⬜** |

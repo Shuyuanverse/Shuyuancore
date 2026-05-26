@@ -2,11 +2,12 @@ from __future__ import annotations
 
 import argparse
 import sys
+from typing import NoReturn
 
 from src.config import get_settings
 from src.models.dashscope import DashScopeProvider
 from src.models.deepseek import DeepSeekProvider
-from src.models.openai_compat import OllamaProvider, OpenAICompatProvider
+from src.models.openai_compat import OpenAICompatProvider, OllamaProvider
 from src.models.router import Router
 
 

@@ -30,26 +30,23 @@ models:
       base_url: http://localhost:11434
 
 memory:
-  core_memory_limit: 2200
-  user_model_limit: 1375
-  consolidation_threshold: 0.8
-  fts5_search_limit: 10
-  vector_search_limit: 5
-  working:
-    expire_days: 30
-    auto_cleanup: true
-  chroma:
-    persist_directory: data/chroma
-    client_type: persistent
-    collections:
-      long_term_memory:
-        metadata: [source, timestamp, topic, importance]
-      conversations:
-        metadata: [session_id, user_id, role, timestamp]
-  embedding:
-    provider: dashscope
-    dedup_threshold: 0.95
-    batch_size: 20
+  decay_rates:
+    layer_1: 0.0005
+    layer_2: 0.005
+    layer_3: 0.01
+    layer_4: 0.015
+    layer_5: 0.01
+    layer_6: 0.0
+  confidence_floor: 0.1
+  wake_threshold: 0.6
+  readiness_threshold: 0.5
+  max_wakeups_per_belief_per_day: 2
+  max_wakeups_per_session: 5
+  cooldown_base_minutes: 30
+  ai_importance_threshold: 0.6
+  ai_importance_working: 0.5
+  composite_min_rounds: 3
+  composite_confidence: 0.8
 
 skills:
   auto_extract: true
@@ -61,29 +58,45 @@ skills:
   difficulty_driven: true
 
 persona:
-  drift_threshold: 0.25
-  review_drift_threshold: 0.15
-  enable_proactive: false
-  style_dimensions: 256
-  anchor_dimensions_pytorch: 256
-  anchor_dimensions_numpy: 256
-  bound_components: true
-  min_input_chars: 100
-  max_input_chars: 1000000
-  language_samples_min: 500
-  language_samples_max: 1000
-  style_7_dimensions:
-    - formality
-    - warmth
-    - directness
-    - playfulness
-    - detail_orientation
-    - emotional_expression
-    - pace
-  protection_levels:
-    normal: 0.15
-    mild_drift: 0.25
-    severe_drift: 3
+  feature_flags:
+    enable_persona_system: true
+    enable_style_protection: true
+    enable_identity_injection: true
+    enable_perception: true
+    enable_self_review: true
+    enable_adjustment: true
+    enable_autonomous_evolution: false
+    enable_inner_reaction: false
+    enable_hard_fact_guard: true
+  style:
+    style_dimensions: 7
+    anchor_dimensions: 128
+    decision_anchor_dimensions: 256
+    drift_threshold: 0.25
+    review_drift_threshold: 0.15
+    enable_proactive: false
+    bound_components: true
+  hard_fact:
+    confidence: 0.99
+    memory_type: identity
+    layer: 1
+    categories:
+      - identity
+      - knowledge_boundary
+      - relation
+      - bottom_line
+  compiler:
+    min_input_chars: 100
+    max_input_chars: 1000000
+    language_samples_min: 500
+    language_samples_max: 1000
+    embedding_model: dashscope/text-embedding-v2
+    embedding_dimensions: 1536
+  autonomous:
+    consistency_reject_threshold: 0.3
+    consistency_auto_threshold: 0.7
+    trigger_days: 7
+    max_proposals: 5
   identity_file: CORE.md
   identity:
     max_identities: 5

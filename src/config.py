@@ -97,6 +97,24 @@ class EmbeddingConfig(BaseModel):
 
 
 class MemoryConfig(BaseModel):
+    decay_rates: dict[str, float] = {
+        "layer_1": 0.0005,
+        "layer_2": 0.005,
+        "layer_3": 0.01,
+        "layer_4": 0.015,
+        "layer_5": 0.01,
+        "layer_6": 0.0,
+    }
+    confidence_floor: float = 0.1
+    wake_threshold: float = 0.6
+    readiness_threshold: float = 0.5
+    max_wakeups_per_belief_per_day: int = 2
+    max_wakeups_per_session: int = 5
+    cooldown_base_minutes: int = 30
+    ai_importance_threshold: float = 0.6
+    ai_importance_working: float = 0.5
+    composite_min_rounds: int = 3
+    composite_confidence: float = 0.8
     core_memory_limit: int = 2200
     user_model_limit: int = 1375
     consolidation_threshold: float = 0.8
@@ -117,45 +135,26 @@ class SkillsConfig(BaseModel):
     difficulty_driven: bool = True
 
 
-class ProtectionLevelsConfig(BaseModel):
-    normal: float = 0.15
-    mild_drift: float = 0.25
-    severe_drift: int = 3
+class PersonaFeatureFlagsConfig(BaseModel):
+    enable_persona_system: bool = True
+    enable_style_protection: bool = True
+    enable_identity_injection: bool = True
+    enable_perception: bool = True
+    enable_self_review: bool = True
+    enable_adjustment: bool = True
+    enable_autonomous_evolution: bool = False
+    enable_inner_reaction: bool = False
+    enable_hard_fact_guard: bool = True
 
 
-class PersonaIdentityConfig(BaseModel):
-    max_identities: int = 5
-    switch_methods: list[str] = Field(default_factory=lambda: ["natural_language", "slash_command"])
-    shared_layers: list[str] = Field(default_factory=lambda: ["L3", "L4"])
-    independent_layers: list[str] = Field(default_factory=lambda: ["L1", "L6"])
-
-
-class PersonaConfig(BaseModel):
+class PersonaStyleConfig(BaseModel):
+    style_dimensions: int = 7
+    anchor_dimensions: int = 128
+    decision_anchor_dimensions: int = 256
     drift_threshold: float = 0.25
     review_drift_threshold: float = 0.15
     enable_proactive: bool = False
-    style_dimensions: int = 256
-    anchor_dimensions_pytorch: int = 256
-    anchor_dimensions_numpy: int = 256
     bound_components: bool = True
-    min_input_chars: int = 100
-    max_input_chars: int = 1000000
-    language_samples_min: int = 500
-    language_samples_max: int = 1000
-    style_7_dimensions: list[str] = Field(
-        default_factory=lambda: [
-            "formality",
-            "warmth",
-            "directness",
-            "playfulness",
-            "detail_orientation",
-            "emotional_expression",
-            "pace",
-        ]
-    )
-    protection_levels: ProtectionLevelsConfig = Field(default_factory=ProtectionLevelsConfig)
-    identity_file: str = "CORE.md"
-    identity: PersonaIdentityConfig = Field(default_factory=PersonaIdentityConfig)
 
     @field_validator("drift_threshold")
     @classmethod
@@ -175,50 +174,97 @@ class PersonaConfig(BaseModel):
     @classmethod
     def _lock_enable_proactive(cls, v: bool) -> bool:
         if v is not False:
-            raise ValueError(f"persona.enable_proactive 为锁定参数，值必须为 False，当前为 {v}")
+            raise ValueError(f"style.enable_proactive 为锁定参数，值必须为 False，当前为 {v}")
         return v
 
-    @field_validator("style_dimensions")
+    @field_validator("anchor_dimensions")
     @classmethod
-    def _lock_style_dimensions(cls, v: int) -> int:
-        if v != 256:
-            raise ValueError(f"style_dimensions 为锁定参数，值必须为 256，当前为 {v}")
+    def _lock_anchor_dimensions(cls, v: int) -> int:
+        if v != 128:
+            raise ValueError(f"style.anchor_dimensions 为锁定参数，值必须为 128，当前为 {v}")
         return v
 
-    @field_validator("anchor_dimensions_numpy")
+    @field_validator("decision_anchor_dimensions")
     @classmethod
-    def _lock_anchor_dimensions_numpy(cls, v: int) -> int:
+    def _lock_decision_anchor_dimensions(cls, v: int) -> int:
         if v != 256:
-            raise ValueError(f"anchor_dimensions_numpy 为锁定参数，值必须为 256，当前为 {v}")
+            raise ValueError(f"style.decision_anchor_dimensions 为锁定参数，值必须为 256，当前为 {v}")
         return v
+
+
+class PersonaHardFactConfig(BaseModel):
+    confidence: float = 0.99
+    memory_type: str = "identity"
+    layer: int = 1
+    categories: list[str] = Field(default_factory=lambda: ["identity", "knowledge_boundary", "relation", "bottom_line"])
+
+
+class PersonaCompilerConfig(BaseModel):
+    min_input_chars: int = 100
+    max_input_chars: int = 1000000
+    language_samples_min: int = 500
+    language_samples_max: int = 1000
+    embedding_model: str = "dashscope/text-embedding-v2"
+    embedding_dimensions: int = 1536
 
     @field_validator("min_input_chars")
     @classmethod
     def _lock_min_input_chars(cls, v: int) -> int:
         if v != 100:
-            raise ValueError(f"min_input_chars 为锁定参数，值必须为 100，当前为 {v}")
+            raise ValueError(f"compiler.min_input_chars 为锁定参数，值必须为 100，当前为 {v}")
         return v
 
     @field_validator("max_input_chars")
     @classmethod
     def _lock_max_input_chars(cls, v: int) -> int:
         if v != 1000000:
-            raise ValueError(f"max_input_chars 为锁定参数，值必须为 1000000，当前为 {v}")
+            raise ValueError(f"compiler.max_input_chars 为锁定参数，值必须为 1000000，当前为 {v}")
         return v
 
     @field_validator("language_samples_min")
     @classmethod
     def _lock_language_samples_min(cls, v: int) -> int:
         if v != 500:
-            raise ValueError(f"language_samples_min 为锁定参数，值必须为 500，当前为 {v}")
+            raise ValueError(f"compiler.language_samples_min 为锁定参数，值必须为 500，当前为 {v}")
         return v
 
     @field_validator("language_samples_max")
     @classmethod
     def _lock_language_samples_max(cls, v: int) -> int:
         if v != 1000:
-            raise ValueError(f"language_samples_max 为锁定参数，值必须为 1000，当前为 {v}")
+            raise ValueError(f"compiler.language_samples_max 为锁定参数，值必须为 1000，当前为 {v}")
         return v
+
+
+class PersonaAutonomousConfig(BaseModel):
+    consistency_reject_threshold: float = 0.3
+    consistency_auto_threshold: float = 0.7
+    trigger_days: int = 7
+    max_proposals: int = 5
+
+
+class ProtectionLevelsConfig(BaseModel):
+    normal: float = 0.15
+    mild_drift: float = 0.25
+    severe_drift: int = 3
+
+
+class PersonaIdentityConfig(BaseModel):
+    max_identities: int = 5
+    switch_methods: list[str] = Field(default_factory=lambda: ["natural_language", "slash_command"])
+    shared_layers: list[str] = Field(default_factory=lambda: ["L3", "L4"])
+    independent_layers: list[str] = Field(default_factory=lambda: ["L1", "L6"])
+
+
+class PersonaConfig(BaseModel):
+    feature_flags: PersonaFeatureFlagsConfig = Field(default_factory=PersonaFeatureFlagsConfig)
+    style: PersonaStyleConfig = Field(default_factory=PersonaStyleConfig)
+    hard_fact: PersonaHardFactConfig = Field(default_factory=PersonaHardFactConfig)
+    compiler: PersonaCompilerConfig = Field(default_factory=PersonaCompilerConfig)
+    autonomous: PersonaAutonomousConfig = Field(default_factory=PersonaAutonomousConfig)
+    protection_levels: ProtectionLevelsConfig = Field(default_factory=ProtectionLevelsConfig)
+    identity_file: str = "CORE.md"
+    identity: PersonaIdentityConfig = Field(default_factory=PersonaIdentityConfig)
 
 
 class EvolutionConfig(BaseModel):

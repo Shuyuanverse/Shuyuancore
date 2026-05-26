@@ -1,11 +1,10 @@
 from __future__ import annotations
 
 import asyncio
+import logging
 from typing import Any
 
 import httpx
-
-from src.logging import get_logger
 
 _RETRYABLE_STATUSES: set[int] = {429, 500, 502, 503, 504}
 _DEFAULT_TIMEOUT: float = 30.0
@@ -13,7 +12,7 @@ _DEFAULT_CONNECT_TIMEOUT: float = 10.0
 _DEFAULT_MAX_RETRIES: int = 3
 _DEFAULT_BACKOFF: float = 1.0
 
-_logger = get_logger("shuyuancore.models.http")
+_logger = logging.getLogger("shuyuancore.models.http")
 
 
 class HttpxClient:

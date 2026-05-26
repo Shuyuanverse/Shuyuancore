@@ -5,12 +5,53 @@ import time
 from typing import Any
 
 from src.core.interfaces import (
+    Belief,
+    IBeliefStore,
     IMemoryStore,
     IPersonaGuard,
     ISkillEngine,
     IToolRegistry,
     ToolSpec,
 )
+
+
+class NoOpBeliefStore(IBeliefStore):
+
+    async def add(self, conversation_id: str, belief: Belief) -> str:
+        return belief.id
+
+    async def get(
+        self, conversation_id: str, limit: int = 50
+    ) -> list[Belief]:
+        return []
+
+    async def get_by_id(self, belief_id: str) -> Belief | None:
+        return None
+
+    async def update(self, belief: Belief) -> None:
+        pass
+
+    async def clear(self, conversation_id: str) -> None:
+        pass
+
+    async def remove(self, conversation_id: str, belief_id: str) -> None:
+        pass
+
+    async def search_similar(
+        self,
+        query: str,
+        top_k: int = 10,
+        min_confidence: float = 0.1,
+    ) -> list[tuple[Belief, float]]:
+        return []
+
+    async def propagate_confidence(
+        self, belief_id: str, delta: float, visited: set[str] | None = None
+    ) -> None:
+        pass
+
+    async def overthrow(self, old_id: str, new_id: str, reason: str) -> None:
+        pass
 
 
 class NoOpMemoryStore(IMemoryStore):
