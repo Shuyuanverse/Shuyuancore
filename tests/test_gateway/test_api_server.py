@@ -9,10 +9,17 @@ from typing import Any
 import pytest
 from httpx import ASGITransport, AsyncClient
 
+from src.config import reload_settings
 from src.core.agent import Agent
 from src.core.belief_store import BeliefStore
 from src.core.reader import Reader
-from src.gateway.api_server import create_app, set_agent, set_belief_store
+from src.gateway.api_server import (
+    _check_rate_limit,
+    _rate_limit_buckets,
+    create_app,
+    set_agent,
+    set_belief_store,
+)
 from src.memory.belief_store import PersistentBeliefStore
 from src.models.interfaces import IModelProvider
 
@@ -519,3 +526,133 @@ class TestSSEApprovalFlow:
                 params={"stream_id": "nonexistent", "approved": "true"},
             )
         assert resp.status_code == 404
+
+
+class TestTokenBucketUnit:
+    def test_first_request_allowed(self) -> None:
+        _rate_limit_buckets.clear()
+        result = _check_rate_limit("user_a", rpm=60)
+        assert result is True
+        assert "user_a" in _rate_limit_buckets
+
+    def test_rate_limit_exceeded(self) -> None:
+        _rate_limit_buckets.clear()
+        for _ in range(5):
+            assert _check_rate_limit("user_b", rpm=5) is True
+        assert _check_rate_limit("user_b", rpm=5) is False
+
+    def test_different_users_isolated(self) -> None:
+        _rate_limit_buckets.clear()
+        for _ in range(5):
+            assert _check_rate_limit("user_a", rpm=5) is True
+        assert _check_rate_limit("user_a", rpm=5) is False
+        assert _check_rate_limit("user_b", rpm=5) is True
+
+
+class TestRateLimitMiddleware:
+    async def test_whitelist_health_not_rate_limited(self, monkeypatch: Any) -> None:
+        monkeypatch.setenv("SECURITY__RATE_LIMIT_PER_MINUTE", "1")
+        reload_settings()
+        _rate_limit_buckets.clear()
+
+        app = create_app()
+        transport = ASGITransport(app=app)
+        async with AsyncClient(transport=transport, base_url="http://test") as client:
+            resp1 = await client.get("/health")
+            resp2 = await client.get("/health")
+            resp3 = await client.get("/health")
+        assert resp1.status_code == 200
+        assert resp2.status_code == 200
+        assert resp3.status_code == 200
+
+    async def test_protected_route_rate_limited(self, monkeypatch: Any) -> None:
+        monkeypatch.setenv("SECURITY__RATE_LIMIT_PER_MINUTE", "2")
+        reload_settings()
+        _rate_limit_buckets.clear()
+
+        app = create_app()
+        transport = ASGITransport(app=app)
+        async with AsyncClient(transport=transport, base_url="http://test") as client:
+            resp1 = await client.get(
+                "/api/v1/conversations", headers={"X-User-ID": "rl-test-user"}
+            )
+            resp2 = await client.get(
+                "/api/v1/conversations", headers={"X-User-ID": "rl-test-user"}
+            )
+            resp3 = await client.get(
+                "/api/v1/conversations", headers={"X-User-ID": "rl-test-user"}
+            )
+        assert resp1.status_code == 200
+        assert resp2.status_code == 200
+        assert resp3.status_code == 429
+        data = resp3.json()
+        assert data["error"]["code"] == 429
+        assert "Retry-After" in resp3.headers
+
+    async def test_different_users_isolated_rate_limit(
+        self, monkeypatch: Any
+    ) -> None:
+        monkeypatch.setenv("SECURITY__RATE_LIMIT_PER_MINUTE", "2")
+        reload_settings()
+        _rate_limit_buckets.clear()
+
+        app = create_app()
+        transport = ASGITransport(app=app)
+        async with AsyncClient(transport=transport, base_url="http://test") as client:
+            r1 = await client.get(
+                "/api/v1/conversations", headers={"X-User-ID": "user-a"}
+            )
+            r2 = await client.get(
+                "/api/v1/conversations", headers={"X-User-ID": "user-a"}
+            )
+            r3 = await client.get(
+                "/api/v1/conversations", headers={"X-User-ID": "user-a"}
+            )
+            r4 = await client.get(
+                "/api/v1/conversations", headers={"X-User-ID": "user-b"}
+            )
+        assert r1.status_code == 200
+        assert r2.status_code == 200
+        assert r3.status_code == 429
+        assert r4.status_code == 200
+
+
+class TestUserExtraction:
+    async def test_bearer_token_sets_user_id(self) -> None:
+        app = create_app()
+        transport = ASGITransport(app=app)
+        async with AsyncClient(transport=transport, base_url="http://test") as client:
+            resp = await client.get(
+                "/health",
+                headers={
+                    "Authorization": "Bearer sk_test_123",
+                    "Origin": "http://example.com",
+                },
+            )
+        assert resp.status_code == 200
+        assert resp.headers.get("x-user-id") is not None
+
+    async def test_x_user_id_header_preserved(self) -> None:
+        app = create_app()
+        transport = ASGITransport(app=app)
+        async with AsyncClient(transport=transport, base_url="http://test") as client:
+            resp = await client.get(
+                "/health",
+                headers={
+                    "X-User-ID": "my-custom-user",
+                    "Origin": "http://example.com",
+                },
+            )
+        assert resp.status_code == 200
+        assert resp.headers.get("x-user-id") == "my-custom-user"
+
+    async def test_anonymous_user_when_no_headers(self) -> None:
+        app = create_app()
+        transport = ASGITransport(app=app)
+        async with AsyncClient(transport=transport, base_url="http://test") as client:
+            resp = await client.get(
+                "/health",
+                headers={"Origin": "http://example.com"},
+            )
+        assert resp.status_code == 200
+        assert resp.headers.get("x-user-id") == "anonymous"

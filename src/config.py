@@ -317,6 +317,7 @@ class SecurityConfig(BaseModel):
     permission_grading: bool = True
     cursor_secret: str = ""
     api_keys: list[dict[str, str]] = Field(default_factory=list)
+    rate_limit_per_minute: int = 60
 
 
 class ToolsConfig(BaseModel):

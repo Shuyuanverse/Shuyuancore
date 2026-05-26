@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import time
 import uuid
 from collections.abc import AsyncIterator
 from typing import Any
@@ -42,6 +43,12 @@ from src.memory.belief_store import PersistentBeliefStore
 from src.models.interfaces import IModelProvider
 
 logger = logging.getLogger(__name__)
+
+_WHITELIST_PATHS: frozenset[str] = frozenset(
+    {"/health", "/docs", "/openapi.json", "/redoc", "/favicon.ico"}
+)
+_rate_limit_buckets: dict[str, tuple[float, float]] = {}
+_rate_limit_lock = asyncio.Lock()
 
 _agent_instance: Agent | None = None
 _belief_store_instance: PersistentBeliefStore | None = None
@@ -157,6 +164,22 @@ def _extract_user_id(request: Request) -> str:
     return "anonymous"
 
 
+def _check_rate_limit(user_id: str, rpm: int) -> bool:
+    now = time.monotonic()
+    key = user_id
+    if key not in _rate_limit_buckets:
+        _rate_limit_buckets[key] = (float(rpm) - 1.0, now)
+        return True
+    tokens, last_refill = _rate_limit_buckets[key]
+    elapsed = now - last_refill
+    tokens = min(float(rpm), tokens + elapsed * (rpm / 60.0))
+    if tokens >= 1.0:
+        _rate_limit_buckets[key] = (tokens - 1.0, now)
+        return True
+    _rate_limit_buckets[key] = (tokens, now)
+    return False
+
+
 def create_app(
     agent: Agent | None = None,
     belief_store: PersistentBeliefStore | None = None,
@@ -181,9 +204,37 @@ def create_app(
     )
 
     @app.middleware("http")
+    async def _guard(request: Request, call_next: Any) -> Any:
+        path = request.url.path
+        if (
+            path in _WHITELIST_PATHS
+            or path.startswith("/docs")
+            or path.startswith("/openapi")
+        ):
+            return await call_next(request)
+
+        user_id = _extract_user_id(request)
+        request.state.user_id = user_id
+
+        settings = get_settings()
+        rpm = settings.security.rate_limit_per_minute
+        if rpm > 0:
+            async with _rate_limit_lock:
+                if not _check_rate_limit(user_id, rpm):
+                    return JSONResponse(
+                        status_code=429,
+                        content={
+                            "error": {"code": 429, "message": "Rate limit exceeded"}
+                        },
+                        headers={"Retry-After": "60", "X-User-ID": user_id},
+                    )
+
+        return await call_next(request)
+
+    @app.middleware("http")
     async def _inject_context(request: Request, call_next: Any) -> Any:
         request_id = str(uuid.uuid4())
-        user_id = _extract_user_id(request)
+        user_id = getattr(request.state, "user_id", None) or _extract_user_id(request)
         request.state.request_id = request_id
         request.state.user_id = user_id
         response = await call_next(request)
