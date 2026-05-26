@@ -416,6 +416,26 @@
 - [⚠️] **EmailTool 环境变量**：SMTP/IMAP 配置仅支持环境变量，不支持 config/default.yaml 配置
 - [⚠️] **数据库只读模式**：database_readonly=True 时拒绝所有非 SELECT 查询，无法通过配置动态切换运行时状态
 
+### Stage 3 办公与生产力工具（已完成）
+
+- [✅] 实现 `SpreadsheetTool`（CSV/Excel 读写，openpyxl 可选）
+- [✅] 实现 `TranslateTool`（Google Translate 免费 API + DeepL API 可配置）
+- [✅] 实现 `DocGenTool`（Markdown 生成 + reportlab PDF / python-docx DOCX 可选）
+- [✅] 实现 `FileConvertTool`（PDF 文本提取 + Tesseract OCR，可选依赖）
+- [✅] 实现 `CalendarTool`（.ics 文件读写，icalendar 可选依赖）
+- [✅] 实现 `GitTool`（clone/commit/push/status/diff/log/create_pr，push + PR 需审批）
+- [✅] 实现 `ProjectMgmtTool`（GitHub Issues + Jira，写操作需审批）
+- [✅] 实现 `KnowledgeBaseTool`（local/Notion/语雀/Obsidian 四模式）
+- [✅] 测试：45 个用例（8 个新测试文件，全部通过）
+
+### ⚠️ 技术债务（Stage 3）
+
+- [⚠️] **PPT 生成未实现**：DocGenTool 的 ppt action 返回"暂未实现"，需要第三方库支持
+- [⚠️] **文件转换依赖系统工具**：pdftotext/pytesseract 需要系统级安装，非纯 Python
+- [⚠️] **Notion/语雀 API 无测试覆盖**：因需要真实的 API token 和网络访问
+- [⚠️] **Jira Transition ID 动态查找**：关闭 Issue 时需要先查询可用的 transition 列表，增加一次额外 API 调用
+- [⚠️] **Git PR 创建依赖 gh CLI**：create_pr 操作在 gh CLI 不可用时降级为文本说明，需用户自行安装 gh
+
 ### 后续 Stage（待实现）
 
 ---

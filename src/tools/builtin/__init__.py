@@ -10,6 +10,14 @@ from src.tools.builtin.web import WebTool
 from src.tools.builtin.browser import BrowserTool
 from src.tools.builtin.database import DatabaseTool
 from src.tools.builtin.email import EmailTool
+from src.tools.builtin.spreadsheet import SpreadsheetTool
+from src.tools.builtin.translate import TranslateTool
+from src.tools.builtin.doc_gen import DocGenTool
+from src.tools.builtin.file_convert import FileConvertTool
+from src.tools.builtin.calendar import CalendarTool
+from src.tools.builtin.git import GitTool
+from src.tools.builtin.project_mgmt import ProjectMgmtTool
+from src.tools.builtin.knowledge_base import KnowledgeBaseTool
 
 __all__ = [
     "TerminalTool",
@@ -22,4 +30,12 @@ __all__ = [
     "BrowserTool",
     "DatabaseTool",
     "EmailTool",
+    "SpreadsheetTool",
+    "TranslateTool",
+    "DocGenTool",
+    "FileConvertTool",
+    "CalendarTool",
+    "GitTool",
+    "ProjectMgmtTool",
+    "KnowledgeBaseTool",
 ]
