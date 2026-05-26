@@ -9,6 +9,7 @@ from src.skills.extractor import (
 )
 from src.skills.interfaces import ISkillGraph, ISkillStore
 from src.skills.manager import PersistentSkillGraph, PersistentSkillStore
+from src.skills.matcher import format_skill_for_prompt, match_skill
 
 __all__ = [
     "ISkillStore",
@@ -20,4 +21,6 @@ __all__ = [
     "count_corrections",
     "count_refinements",
     "has_explicit_save",
+    "match_skill",
+    "format_skill_for_prompt",
 ]

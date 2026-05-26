@@ -103,12 +103,42 @@ class Agent:
 
         tool_call_count = 0
         full_response = ""
+
+        skill_context: list[dict[str, Any]] = []
+        if self._skill_store:
+            try:
+                from src.memory.embedding import EmbeddingService
+                from src.skills.matcher import (
+                    format_skill_for_prompt,
+                    match_skill,
+                )
+
+                embedding_service = EmbeddingService(self._model_provider)
+                matched = await match_skill(
+                    user_message=message,
+                    belief_store=self._belief_store,
+                    skill_store=self._skill_store,
+                    embedding_service=embedding_service,
+                )
+                if matched is not None:
+                    skill_prompt = format_skill_for_prompt(matched)
+                    skill_context = [
+                        {
+                            "role": "system",
+                            "content": skill_prompt,
+                        }
+                    ]
+            except Exception:
+                logger.exception("skill_matching_error")
+
         while tool_call_count < _MAX_TOOL_CALLS_PER_TURN:
             context = await self._reader.read(
                 conversation_id=conversation_id,
                 user_query=message,
                 max_tokens=4000,
             )
+            if skill_context:
+                context = skill_context + context
 
             pending_tool_calls: list[dict[str, Any]] = []
 

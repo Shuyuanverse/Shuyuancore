@@ -78,6 +78,24 @@ class PersistentSkillStore(ISkillStore):
             return None
         return self._row_to_dict(row)
 
+    async def get_skill_by_belief_id(
+        self, belief_id: str
+    ) -> dict[str, Any] | None:
+        conn = await self._get_conn()
+        cursor = await conn.execute(
+            """
+            SELECT sn.*, b.confidence, b.last_accessed
+            FROM skill_nodes sn
+            LEFT JOIN beliefs b ON sn.belief_id = b.id
+            WHERE sn.belief_id = ?
+            """,
+            (belief_id,),
+        )
+        row = await cursor.fetchone()
+        if row is None:
+            return None
+        return self._row_to_dict(row)
+
     async def create_skill(
         self,
         node: dict[str, Any],
