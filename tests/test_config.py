@@ -8,7 +8,9 @@ from pydantic import ValidationError
 
 from src.config import (
     EvolutionConfig,
+    PersonaCompilerConfig,
     PersonaConfig,
+    PersonaStyleConfig,
     Settings,
     _load_yaml,
     _resolve_env_vars,
@@ -94,66 +96,80 @@ class TestLoadYaml:
 class TestPersonaConfig:
     def test_default_values(self) -> None:
         config = PersonaConfig()
-        assert config.drift_threshold == 0.25
-        assert config.review_drift_threshold == 0.15
-        assert config.enable_proactive is False
-        assert config.style_dimensions == 256
-        assert config.anchor_dimensions_numpy == 256
-        assert config.min_input_chars == 100
-        assert config.max_input_chars == 1000000
-        assert config.language_samples_min == 500
-        assert config.language_samples_max == 1000
-        assert len(config.style_7_dimensions) == 7
+        assert config.style.drift_threshold == 0.25
+        assert config.style.review_drift_threshold == 0.15
+        assert config.style.enable_proactive is False
+        assert config.style.style_dimensions == 7
+        assert config.style.anchor_dimensions == 128
+        assert config.style.decision_anchor_dimensions == 256
+        assert config.compiler.min_input_chars == 100
+        assert config.compiler.max_input_chars == 1000000
+        assert config.compiler.language_samples_min == 500
+        assert config.compiler.language_samples_max == 1000
 
     def test_drift_threshold_locked(self) -> None:
+        from src.config import PersonaStyleConfig
         with pytest.raises(ValidationError):
-            PersonaConfig(drift_threshold=0.99)
+            PersonaConfig(style=PersonaStyleConfig(drift_threshold=0.99))
 
     def test_review_drift_threshold_locked(self) -> None:
+        from src.config import PersonaStyleConfig
         with pytest.raises(ValidationError):
-            PersonaConfig(review_drift_threshold=0.99)
+            PersonaConfig(style=PersonaStyleConfig(review_drift_threshold=0.99))
 
     def test_enable_proactive_locked(self) -> None:
+        from src.config import PersonaStyleConfig
         with pytest.raises(ValidationError):
-            PersonaConfig(enable_proactive=True)
+            PersonaConfig(style=PersonaStyleConfig(enable_proactive=True))
 
-    def test_style_dimensions_locked(self) -> None:
+    def test_anchor_dimensions_locked(self) -> None:
+        from src.config import PersonaStyleConfig
         with pytest.raises(ValidationError):
-            PersonaConfig(style_dimensions=512)
+            PersonaConfig(style=PersonaStyleConfig(anchor_dimensions=256))
 
-    def test_anchor_dimensions_numpy_locked(self) -> None:
+    def test_decision_anchor_dimensions_locked(self) -> None:
+        from src.config import PersonaStyleConfig
         with pytest.raises(ValidationError):
-            PersonaConfig(anchor_dimensions_numpy=128)
+            PersonaConfig(style=PersonaStyleConfig(decision_anchor_dimensions=128))
 
     def test_min_input_chars_locked(self) -> None:
+        from src.config import PersonaCompilerConfig
         with pytest.raises(ValidationError):
-            PersonaConfig(min_input_chars=50)
+            PersonaConfig(compiler=PersonaCompilerConfig(min_input_chars=50))
 
     def test_max_input_chars_locked(self) -> None:
+        from src.config import PersonaCompilerConfig
         with pytest.raises(ValidationError):
-            PersonaConfig(max_input_chars=500)
+            PersonaConfig(compiler=PersonaCompilerConfig(max_input_chars=500))
 
     def test_language_samples_min_locked(self) -> None:
+        from src.config import PersonaCompilerConfig
         with pytest.raises(ValidationError):
-            PersonaConfig(language_samples_min=100)
+            PersonaConfig(compiler=PersonaCompilerConfig(language_samples_min=100))
 
     def test_language_samples_max_locked(self) -> None:
+        from src.config import PersonaCompilerConfig
         with pytest.raises(ValidationError):
-            PersonaConfig(language_samples_max=2000)
+            PersonaConfig(compiler=PersonaCompilerConfig(language_samples_max=2000))
 
     def test_valid_locked_values_accepted(self) -> None:
         config = PersonaConfig(
-            drift_threshold=0.25,
-            review_drift_threshold=0.15,
-            enable_proactive=False,
-            style_dimensions=256,
-            anchor_dimensions_numpy=256,
-            min_input_chars=100,
-            max_input_chars=1000000,
-            language_samples_min=500,
-            language_samples_max=1000,
+            style=PersonaStyleConfig(
+                drift_threshold=0.25,
+                review_drift_threshold=0.15,
+                enable_proactive=False,
+                style_dimensions=7,
+                anchor_dimensions=128,
+                decision_anchor_dimensions=256,
+            ),
+            compiler=PersonaCompilerConfig(
+                min_input_chars=100,
+                max_input_chars=1000000,
+                language_samples_min=500,
+                language_samples_max=1000,
+            ),
         )
-        assert config.drift_threshold == 0.25
+        assert config.style.drift_threshold == 0.25
 
 
 class TestEvolutionConfig:

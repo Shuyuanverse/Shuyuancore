@@ -154,7 +154,7 @@ class TestToolIntegration:
         ):
             tokens.append(token)
         assert "".join(tokens) == "Let me check the timeThe time is now."
-        beliefs = store.get("conv_1")
+        beliefs = await store.get("conv_1")
         sources = [b.source for b in beliefs]
         assert "user" in sources
         assert "tool" in sources
@@ -190,7 +190,7 @@ class TestToolIntegration:
             message="echo hello", conversation_id="conv_1"
         ):
             pass
-        beliefs = store.get("conv_1")
+        beliefs = await store.get("conv_1")
         tool_beliefs = [b for b in beliefs if b.source == "tool"]
         assert len(tool_beliefs) == 1
         assert "echo: hello world" in tool_beliefs[0].content

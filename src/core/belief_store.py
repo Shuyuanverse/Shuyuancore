@@ -11,43 +11,53 @@ class BeliefStore(IBeliefStore):
 
     def __init__(self) -> None:
         self._store: dict[str, list[Belief]] = {}
+        self._by_id: dict[str, Belief] = {}
 
-    def add(self, conversation_id: str, belief: Belief) -> None:
+    async def add(self, conversation_id: str, belief: Belief) -> str:
         if conversation_id not in self._store:
             self._store[conversation_id] = []
         self._store[conversation_id].append(belief)
+        self._by_id[belief.id] = belief
+        return belief.id
 
-    def get(
+    async def get(
         self, conversation_id: str, limit: int = 50
     ) -> list[Belief]:
         beliefs = self._store.get(conversation_id, [])
         return beliefs[-limit:]
 
-    def clear(self, conversation_id: str) -> None:
-        self._store.pop(conversation_id, None)
+    async def get_by_id(self, belief_id: str) -> Belief | None:
+        return self._by_id.get(belief_id)
 
-    def remove(self, conversation_id: str, belief_id: str) -> None:
+    async def update(self, belief: Belief) -> None:
+        self._by_id[belief.id] = belief
+
+    async def clear(self, conversation_id: str) -> None:
+        beliefs = self._store.pop(conversation_id, [])
+        for b in beliefs:
+            self._by_id.pop(b.id, None)
+
+    async def remove(self, conversation_id: str, belief_id: str) -> None:
         beliefs = self._store.get(conversation_id)
         if beliefs is None:
             return
         self._store[conversation_id] = [
             b for b in beliefs if b.id != belief_id
         ]
+        self._by_id.pop(belief_id, None)
 
-    @staticmethod
-    def create_belief(
-        content: str,
-        source: str,
-        confidence: float = 1.0,
-        dependencies: list[str] | None = None,
-        metadata: dict[str, Any] | None = None,
-    ) -> Belief:
-        return Belief(
-            id=str(uuid.uuid4()),
-            content=content,
-            source=source,
-            confidence=confidence,
-            timestamp=int(time.time() * 1000),
-            dependencies=dependencies or [],
-            metadata=metadata or {},
-        )
+    async def search_similar(
+        self,
+        query: str,
+        top_k: int = 10,
+        min_confidence: float = 0.1,
+    ) -> list[tuple[Belief, float]]:
+        return []
+
+    async def propagate_confidence(
+        self, belief_id: str, delta: float, visited: set[str] | None = None
+    ) -> None:
+        pass
+
+    async def overthrow(self, old_id: str, new_id: str, reason: str) -> None:
+        pass

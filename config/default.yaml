@@ -30,6 +30,11 @@ models:
       base_url: http://localhost:11434
 
 memory:
+  core_memory_limit: 2200
+  user_model_limit: 1375
+  consolidation_threshold: 0.8
+  fts5_search_limit: 10
+  vector_search_limit: 5
   decay_rates:
     layer_1: 0.0005
     layer_2: 0.005

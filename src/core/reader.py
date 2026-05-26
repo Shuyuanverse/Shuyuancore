@@ -10,13 +10,13 @@ class Reader(IReader):
     def __init__(self, belief_store: IBeliefStore) -> None:
         self._belief_store = belief_store
 
-    def read(
+    async def read(
         self,
         conversation_id: str,
         user_query: str | None = None,
         max_tokens: int = 4000,
     ) -> list[dict[str, Any]]:
-        beliefs = self._belief_store.get(conversation_id)
+        beliefs = await self._belief_store.get(conversation_id)
         messages: list[dict[str, Any]] = []
         current_tokens = 0
 

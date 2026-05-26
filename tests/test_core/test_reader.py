@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import pytest
+
 from src.core.belief_store import BeliefStore
 from src.core.interfaces import Belief
 from src.core.reader import Reader
@@ -7,15 +9,17 @@ from src.core.reader import Reader
 
 class TestReader:
 
-    def test_read_empty(self) -> None:
+    @pytest.mark.asyncio
+    async def test_read_empty(self) -> None:
         store = BeliefStore()
         reader = Reader(store)
-        messages = reader.read("conv_1")
+        messages = await reader.read("conv_1")
         assert messages == []
 
-    def test_read_single_belief(self) -> None:
+    @pytest.mark.asyncio
+    async def test_read_single_belief(self) -> None:
         store = BeliefStore()
-        store.add(
+        await store.add(
             "conv_1",
             Belief(
                 id="b1",
@@ -25,14 +29,15 @@ class TestReader:
             ),
         )
         reader = Reader(store)
-        messages = reader.read("conv_1")
+        messages = await reader.read("conv_1")
         assert len(messages) == 1
         assert messages[0]["role"] == "user"
         assert messages[0]["content"] == "hello world"
 
-    def test_read_multiple_beliefs_in_order(self) -> None:
+    @pytest.mark.asyncio
+    async def test_read_multiple_beliefs_in_order(self) -> None:
         store = BeliefStore()
-        store.add(
+        await store.add(
             "conv_1",
             Belief(
                 id="b1",
@@ -41,7 +46,7 @@ class TestReader:
                 timestamp=1000,
             ),
         )
-        store.add(
+        await store.add(
             "conv_1",
             Belief(
                 id="b2",
@@ -51,15 +56,16 @@ class TestReader:
             ),
         )
         reader = Reader(store)
-        messages = reader.read("conv_1")
+        messages = await reader.read("conv_1")
         assert len(messages) == 2
         assert messages[0]["content"] == "first"
         assert messages[1]["content"] == "second"
 
-    def test_read_with_max_tokens(self) -> None:
+    @pytest.mark.asyncio
+    async def test_read_with_max_tokens(self) -> None:
         store = BeliefStore()
         for i in range(5):
-            store.add(
+            await store.add(
                 "conv_1",
                 Belief(
                     id=f"b{i}",
@@ -69,14 +75,15 @@ class TestReader:
                 ),
             )
         reader = Reader(store)
-        messages = reader.read("conv_1", max_tokens=150)
+        messages = await reader.read("conv_1", max_tokens=150)
         assert len(messages) < 5
         for msg in messages:
             assert msg["role"] == "user"
 
-    def test_read_tool_beliefs_proper_role(self) -> None:
+    @pytest.mark.asyncio
+    async def test_read_tool_beliefs_proper_role(self) -> None:
         store = BeliefStore()
-        store.add(
+        await store.add(
             "conv_1",
             Belief(
                 id="b1",
@@ -85,7 +92,7 @@ class TestReader:
                 timestamp=1000,
             ),
         )
-        store.add(
+        await store.add(
             "conv_1",
             Belief(
                 id="b2",
@@ -95,13 +102,14 @@ class TestReader:
             ),
         )
         reader = Reader(store)
-        messages = reader.read("conv_1")
+        messages = await reader.read("conv_1")
         assert len(messages) == 2
         assert messages[1]["role"] == "tool"
 
-    def test_read_tool_as_role(self) -> None:
+    @pytest.mark.asyncio
+    async def test_read_tool_as_role(self) -> None:
         store = BeliefStore()
-        store.add(
+        await store.add(
             "conv_1",
             Belief(
                 id="b1",
@@ -111,5 +119,5 @@ class TestReader:
             ),
         )
         reader = Reader(store)
-        messages = reader.read("conv_1")
+        messages = await reader.read("conv_1")
         assert messages[0]["role"] == "tool"

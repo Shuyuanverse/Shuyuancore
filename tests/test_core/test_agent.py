@@ -136,7 +136,7 @@ class TestAgent:
             message="user msg", conversation_id="conv_1"
         ):
             pass
-        beliefs = store.get("conv_1")
+        beliefs = await store.get("conv_1")
         assert len(beliefs) == 2
         assert beliefs[0].source == "user"
         assert beliefs[0].content == "user msg"
@@ -176,10 +176,10 @@ class TestAgent:
             message="msg2", conversation_id="conv_b"
         ):
             pass
-        assert len(store.get("conv_a")) == 2
-        assert len(store.get("conv_b")) == 2
-        assert store.get("conv_a")[0].content == "msg1"
-        assert store.get("conv_b")[0].content == "msg2"
+        assert len(await store.get("conv_a")) == 2
+        assert len(await store.get("conv_b")) == 2
+        assert (await store.get("conv_a"))[0].content == "msg1"
+        assert (await store.get("conv_b"))[0].content == "msg2"
 
     @pytest.mark.asyncio
     async def test_chat_stream_multiple_rounds(self) -> None:
