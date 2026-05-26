@@ -315,6 +315,8 @@ class SecurityConfig(BaseModel):
     sensitive_confirm: bool = True
     output_filter: bool = True
     permission_grading: bool = True
+    cursor_secret: str = ""
+    api_keys: list[dict[str, str]] = Field(default_factory=list)
 
 
 class ToolsConfig(BaseModel):

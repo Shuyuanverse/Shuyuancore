@@ -36,7 +36,7 @@ from src.gateway.approval_helper import (
     get_approval,
     resolve_approval,
 )
-from src.gateway.utils import error_response, format_sse_event
+from src.gateway.utils import error_response, format_sse_event, set_cursor_secret
 from src.memory.belief_store import PersistentBeliefStore
 from src.models.interfaces import IModelProvider
 
@@ -164,6 +164,10 @@ def create_app(
         set_belief_store(belief_store)
 
     app = FastAPI(title="ShuyuanCore", version="1.0.0")
+
+    settings = get_settings()
+    if settings.security.cursor_secret:
+        set_cursor_secret(settings.security.cursor_secret)
 
     app.add_middleware(
         CORSMiddleware,
