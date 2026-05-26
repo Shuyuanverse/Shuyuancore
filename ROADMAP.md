@@ -223,34 +223,34 @@
 
 ### 基础设施（Phase 1）
 
-- [ ] 实现 `feature_flags.py` — 功能开关（从 `Settings.persona.feature_flags` 读取）
-- [ ] 实现 `profile.py` — 数据结构定义（StyleDimensions, PersonaProfile）
-- [ ] 实现 `perception.py` — 感知层（零 LLM 纯规则，6 类情绪，difflib 重复检测）
-- [ ] 实现 `hard_fact_guard.py` — 硬事实防护（写入 beliefs 表 L1, memory_type='identity'）
-- [ ] 创建 Alembic 迁移脚本（evolution_proposals, drift_history 表）
-- [ ] 编写基础设施测试文件
+- [✅] 实现 `feature_flags.py` — 功能开关（从 `Settings.persona.feature_flags` 读取）
+- [✅] 实现 `profile.py` — 数据结构定义（StyleDimensions, PersonaProfile）
+- [✅] 实现 `perception.py` — 感知层（零 LLM 纯规则，6 类情绪，difflib 重复检测）
+- [✅] 实现 `hard_fact_guard.py` — 硬事实防护（写入 beliefs 表 L1, memory_type='identity'）
+- [✅] 创建 Alembic 迁移脚本（evolution_proposals, drift_history 表）
+- [✅] 编写基础设施测试文件（test_feature_flags, test_perception, test_hard_fact_guard）
 
 ### 编译核心（Phase 2）
 
-- [ ] 实现 `identity_prompt.py` — 身份 prompt 构建器
-- [ ] 实现 `style_encoder.py` — 风格 7 维度编码器输出 StyleDimensions
-- [ ] 实现 `anchor_manager.py` — 锚点版本管理（128 维风格 + 256 维决策锚点）
-- [ ] 实现 `protection.py` — 风格保护流水线（漂移检测 + 校准指令 + 审视与调整）
-- [ ] 编写编译核心测试文件
+- [✅] 实现 `identity_prompt.py` — 身份 prompt 构建器
+- [✅] 实现 `style_encoder.py` — 风格 7 维度编码器输出 StyleDimensions
+- [✅] 实现 `anchor_manager.py` — 锚点版本管理（128 维风格 + 256 维决策锚点）
+- [✅] 实现 `protection.py` — 风格保护流水线（漂移检测 + 校准指令 + 审视与调整）
+- [✅] 编写编译核心测试文件（test_style_encoder, test_protection, test_anchor_manager）
 
 ### 编译器（Phase 3）
 
-- [ ] 实现 `compiler.py` — 人格编译入口（通用模式 + 人格模式）
-- [ ] 实现 `compile_generic` — 通用模式编译（从对话记录生成风格+决策锚点）
-- [ ] 实现 `compile_persona` — 人格模式编译（从指定文本生成完整档案）
-- [ ] 编写编译器测试文件
+- [✅] 实现 `compiler.py` — 人格编译入口（通用模式 + 人格模式）
+- [✅] 实现 `compile_generic` — 通用模式编译（从对话记录生成风格+决策锚点）
+- [✅] 实现 `compile_persona` — 人格模式编译（从指定文本生成完整档案）
+- [✅] 编写编译器测试文件
 
 ### 自主演化与管线编排（Phase 4）
 
-- [ ] 实现 `autonomous_evolution.py` — 自主演化提议引擎（三档审核）
-- [ ] 实现 `pipeline.py` — 全管线编排（同步感知 + 异步后台）
-- [ ] 集成 Agent 主循环（chat_stream 中注入感知、风格保护、校准指令）
-- [ ] 编写演化与管线测试文件
+- [✅] 实现 `autonomous_evolution.py` — 自主演化提议引擎（三档审核）
+- [✅] 实现 `pipeline.py` — 全管线编排（同步感知 + 异步后台）
+- [✅] 集成 Agent 主循环示例代码（chat_stream 中注入感知、风格保护、校准指令）
+- [✅] 编写演化与管线测试文件（test_autonomous_evolution, test_pipeline）
 
 ### 技术债务
 
@@ -458,7 +458,7 @@
 | Phase 2 | 模型层 | 10 | 10 ✅ |
 | Phase 3 | 核心 Agent | 9 | 全部待开始 |
 | Phase 4 | 记忆系统 | 16 + 10 项技术债务 | 16 ✅ |
-| Phase 5 | 人格编译 | 10 | 全部待开始 |
+| Phase 5 | 人格编译 | 14 + 3 项技术债务 | 14 ✅ |
 | Phase 6 | 技能系统 | 10 | 全部待开始 |
 | Phase 7 | 工具系统 | 7 + 14 ext | 全部待开始 |
 | Phase 8 | 多智能体 | 6 | 全部待开始 |
