@@ -436,6 +436,30 @@
 - [⚠️] **Jira Transition ID 动态查找**：关闭 Issue 时需要先查询可用的 transition 列表，增加一次额外 API 调用
 - [⚠️] **Git PR 创建依赖 gh CLI**：create_pr 操作在 gh CLI 不可用时降级为文本说明，需用户自行安装 gh
 
+### Stage 4 社交媒体 + 监控 + 扩展工具（已完成）
+
+- [✅] 实现 `XiaoHongShuTool`（公开笔记搜索/获取/用户搜索/评论，allow_write=False 预留）
+- [✅] 实现 `DouYinTool`（公开视频搜索/获取/用户搜索/视频列表，allow_write=False 预留）
+- [✅] 实现 `WeiBoTool`（公开微博搜索/获取/用户搜索/微博列表/评论）
+- [✅] 实现 `WeChatMpTool`（公众号公开文章搜索/获取/账号文章列表）
+- [✅] 实现 `MonitoringTool`（服务器 CPU/内存/磁盘状态 + 网站可用性检测 + ping）
+- [✅] 实现 `ChartTool`（matplotlib 生成图表 + Mermaid.js 代码，可选依赖）
+- [✅] 实现 `CryptoTool`（Fernet 加密/解密 + HMAC 签名/验签 + 密钥生成）
+- [✅] 实现 `CronTool`（定时任务创建/删除/列表/触发，JSON 文件存储）
+- [✅] 实现 `DelegationTool`（子代理委派/状态查询/取消）
+- [✅] 实现 `MediaTool`（图片 OCR/TTS 语音合成/图片缩放/格式转换）
+- [✅] 测试：50 个用例（10 个新测试文件，全部通过）
+
+### ⚠️ 技术债务（Stage 4）
+
+- [⚠️] **社交媒体工具依赖模拟数据**：XiaoHongShuTool 和 DouYinTool 使用 mock/模拟数据作为降级方案，真实 API 端点可能因平台变更而失效
+- [⚠️] **Playwright/pytesseract 等系统级依赖**：browser.py 和 media.py 的某些功能需要系统级安装，非纯 Python 依赖
+- [⚠️] **matplotlib/plotly 可选依赖**：ChartTool 的图表功能需要用户安装 `shuyuancore[chart]`
+- [⚠️] **CryptoTool 密钥管理**：MASTER_KEY 从环境变量读取或自动生成，未集成密钥轮换和持久化存储
+- [⚠️] **DelegationTool 任务存储**：子代理任务存储在内存字典中，进程重启后丢失
+- [⚠️] **CronTool 非真正 cron**：定时任务存储为 JSON 文件，未集成系统 crond 或调度器
+- [⚠️] **社交媒体允许写扩展点未使用**：allow_write=False 在代码中定义但对应逻辑未实现
+
 ### 后续 Stage（待实现）
 
 ---

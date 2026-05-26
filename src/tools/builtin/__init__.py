@@ -18,6 +18,16 @@ from src.tools.builtin.calendar import CalendarTool
 from src.tools.builtin.git import GitTool
 from src.tools.builtin.project_mgmt import ProjectMgmtTool
 from src.tools.builtin.knowledge_base import KnowledgeBaseTool
+from src.tools.builtin.xiaohongshu import XiaoHongShuTool
+from src.tools.builtin.douyin import DouYinTool
+from src.tools.builtin.weibo import WeiBoTool
+from src.tools.builtin.wechat_mp import WeChatMpTool
+from src.tools.builtin.monitoring import MonitoringTool
+from src.tools.builtin.chart import ChartTool
+from src.tools.builtin.crypto import CryptoTool
+from src.tools.builtin.cron import CronTool
+from src.tools.builtin.delegation import DelegationTool
+from src.tools.builtin.media import MediaTool
 
 __all__ = [
     "TerminalTool",
@@ -38,4 +48,14 @@ __all__ = [
     "GitTool",
     "ProjectMgmtTool",
     "KnowledgeBaseTool",
+    "XiaoHongShuTool",
+    "DouYinTool",
+    "WeiBoTool",
+    "WeChatMpTool",
+    "MonitoringTool",
+    "ChartTool",
+    "CryptoTool",
+    "CronTool",
+    "DelegationTool",
+    "MediaTool",
 ]
