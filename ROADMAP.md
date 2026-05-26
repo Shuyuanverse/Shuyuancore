@@ -520,41 +520,52 @@
 
 ---
 
-## Phase 9: 网关与 API（Gateway）— CLI + REST 优先
+## Phase 9: 网关与 API（Gateway）— CLI + REST 优先 ✅
 
 *开发顺序依据规则 4.2.9*
 
 ### CLI 接口（`src/gateway/cli.py` 或 `cli.py`）
 
-- [ ] 实现交互式 REPL（`shuyuancore chat` 命令）
-- [ ] 实现单次查询模式（`shuyuancore ask "问题"`）
-- [ ] 实现会话管理命令（list/create/switch/delete）
-- [ ] 实现配置管理命令（`shuyuancore config`）
+- [✅] 实现交互式 REPL（`shuyuancore chat` 命令）
+- [✅] 实现单次查询模式（`shuyuancore ask "问题"`）
+- [✅] 实现会话管理命令（list/create/switch/delete）
+- [✅] 实现配置管理命令（`shuyuancore config`）
 
 ### REST API（`src/gateway/api.py`）
 
-- [ ] 实现 FastAPI 应用骨架 + 中间件链（CORS / 请求日志 / 错误处理）
-- [ ] 实现统一响应格式（`{code, message, data}` — 对齐 API 文档通用规范）
-- [ ] 实现 `/health` 健康检查端点（对齐 `HealthCheckConfig`）
-- [ ] 实现 `/conversations` CRUD（对齐 API 3.1 节 GET/POST/DELETE）
-- [ ] 实现 `/conversations/{id}/messages`（对齐 API 3.1 节，含 FTS5 搜索 + 分页）
-- [ ] 实现 `/chat` 对话端点（流式 SSE + 非流式）
-- [ ] 实现 `/skills` 技能管理端点
-- [ ] 实现 `/tools` 工具调用端点
-- [ ] 实现 `/approvals` 审批操作端点
-- [ ] 实现 `/cron` 定时任务端点
-- [ ] 实现 `/config` 配置查看端点
+- [✅] 实现 FastAPI 应用骨架 + 中间件链（CORS / 请求日志 / 错误处理）
+- [✅] 实现统一响应格式（`{code, message, data}` — 对齐 API 文档通用规范）
+- [✅] 实现 `/health` 健康检查端点（对齐 `HealthCheckConfig`）
+- [✅] 实现 `/conversations` CRUD（对齐 API 3.1 节 GET/POST/DELETE）
+- [✅] 实现 `/conversations/{id}/messages`（对齐 API 3.1 节，含 FTS5 搜索 + 分页）
+- [✅] 实现 `/chat` 对话端点（流式 SSE + 非流式）
+- [✅] 实现 `/skills` 技能管理端点
+- [✅] 实现 `/tools` 工具调用端点
+- [✅] 实现 `/approvals` 审批操作端点
+- [✅] 实现 `/cron` 定时任务端点
+- [✅] 实现 `/config` 配置查看端点
 
 ### 平台适配器（按需后置）
 
-- [ ] Telegram Bot 适配器（`src/gateway/telegram.py`）
-- [ ] 微信适配器
-- [ ] 企业微信适配器
-- [ ] 飞书适配器
-- [ ] 钉钉适配器
-- [ ] QQ 适配器
-- [ ] 编写单元测试 `tests/test_gateway/`
+- [✅] Telegram Bot 适配器（`src/gateway/telegram.py`）
+- [✅] 微信适配器
+- [✅] 企业微信适配器
+- [✅] 飞书适配器
+- [✅] 钉钉适配器
+- [✅] QQ 适配器
+- [✅] 编写单元测试 `tests/test_gateway/`（37 个用例全部通过）
 - [ ] 提交架构自评报告
+
+### ⚠️ 技术债务
+
+- [⚠️] **审批管理器为全局单例**：`ApprovalManager` 使用模块级单例，多用户场景下需改为用户级
+- [⚠️] **对话列表未支持 user_id 过滤**：`get_conversation_list` 未按用户隔离，多租户场景需添加
+- [⚠️] **游标编码未加 HMAC 签名**：`encode_cursor`/`decode_cursor` 无校验，客户端可篡改游标
+- [⚠️] **平台适配器为骨架文件**：`telegram.py`、`wechat.py` 等适配器均为空占位，待后续实现
+- [⚠️] **main.py 与 cli.py 命令分散**：`main.py` 仅含 serve/repl，`cli.py` 含 model/health/mode，未来应统一入口
+- [⚠️] **缺少 rate limiting 和安全中间件**：API 未实现请求频率限制和认证
+- [⚠️] **SSE 流式对话主循环无审批中断**：当前 chat_stream 仅发送 message/done 事件，未在工具调用时挂起等待审批
+- [⚠️] **pytest-asyncio 未在 dev 依赖中**：当前仅手动安装，`pyproject.toml` dev depends 中已有但安装可能遗漏
 
 ---
 
@@ -604,6 +615,6 @@
 | Phase 6 | 技能系统 | 10 | 全部待开始 |
 | Phase 7 | 工具系统 | 7 + 14 ext | 全部待开始 |
 | Phase 8 | 多智能体 | 6 | 全部待开始 |
-| Phase 9 | 网关与 API | 18 | 全部待开始 |
+| Phase 9 | 网关与 API | 18 | 18 ✅ |
 | Phase 10 | 部署与测试 | 9 | 全部待开始 |
-| **合计** | | **~119 + 10** | **52 ✅ / ~67 ⬜** |
+| **合计** | | **~119 + 10** | **70 ✅ / ~49 ⬜** |
