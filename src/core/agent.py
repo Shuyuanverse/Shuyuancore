@@ -56,6 +56,7 @@ class Agent:
         skill_store: Any | None = None,
         entity_extractor: IEntityExtractor | None = None,
         emotion_analyzer: IEmotionAnalyzer | None = None,
+        coordinator: Any | None = None,
     ) -> None:
         self._model_provider = model_provider
         self._belief_store = belief_store
@@ -67,6 +68,7 @@ class Agent:
         self._skill_store = skill_store
         self._entity_extractor = entity_extractor or JiebaEntityExtractor()
         self._emotion_analyzer = emotion_analyzer or SnowNlpEmotionAnalyzer()
+        self._coordinator = coordinator
 
     async def chat_stream(
         self,
@@ -139,6 +141,35 @@ class Agent:
             )
             if skill_context:
                 context = skill_context + context
+
+            if self._coordinator is not None and tool_call_count == 0:
+                try:
+                    from src.agents.interfaces import UpdateContext
+
+                    ctx = UpdateContext(
+                        conversation_id=conversation_id,
+                        user_id=conversation_id,
+                        message=message,
+                        history=context,
+                        belief_store=self._belief_store,
+                        skill_store=self._skill_store,
+                    )
+                    coordinator_result = await self._coordinator.run(ctx)
+                    full_response = coordinator_result
+                    yield coordinator_result
+                    assistant_belief = Belief(
+                        content=full_response,
+                        source="assistant",
+                        id=str(uuid.uuid4()),
+                        timestamp=current_time_ms(),
+                        last_accessed=current_time_ms(),
+                    )
+                    await self._belief_store.add(
+                        conversation_id, assistant_belief
+                    )
+                    break
+                except Exception:
+                    logger.exception("coordinator_failed_fallback_to_llm")
 
             pending_tool_calls: list[dict[str, Any]] = []
 

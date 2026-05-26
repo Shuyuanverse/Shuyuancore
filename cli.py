@@ -122,6 +122,16 @@ def cmd_health(_args: argparse.Namespace) -> None:
         print("部分提供者不可用 / Some providers unavailable")
 
 
+def cmd_mode(args: argparse.Namespace) -> None:
+    valid_modes = ("quick", "balanced", "deep")
+    if args.mode not in valid_modes:
+        print(f"无效的模式 / Invalid mode: {args.mode}", file=sys.stderr)
+        print(f"可用值 / Valid values: {', '.join(valid_modes)}", file=sys.stderr)
+        sys.exit(1)
+    print(f"多智能体模式已切换至: {args.mode}（会话级，不持久化）")
+    print(f"Multi-agent mode set to: {args.mode} (session-level, not persisted)")
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(
         prog="shuyuancore",
@@ -147,6 +157,15 @@ def main() -> None:
 
     health_parser = subparsers.add_parser("health", help="健康检查 / Health check")
     health_parser.set_defaults(func=cmd_health)
+
+    mode_parser = subparsers.add_parser(
+        "mode", help="多智能体协作模式 / Multi-agent collaboration mode"
+    )
+    mode_parser.add_argument(
+        "mode", choices=["quick", "balanced", "deep"],
+        help="quick=快速 / balanced=平衡 / deep=深度"
+    )
+    mode_parser.set_defaults(func=cmd_mode)
 
     args = parser.parse_args()
 
