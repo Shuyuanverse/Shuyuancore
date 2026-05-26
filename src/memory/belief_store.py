@@ -410,6 +410,143 @@ class PersistentBeliefStore(IBeliefStore):
     async def overthrow(self, old_id: str, new_id: str, reason: str) -> None:
         await propagation_overthrow(self, old_id, new_id, reason)
 
+    async def get_conversation_list(
+        self,
+        cursor: str | None = None,
+        limit: int = 20,
+    ) -> tuple[list[dict[str, object]], str | None, bool]:
+        from src.gateway.utils import decode_cursor, encode_cursor
+
+        conn = await self._get_conn()
+        effective_limit = min(max(limit, 1), 100) + 1
+
+        params: list[object]
+        if cursor is not None:
+            decoded = decode_cursor(cursor)
+            if decoded is None:
+                return [], None, False
+            cursor_ts, cursor_id = decoded
+            query = """
+                SELECT
+                    conversation_id,
+                    COUNT(*) AS message_count,
+                    MIN(timestamp) AS created_at,
+                    MAX(timestamp) AS last_message_at
+                FROM beliefs
+                WHERE layer = 3
+                  AND memory_type = 'conversation'
+                  AND status = 'active'
+                GROUP BY conversation_id
+                HAVING (MAX(timestamp) < ? OR (MAX(timestamp) = ? AND conversation_id < ?))
+                ORDER BY last_message_at DESC, conversation_id DESC
+                LIMIT ?
+            """
+            params = [cursor_ts, cursor_ts, cursor_id, effective_limit]
+        else:
+            query = """
+                SELECT
+                    conversation_id,
+                    COUNT(*) AS message_count,
+                    MIN(timestamp) AS created_at,
+                    MAX(timestamp) AS last_message_at
+                FROM beliefs
+                WHERE layer = 3
+                  AND memory_type = 'conversation'
+                  AND status = 'active'
+                GROUP BY conversation_id
+                ORDER BY last_message_at DESC, conversation_id DESC
+                LIMIT ?
+            """
+            params = [effective_limit]
+
+        cursor_obj = await conn.execute(query, params)
+        rows_raw = await cursor_obj.fetchall()
+        has_more = len(rows_raw) > limit
+        rows_raw = rows_raw[:limit]
+
+        items: list[dict[str, object]] = []
+        for row in rows_raw:
+            items.append(
+                {
+                    "id": row[0],
+                    "message_count": row[1],
+                    "created_at": row[2],
+                    "last_message_at": row[3],
+                }
+            )
+
+        next_cursor: str | None = None
+        if has_more and rows_raw:
+            last = rows_raw[-1]
+            next_cursor = encode_cursor(last[3], last[0])
+
+        return items, next_cursor, has_more
+
+    async def get_conversation_messages(
+        self,
+        conversation_id: str,
+        cursor: str | None = None,
+        limit: int = 50,
+    ) -> tuple[list[dict[str, object]], str | None, bool]:
+        from src.gateway.utils import decode_cursor, encode_cursor
+
+        conn = await self._get_conn()
+        effective_limit = min(max(limit, 1), 200) + 1
+
+        params: list[object]
+        if cursor is not None:
+            decoded = decode_cursor(cursor)
+            if decoded is None:
+                return [], None, False
+            cursor_ts, cursor_id = decoded
+            query = """
+                SELECT id, content, source, timestamp
+                FROM beliefs
+                WHERE conversation_id = ?
+                  AND layer = 3
+                  AND memory_type = 'conversation'
+                  AND status = 'active'
+                  AND (timestamp > ? OR (timestamp = ? AND id > ?))
+                ORDER BY timestamp ASC, id ASC
+                LIMIT ?
+            """
+            params = [conversation_id, cursor_ts, cursor_ts, cursor_id, effective_limit]
+        else:
+            query = """
+                SELECT id, content, source, timestamp
+                FROM beliefs
+                WHERE conversation_id = ?
+                  AND layer = 3
+                  AND memory_type = 'conversation'
+                  AND status = 'active'
+                ORDER BY timestamp ASC, id ASC
+                LIMIT ?
+            """
+            params = [conversation_id, effective_limit]
+
+        cursor_obj = await conn.execute(query, params)
+        rows_raw = await cursor_obj.fetchall()
+        has_more = len(rows_raw) > limit
+        rows_raw = rows_raw[:limit]
+
+        items: list[dict[str, object]] = []
+        for row in rows_raw:
+            items.append(
+                {
+                    "id": row[0],
+                    "content": row[1],
+                    "role": row[2],
+                    "created_at": row[3],
+                }
+            )
+
+        next_cursor: str | None = None
+        if has_more and rows_raw:
+            last = rows_raw[-1]
+            next_cursor = encode_cursor(last[3], last[0])
+
+        return items, next_cursor, has_more
+
     async def close(self) -> None:
         if self._conn is not None:
             await self._conn.close()
