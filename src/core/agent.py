@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import json
 import logging
 import uuid
@@ -69,12 +70,18 @@ class Agent:
         self._entity_extractor = entity_extractor or JiebaEntityExtractor()
         self._emotion_analyzer = emotion_analyzer or SnowNlpEmotionAnalyzer()
         self._coordinator = coordinator
+        self._dangerous_tools: set[str] = set()
+        self._pending_resume_event: asyncio.Event | None = None
+
+    def set_dangerous_tools(self, tool_names: list[str]) -> None:
+        self._dangerous_tools = set(tool_names)
 
     async def chat_stream(
         self,
         message: str,
         conversation_id: str | None = None,
-    ) -> AsyncIterator[str]:
+        resume_event: asyncio.Event | None = None,
+    ) -> AsyncIterator[str | dict[str, Any]]:
         if conversation_id is None:
             conversation_id = str(uuid.uuid4())
 
@@ -230,6 +237,39 @@ class Agent:
                     arguments = {}
 
                 try:
+                    require_approval = (
+                        tool_name in self._dangerous_tools
+                        and resume_event is not None
+                    )
+                    if require_approval:
+                        approval_id = f"stream_{uuid.uuid4().hex[:8]}"
+                        self._pending_resume_event = resume_event
+                        yield {
+                            "type": "approval",
+                            "approval_id": approval_id,
+                            "tool_name": tool_name,
+                            "arguments": arguments,
+                            "message": f"工具 {tool_name} 需要审批",
+                        }
+                        await resume_event.wait()
+                        resume_event.clear()
+                        self._pending_resume_event = None
+                        if not getattr(self, "_approval_approved", True):
+                            result = f"error: tool {tool_name} rejected by user"
+                            yield {
+                                "type": "approval_result",
+                                "approved": False,
+                                "tool_name": tool_name,
+                            }
+                            tool_results.append(
+                                {
+                                    "role": "tool",
+                                    "tool_call_id": tool_call_id,
+                                    "content": result,
+                                }
+                            )
+                            continue
+
                     result = await self._tool_registry.execute(
                         tool_name, arguments
                     )

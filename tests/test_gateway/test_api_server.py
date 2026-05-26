@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import json
 import uuid
 from collections.abc import AsyncIterator
@@ -481,3 +482,40 @@ class TestUserIsolation:
         assert resp.status_code == 200
         data = resp.json()
         assert len(data["items"]) >= 1
+
+
+class TestSSEApprovalFlow:
+    async def test_sse_approval_resume_endpoint(self) -> None:
+        stream_id = "test-stream-123"
+        resume_event = asyncio.Event()
+
+        from src.gateway.api_server import _active_streams, _stream_lock
+
+        async with _stream_lock:
+            _active_streams[stream_id] = resume_event
+
+        app = create_app()
+        transport = ASGITransport(app=app)
+        async with AsyncClient(transport=transport, base_url="http://test") as client:
+            resp = await client.post(
+                f"/api/v1/approvals/{stream_id}/resume",
+                params={"stream_id": stream_id, "approved": "true"},
+            )
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["resumed"] is True
+
+        assert resume_event.is_set()
+
+        async with _stream_lock:
+            _active_streams.pop(stream_id, None)
+
+    async def test_sse_approval_resume_not_found(self) -> None:
+        app = create_app()
+        transport = ASGITransport(app=app)
+        async with AsyncClient(transport=transport, base_url="http://test") as client:
+            resp = await client.post(
+                "/api/v1/approvals/nonexistent-stream/resume",
+                params={"stream_id": "nonexistent", "approved": "true"},
+            )
+        assert resp.status_code == 404

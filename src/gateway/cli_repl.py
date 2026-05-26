@@ -265,10 +265,18 @@ async def _handle_user_message(message: str, conversation_id: str) -> None:
     _print_colored("", "")
     try:
         async for token in agent.chat_stream(message, conversation_id):
-            import sys
-
-            sys.stdout.write(token)
-            sys.stdout.flush()
+            if isinstance(token, dict):
+                if token.get("type") == "approval":
+                    _print_colored(
+                        f"[审批] {token.get('message', '')} id={token.get('approval_id', '')}",
+                        "warn",
+                    )
+                    approved = await _wait_for_approval(token["approval_id"])
+                    if not approved:
+                        _print_colored("审批被拒绝", "error")
+                continue
+            if isinstance(token, str):
+                print(token, end="", flush=True)
         _print_colored("", "")
     except Exception as e:
         _print_colored(f"错误 / Error: {e}", "error")

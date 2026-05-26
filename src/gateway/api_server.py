@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import logging
 import uuid
 from collections.abc import AsyncIterator
@@ -44,6 +45,8 @@ logger = logging.getLogger(__name__)
 
 _agent_instance: Agent | None = None
 _belief_store_instance: PersistentBeliefStore | None = None
+_active_streams: dict[str, asyncio.Event] = {}
+_stream_lock = asyncio.Lock()
 
 
 def _get_belief_store() -> PersistentBeliefStore:
@@ -212,7 +215,8 @@ def create_app(
 
         full_response = ""
         async for token in agent.chat_stream(request.message, conversation_id):
-            full_response += token
+            if isinstance(token, str):
+                full_response += token
 
         user_belief_id = str(uuid.uuid4())
         return {
@@ -234,18 +238,48 @@ def create_app(
                 raise HTTPException(status_code=503, detail="Agent not available")
 
         conversation_id = request.conversation_id or str(uuid.uuid4())
+        user_id = getattr(req.state, "user_id", "anonymous")
+        stream_id = f"{user_id}_{uuid.uuid4().hex[:8]}"
+
+        resume_event = asyncio.Event()
+        async with _stream_lock:
+            _active_streams[stream_id] = resume_event
 
         async def _event_generator() -> AsyncIterator[str]:
-            message_id = str(uuid.uuid4())
-            async for token in agent.chat_stream(request.message, conversation_id):
-                yield format_sse_event("message", {"content": token})
-            yield format_sse_event(
-                "done",
-                {
-                    "conversation_id": conversation_id,
-                    "message_id": message_id,
-                },
-            )
+            try:
+                message_id = str(uuid.uuid4())
+                async for chunk in agent.chat_stream(
+                    request.message, conversation_id, resume_event=resume_event
+                ):
+                    if isinstance(chunk, dict) and chunk.get("type") == "approval":
+                        approval_id = chunk.get("approval_id", stream_id)
+                        approval_data = {
+                            "type": "approval",
+                            "approval_id": approval_id,
+                            "stream_id": stream_id,
+                            "tool_name": chunk.get("tool_name", ""),
+                            "message": chunk.get("message", "需要审批"),
+                        }
+                        yield format_sse_event("approval", approval_data)
+                        await resume_event.wait()
+                        resume_event.clear()
+                    elif isinstance(chunk, dict):
+                        yield format_sse_event("message", chunk)
+                    else:
+                        yield format_sse_event("message", {"content": chunk})
+                yield format_sse_event(
+                    "done",
+                    {
+                        "conversation_id": conversation_id,
+                        "message_id": message_id,
+                    },
+                )
+            except Exception:
+                logger.exception("sse_stream_error stream_id=%s", stream_id)
+                yield format_sse_event("error", {"detail": "stream error"})
+            finally:
+                async with _stream_lock:
+                    _active_streams.pop(stream_id, None)
 
         return StreamingResponse(
             _event_generator(),
@@ -366,6 +400,33 @@ def create_app(
             "approval_id": resolved.approval_id,
             "status": resolved.status,
             "reason": resolved.reason,
+        }
+
+    async def _resume_stream_if_pending(stream_id: str, approved: bool) -> bool:
+        async with _stream_lock:
+            event = _active_streams.get(stream_id)
+        if event is not None and not event.is_set():
+            if _agent_instance is not None:
+                _agent_instance._approval_approved = approved
+            event.set()
+            return True
+        return False
+
+    @app.post("/api/v1/approvals/{approval_id}/resume")
+    async def resume_approval_stream(approval_id: str, req: Request) -> dict[str, Any]:
+        stream_id = req.query_params.get("stream_id", approval_id)
+        approved = req.query_params.get("approved", "true").lower() == "true"
+
+        resumed = await _resume_stream_if_pending(stream_id, approved)
+
+        if not resumed:
+            raise HTTPException(status_code=404, detail="No pending stream found for this ID")
+
+        return {
+            "approval_id": approval_id,
+            "stream_id": stream_id,
+            "resumed": True,
+            "approved": approved,
         }
 
     return app
