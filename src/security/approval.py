@@ -32,9 +32,11 @@ class ApprovalManager:
         params: dict[str, Any],
         user_id: str,
         timeout: int = 300,
+        approval_id: str | None = None,
     ) -> ApprovalRequest:
         self._counter += 1
-        approval_id = f"apr_{int(time.time())}_{self._counter}"
+        if approval_id is None:
+            approval_id = f"apr_{int(time.time())}_{self._counter}"
         req = ApprovalRequest(
             approval_id=approval_id,
             tool_name=tool_name,

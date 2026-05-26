@@ -19,6 +19,10 @@ from src.core.noop_implementations import (
 )
 from src.core.reader import Reader
 from src.gateway.api_models import (
+    ApprovalAction,
+    ApprovalCreateRequest,
+    ApprovalCreateResponse,
+    ApprovalResolveResponse,
     ChatRequest,
     ChatResponse,
     ConversationItem,
@@ -26,6 +30,11 @@ from src.gateway.api_models import (
     MessageItem,
     PaginatedResponse,
     StreamChatRequest,
+)
+from src.gateway.approval_helper import (
+    create_approval,
+    get_approval,
+    resolve_approval,
 )
 from src.gateway.utils import error_response, format_sse_event
 from src.memory.belief_store import PersistentBeliefStore
@@ -266,5 +275,63 @@ def create_app(
             for item in items_raw
         ]
         return {"items": items, "next_cursor": next_cursor, "has_more": has_more}
+
+    @app.post("/api/v1/approvals", response_model=ApprovalCreateResponse)
+    async def create_approval_endpoint(
+        request: ApprovalCreateRequest,
+    ) -> dict[str, Any]:
+        req = await create_approval(
+            tool_name=request.tool_name,
+            command=request.command,
+            user_id=request.user_id,
+        )
+        return {
+            "approval_id": req.approval_id,
+            "status": req.status,
+        }
+
+    @app.post(
+        "/api/v1/approvals/{approval_id}/approve",
+        response_model=ApprovalResolveResponse,
+    )
+    async def approve_endpoint(
+        approval_id: str,
+        action: ApprovalAction,
+    ) -> dict[str, Any]:
+        req = get_approval(approval_id)
+        if req is None:
+            raise HTTPException(status_code=404, detail="Approval not found")
+        resolved = await resolve_approval(
+            approval_id=approval_id,
+            approved=action.approved,
+            reason=action.reason,
+        )
+        return {
+            "approval_id": resolved.approval_id,
+            "status": resolved.status,
+            "reason": resolved.reason,
+        }
+
+    @app.post(
+        "/api/v1/approvals/{approval_id}/deny",
+        response_model=ApprovalResolveResponse,
+    )
+    async def deny_endpoint(
+        approval_id: str,
+        action: ApprovalAction,
+    ) -> dict[str, Any]:
+        req = get_approval(approval_id)
+        if req is None:
+            raise HTTPException(status_code=404, detail="Approval not found")
+        resolved = await resolve_approval(
+            approval_id=approval_id,
+            approved=False,
+            reason=action.reason,
+        )
+        return {
+            "approval_id": resolved.approval_id,
+            "status": resolved.status,
+            "reason": resolved.reason,
+        }
 
     return app
