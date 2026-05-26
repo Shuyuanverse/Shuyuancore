@@ -434,7 +434,6 @@ class PersistentBeliefStore(IBeliefStore):
                     MAX(timestamp) AS last_message_at
                 FROM beliefs
                 WHERE layer = 3
-                  AND memory_type = 'conversation'
                   AND status = 'active'
                 GROUP BY conversation_id
                 HAVING (MAX(timestamp) < ? OR (MAX(timestamp) = ? AND conversation_id < ?))
@@ -451,7 +450,6 @@ class PersistentBeliefStore(IBeliefStore):
                     MAX(timestamp) AS last_message_at
                 FROM beliefs
                 WHERE layer = 3
-                  AND memory_type = 'conversation'
                   AND status = 'active'
                 GROUP BY conversation_id
                 ORDER BY last_message_at DESC, conversation_id DESC
@@ -504,7 +502,6 @@ class PersistentBeliefStore(IBeliefStore):
                 FROM beliefs
                 WHERE conversation_id = ?
                   AND layer = 3
-                  AND memory_type = 'conversation'
                   AND status = 'active'
                   AND (timestamp > ? OR (timestamp = ? AND id > ?))
                 ORDER BY timestamp ASC, id ASC
@@ -517,7 +514,6 @@ class PersistentBeliefStore(IBeliefStore):
                 FROM beliefs
                 WHERE conversation_id = ?
                   AND layer = 3
-                  AND memory_type = 'conversation'
                   AND status = 'active'
                 ORDER BY timestamp ASC, id ASC
                 LIMIT ?
