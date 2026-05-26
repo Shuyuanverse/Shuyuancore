@@ -401,6 +401,21 @@
 - [⚠️] **Docker/Playwright 等可选依赖**：`shuyuancore[tools]` 等扩展包需用户手动安装
 - [⚠️] **架构自评报告**：已提交 `reports/arch_review_tools_stage1.md`
 
+### Stage 2 网络与数据获取工具（已完成）
+
+- [✅] 实现 `WebTool`（HTTP 获取 + DuckDuckGo 搜索 + robots.txt 遵守）
+- [✅] 实现 `BrowserTool`（Playwright 浏览器自动化：导航/截图/点击/填表/取文本）
+- [✅] 实现 `DatabaseTool`（SQLite 只读查询 + 写操作审批 + 只读模式配置）
+- [✅] 实现 `EmailTool`（SMTP 发送 + IMAP 收件箱列表/读取）
+- [✅] 测试：`test_web.py`（8 个）、`test_database.py`（7 个）、`test_browser.py`（7 个）、`test_email.py`（7 个）
+
+### ⚠️ 技术债务（Stage 2）
+
+- [⚠️] **Playwright 可选依赖**：BrowserTool 仅在 `shuyuancore[playwright]` 安装后才可用，需手动 `playwright install`
+- [⚠️] **DuckDuckGo 搜索依赖 HTML 解析**：DuckDuckGo HTML 搜索页面结构可能变动，搜索解析器需定期维护
+- [⚠️] **EmailTool 环境变量**：SMTP/IMAP 配置仅支持环境变量，不支持 config/default.yaml 配置
+- [⚠️] **数据库只读模式**：database_readonly=True 时拒绝所有非 SELECT 查询，无法通过配置动态切换运行时状态
+
 ### 后续 Stage（待实现）
 
 ---
