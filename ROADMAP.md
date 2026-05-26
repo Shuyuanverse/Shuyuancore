@@ -221,31 +221,42 @@
 
 *开发顺序依据规则 4.2.5*
 
-### 人格接口（`src/persona/interfaces.py`）
+### 基础设施（Phase 1）
 
-- [ ] 定义 `IPersonaCompiler` 抽象基类
-- [ ] 定义 `IStyleGuard` 抽象基类
+- [ ] 实现 `feature_flags.py` — 功能开关（从 `Settings.persona.feature_flags` 读取）
+- [ ] 实现 `profile.py` — 数据结构定义（StyleDimensions, PersonaProfile）
+- [ ] 实现 `perception.py` — 感知层（零 LLM 纯规则，6 类情绪，difflib 重复检测）
+- [ ] 实现 `hard_fact_guard.py` — 硬事实防护（写入 beliefs 表 L1, memory_type='identity'）
+- [ ] 创建 Alembic 迁移脚本（evolution_proposals, drift_history 表）
+- [ ] 编写基础设施测试文件
 
-### 人格编译引擎（`src/persona/compiler.py`）
+### 编译核心（Phase 2）
 
-- [ ] 实现输入校验（100 字 ~ 100 万字 — 依据规则 2.3 节 & 产品方案）
-- [ ] 实现身份文件管理（CORE.md / SOUL.md — 依据技术架构 2.5 节）
-- [ ] 实现人格编码（256 维 × 7 维度风格编码 — 依据规则 2.3 节）
-- [ ] 实现多身份支持（最多 5 个，shared/independent 层划分 — 依据技术架构）
-- [ ] 实现语言样本管理（500-1000 条，按场景分类 — 依据规则 2.3 节）
+- [ ] 实现 `identity_prompt.py` — 身份 prompt 构建器
+- [ ] 实现 `style_encoder.py` — 风格 7 维度编码器输出 StyleDimensions
+- [ ] 实现 `anchor_manager.py` — 锚点版本管理（128 维风格 + 256 维决策锚点）
+- [ ] 实现 `protection.py` — 风格保护流水线（漂移检测 + 校准指令 + 审视与调整）
+- [ ] 编写编译核心测试文件
 
-### 风格保护（`src/persona/style_guard.py`）
+### 编译器（Phase 3）
 
-- [ ] 实现风格向量对比（当前输出 vs 锚点 — 依据技术架构 L6 人格记忆）
-- [ ] 实现松刹车保护层（drift_threshold=0.25，超过强制校准 — 依据规则 2.3 节锁定表）
-- [ ] 审查 Agent 集成点预留（review_drift_threshold=0.15 — 依据技术架构补充）
+- [ ] 实现 `compiler.py` — 人格编译入口（通用模式 + 人格模式）
+- [ ] 实现 `compile_generic` — 通用模式编译（从对话记录生成风格+决策锚点）
+- [ ] 实现 `compile_persona` — 人格模式编译（从指定文本生成完整档案）
+- [ ] 编写编译器测试文件
 
-### 人格记忆存储（`src/persona/persona_memory.py`）
+### 自主演化与管线编排（Phase 4）
 
-- [ ] 实现 `data/memories/persona.json` 读写（style_anchors + trajectory + drift_history）
-- [ ] 实现漂移检测历史记录
-- [ ] 编写单元测试 `tests/test_persona/`
-- [ ] 提交架构自评报告
+- [ ] 实现 `autonomous_evolution.py` — 自主演化提议引擎（三档审核）
+- [ ] 实现 `pipeline.py` — 全管线编排（同步感知 + 异步后台）
+- [ ] 集成 Agent 主循环（chat_stream 中注入感知、风格保护、校准指令）
+- [ ] 编写演化与管线测试文件
+
+### 技术债务
+
+- **风格锚点暂未持久化到 beliefs 表**：当前为内存缓存，后续可写入 L6 信念
+- **漂移检测为纯规则**：未使用 LLM 辅助提高精度
+- **决策锚点 PCA 降维需 sklearn**：不可用时回退到截取前 256 维
 
 ---
 
