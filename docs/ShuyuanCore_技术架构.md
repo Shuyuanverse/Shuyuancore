@@ -474,44 +474,75 @@ Phase 2（LLM审查，最多3次迭代）：
 • 技能质量评分：使用人数、成功率、最近更新时间
 • 因果技能可带关系导入，形成网络效应
 • 兼容agentskills.io开放标准（安装后Agent使用时自动补充因果信息）
-### 2.4 多智能体协作
-#### 协调流程（agents/coordinator.py）
-消息进来
-│
-▼
-[1] 判断复杂度
-├── 简单任务（单步/有现成技能）→ 单链执行
-└── 复杂决策（多方案/有权衡/不确定）→ 多视角推理
-│
-▼
-[2a] 单链执行
-决策Agent → 审查Agent（风格+质量，漂移阈值0.15）→ 返回
-│
-▼
-[2b] 多视角并行推理（2-5个视角，Agent根据问题复杂度自定）
-┌─ 视角1 → 论据A
-├─ 视角2 → 论据B
-├─ 视角3 → 论据C
-└─ ...（最多5个视角）
-│
-▼
-仲裁Agent → 综合各方 + 用户模型适配 → 最终建议
-│
-▼
-用户可选择模式：
-├── 快速模式：仅决策Agent
-├── 平衡模式：决策+审查
-└── 深度模式：多视角+仲裁
-#### 多视角推理（agents/multi\_view.py）
-• 视角数量：最少2个，最多5个，Agent根据问题复杂度决定
-• 每条推理链可调用不同模型、引用不同记忆、使用不同技能
-• 每条链输出结构化论据
-• 仲裁Agent始终存在，综合各方论据+用户心理模型判断
-#### 子代理（agents/sub\_agent.py）
-• 隔离的Agent实例（独立沙箱+独立会话）
-• 最多同时运行5个
-• 通过消息队列与主Agent通信
-• 结果回传到主Agent
+### 2.4 多智能体协作（v2.0 信念场深度融合版）
+
+#### 架构概述
+
+多智能体协作系统采用**信念场扰动强度自适应调度**，替代旧的快速/平衡/深度三档固定模式。系统基于用户消息与当前信念场状态的交互，自动评估需要多少"视角"来辅助决策。
+
+#### 核心组件
+
+```
+用户消息
+  │
+  ▼
+Coordinator (src/agents/coordinator.py)
+  │
+  ├─ 1. compute_perturbation_strength()  ← 扰动强度评估
+  │    ├─ 语义距离（消息 vs 最近信念）
+  │    ├─ 矛盾信念对数量（confidence > 0.6）
+  │    └─ 强决策词汇信号
+  │
+  ├─ 2. 自适应调度更新器集合（并行 asyncio.gather）
+  │    ├─ perturbation < 0.3 → EvidenceUpdater 仅证据视角
+  │    ├─ 0.3 ≤ perturbation < 0.7 → EvidenceUpdater + RiskUpdater
+  │    └─ perturbation ≥ 0.7 → EvidenceUpdater + RiskUpdater + InnovationUpdater
+  │    └─ /mode quick|balanced|deep 手动覆盖（会话级，内存存储）
+  │
+  ├─ 3. Arbitrator (src/agents/arbitrator.py)
+  │    ├─ 冲突检测（Jaccard 相似度 < 0.5 或置信度差距 > 0.4）
+  │    ├─ 无冲突 → 选置信度最高结果
+  │    └─ 有冲突 → 置信度加权融合 + LLM 语言润色
+  │
+  ├─ 4. Reviewer (src/agents/reviewer.py)
+  │    ├─ 检查维度：完整性 / 准确性 / 一致性 / 安全底线
+  │    └─ 不检查风格（由 Phase 5 人格保护负责）
+  │
+  └─ 5. 信念写入 → 返回最终回复
+```
+
+#### 三个更新器角色
+
+| 更新器 | 文件 | 职责 |
+|--------|------|------|
+| 证据更新器 | updater_evidence.py | 基于事实和数据，提供最可靠结论 |
+| 风险更新器 | updater_risk.py | 识别失败模式、边界条件、隐患 |
+| 创新更新器 | updater_innovation.py | 提供非显而易见的替代方案和新思路 |
+
+#### 仲裁机制（置信度加权融合）
+
+- **冲突检测**：计算两两结论的 token 级 Jaccard 相似度，< 0.5 视为冲突
+- **加权融合**：`weighted_confidence = confidence * user_preference_weights[source]`
+- **用户偏好权重**：默认等权 1.0，预留 L5 用户心理模型接入点
+- **LLM 角色**：仅做最终文本语言润色，不参与决策
+
+#### 子代理（agents/sub_agent.py）
+
+- 隔离执行 + 共享 IBeliefStore 读权限
+- 写入带 scope 前缀的信念（`source="sub_agent:{scope}"`）
+- 通过 asyncio.Queue 与主 Agent 通信
+- 子代理上限可配置（默认 5，最大 10），超时 30 秒
+
+#### 配置（config/default.yaml agents: 节）
+
+| 参数 | 默认值 | 说明 |
+|------|--------|------|
+| updaters_enabled | evidence/risk/innovation | 启用更新器列表 |
+| perturbation_threshold_low | 0.3 | 低档阈值（仅证据） |
+| perturbation_threshold_high | 0.7 | 高档阈值（全量） |
+| sub_agent_max_concurrent | 5 | 子代理最大并行数 |
+| sub_agent_timeout_seconds | 30 | 子代理超时 |
+| coordinator_timeout_seconds | 30 | 协调器总超时 |
 ### 2.5 人格编译引擎
 #### 编译流程（persona/compiler.py）
 输入：对话记录 / 专业文章 / 语音转写（100字~100万字）

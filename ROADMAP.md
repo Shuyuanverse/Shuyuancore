@@ -464,33 +464,59 @@
 
 ---
 
-## Phase 8: 多智能体协作（Agents）
+## Phase 8: 多智能体协作（Agents）✅
 
-*开发顺序依据规则 4.2.8*
+*开发顺序依据规则 4.2.8，设计依据最终指令 v2.0（信念场深度融合版）*
 
-### 协调器（`src/agents/coordinator.py`）
+### P0: 接口定义 + 配置 + 异常 + 基础工具
 
-- [ ] 实现复杂度判断逻辑（简单 → 单链 / 复杂 → 多视角 — 依据技术架构 2.4 节）
-- [ ] 实现三种执行模式（快速/平衡/深度 — 依据技术架构）
+- [✅] `interfaces.py` — IUpdater/IReviewer/IArbitrator/ISubAgent + UpdateContext/UpdaterResult
+- [✅] `utils.py` — 扰动强度计算、信念写入、更新策略选择
+- [✅] `src/config.py` — 新增 AgentsConfig（8个配置项）
+- [✅] `config/default.yaml` — 新增 agents: 配置节
+- [✅] `src/exceptions.py` — 新增 SubAgentTimeoutError/CoordinatorTimeoutError/ArbitrationError
+- [✅] 28 个 P0 单元测试
 
-### 单链执行（`src/agents/single_chain.py`）
+### P1: 更新器（证据/风险/创新）
 
-- [ ] 实现决策 Agent → 审查 Agent 管道（漂移阈值 0.15 — 依据技术架构）
-- [ ] 实现审查 Agent 质量检查（风格一致性 + 输出质量）
+- [✅] `updater_evidence.py` — 基于事实的决策者，调用 LLM 生成 UpdaterResult
+- [✅] `updater_risk.py` — 风险分析师，识别失败模式和隐患
+- [✅] `updater_innovation.py` — 创新探索者，提供替代方案（temperature=0.7）
+- [✅] 14 个 P1 单元测试（覆盖 JSON 解析、LLM 失败降级、信念上下文加载）
 
-### 多视角推理（`src/agents/multi_view.py`）
+### P2: 审查 Agent + 仲裁器
 
-- [ ] 实现并行视角推理（2-5 个视角，Agent 根据复杂度自定 — 依据规则 2.3 节）
-- [ ] 实现仲裁 Agent（综合各方论据 + 用户模型适配 → 最终建议）
-- [ ] 实现每条链独立模型/记忆/技能调用
+- [✅] `reviewer.py` — 逻辑审查（完整性/准确性/一致性/安全底线），不碰风格
+- [✅] `arbitrator.py` — 冲突检测（Jaccard 相似度 <0.5）→ 置信度加权融合 → LLM 润色
+- [✅] 27 个 P2 单元测试
 
-### 子代理管理（`src/agents/sub_agent.py`）
+### P3: 子代理 + 协调器 + Agent 集成
 
-- [ ] 实现隔离 Agent 实例（独立沙箱 + 独立会话）
-- [ ] 实现并行子代理上限（最多 5 个 — 依据规则 2.3 节）
-- [ ] 实现消息队列通信（子代理 ↔ 主 Agent）
-- [ ] 编写单元测试 `tests/test_agents/`
-- [ ] 提交架构自评报告
+- [✅] `sub_agent.py` — 隔离执行 + 共享 IBeliefStore 读取 + scope 标签写入
+- [✅] `coordinator.py` — 扰动强度自适应调度（3 档）+ 超时保护 + 降级
+- [✅] `src/core/agent.py` — 集成协调器（coordinator 参数注入，chat_stream 中调用）
+- [✅] `cli.py` — 新增 `/mode quick|balanced|deep` 子命令
+- [✅] 10 个 P3 单元测试
+
+### P4: 集成测试 + 文档同步
+
+- [✅] 6 个集成测试（端到端：用户消息 → 协调器 → 最终回复）
+- [✅] ROADMAP.md 更新（本 Phase）
+- [✅] docs/ShuyuanCore_技术架构.md 第 2.4 节更新
+- [✅] 技术债务记录
+
+### 测试统计
+- 总测试数：85 个（P0: 28 + P1: 14 + P2: 27 + P3: 10 + P4: 6）
+- 全项目测试：816 passed
+
+### ⚠️ 技术债务
+
+- 用户心理模型权重（`user_preference_weights`）当前固定为 1.0，需后续接入 L5
+- 扰动强度计算使用简单启发式（语义距离 + 矛盾对 + 决策词），可升级为信念场复杂度模型
+- 子代理的信念写入 scope 未实现自动传播决策（主 Agent 目前总是采纳），后续可增加采纳阈值
+- 多视角并行时模型路由可进一步优化（按视角动态选模型）
+- `sub_agent._execute` 当前为简化实现（直接组装摘要），后续应接入 LLM 进行复杂子任务
+- `/mode` 命令为 CLI 子命令，真正的 REPL 交互需 Phase 9 集成
 
 ---
 
