@@ -75,6 +75,7 @@ class PersistentBeliefStore(IBeliefStore):
             CREATE TABLE IF NOT EXISTS beliefs (
                 id TEXT PRIMARY KEY,
                 conversation_id TEXT NOT NULL,
+                user_id TEXT NOT NULL DEFAULT 'anonymous',
                 content TEXT NOT NULL,
                 source TEXT NOT NULL DEFAULT 'user',
                 confidence REAL NOT NULL DEFAULT 1.0,
@@ -120,6 +121,20 @@ class PersistentBeliefStore(IBeliefStore):
 
         await conn.execute(
             """
+            CREATE INDEX IF NOT EXISTS idx_beliefs_user_id
+            ON beliefs(user_id);
+            """
+        )
+
+        await conn.execute(
+            """
+            CREATE INDEX IF NOT EXISTS idx_beliefs_user_conv
+            ON beliefs(user_id, conversation_id, layer);
+            """
+        )
+
+        await conn.execute(
+            """
             CREATE VIRTUAL TABLE IF NOT EXISTS beliefs_fts USING fts5(
                 content,
                 content='beliefs',
@@ -130,7 +145,12 @@ class PersistentBeliefStore(IBeliefStore):
 
         await conn.commit()
 
-    async def add(self, conversation_id: str, belief: Belief) -> str:
+    async def add(
+        self,
+        conversation_id: str,
+        belief: Belief,
+        user_id: str = "anonymous",
+    ) -> str:
         conn = await self._get_conn()
         now_ms = current_time_ms()
 
@@ -139,17 +159,18 @@ class PersistentBeliefStore(IBeliefStore):
         await conn.execute(
             """
             INSERT INTO beliefs (
-                id, conversation_id, content, source,
+                id, conversation_id, user_id, content, source,
                 confidence, base_confidence, last_accessed,
                 memory_type, layer, entities, emotion,
                 depends_on, child_belief_ids, superseded_by,
                 status, is_composite, timestamp, metadata_json,
                 created_at, updated_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
                 belief_id,
                 conversation_id,
+                user_id,
                 belief.content,
                 belief.source,
                 belief.confidence,
@@ -412,6 +433,7 @@ class PersistentBeliefStore(IBeliefStore):
 
     async def get_conversation_list(
         self,
+        user_id: str | None = None,
         cursor: str | None = None,
         limit: int = 20,
     ) -> tuple[list[dict[str, object]], str | None, bool]:
@@ -420,13 +442,17 @@ class PersistentBeliefStore(IBeliefStore):
         conn = await self._get_conn()
         effective_limit = min(max(limit, 1), 100) + 1
 
+        user_filter = "AND user_id = ?" if user_id else ""
         params: list[object]
+
+        base_params: list[object] = [user_id] if user_id else []
+
         if cursor is not None:
             decoded = decode_cursor(cursor)
             if decoded is None:
                 return [], None, False
             cursor_ts, cursor_id = decoded
-            query = """
+            query = f"""
                 SELECT
                     conversation_id,
                     COUNT(*) AS message_count,
@@ -435,14 +461,15 @@ class PersistentBeliefStore(IBeliefStore):
                 FROM beliefs
                 WHERE layer = 3
                   AND status = 'active'
+                  {user_filter}
                 GROUP BY conversation_id
                 HAVING (MAX(timestamp) < ? OR (MAX(timestamp) = ? AND conversation_id < ?))
                 ORDER BY last_message_at DESC, conversation_id DESC
                 LIMIT ?
             """
-            params = [cursor_ts, cursor_ts, cursor_id, effective_limit]
+            params = base_params + [cursor_ts, cursor_ts, cursor_id, effective_limit]
         else:
-            query = """
+            query = f"""
                 SELECT
                     conversation_id,
                     COUNT(*) AS message_count,
@@ -451,11 +478,12 @@ class PersistentBeliefStore(IBeliefStore):
                 FROM beliefs
                 WHERE layer = 3
                   AND status = 'active'
+                  {user_filter}
                 GROUP BY conversation_id
                 ORDER BY last_message_at DESC, conversation_id DESC
                 LIMIT ?
             """
-            params = [effective_limit]
+            params = base_params + [effective_limit]
 
         cursor_obj = await conn.execute(query, params)
         rows_raw = await cursor_obj.fetchall()
@@ -483,6 +511,7 @@ class PersistentBeliefStore(IBeliefStore):
     async def get_conversation_messages(
         self,
         conversation_id: str,
+        user_id: str | None = None,
         cursor: str | None = None,
         limit: int = 50,
     ) -> tuple[list[dict[str, object]], str | None, bool]:
@@ -491,34 +520,50 @@ class PersistentBeliefStore(IBeliefStore):
         conn = await self._get_conn()
         effective_limit = min(max(limit, 1), 200) + 1
 
+        user_filter = "AND user_id = ?" if user_id else ""
+
         params: list[object]
         if cursor is not None:
             decoded = decode_cursor(cursor)
             if decoded is None:
                 return [], None, False
             cursor_ts, cursor_id = decoded
-            query = """
+            query = f"""
                 SELECT id, content, source, timestamp
                 FROM beliefs
                 WHERE conversation_id = ?
                   AND layer = 3
                   AND status = 'active'
+                  {user_filter}
                   AND (timestamp > ? OR (timestamp = ? AND id > ?))
                 ORDER BY timestamp ASC, id ASC
                 LIMIT ?
             """
-            params = [conversation_id, cursor_ts, cursor_ts, cursor_id, effective_limit]
+            if user_id:
+                params = [
+                    conversation_id, user_id,
+                    cursor_ts, cursor_ts, cursor_id, effective_limit,
+                ]
+            else:
+                params = [
+                    conversation_id,
+                    cursor_ts, cursor_ts, cursor_id, effective_limit,
+                ]
         else:
-            query = """
+            query = f"""
                 SELECT id, content, source, timestamp
                 FROM beliefs
                 WHERE conversation_id = ?
                   AND layer = 3
                   AND status = 'active'
+                  {user_filter}
                 ORDER BY timestamp ASC, id ASC
                 LIMIT ?
             """
-            params = [conversation_id, effective_limit]
+            if user_id:
+                params = [conversation_id, user_id, effective_limit]
+            else:
+                params = [conversation_id, effective_limit]
 
         cursor_obj = await conn.execute(query, params)
         rows_raw = await cursor_obj.fetchall()

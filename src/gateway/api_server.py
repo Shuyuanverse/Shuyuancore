@@ -259,9 +259,10 @@ def create_app(
         cursor: str | None = Query(default=None),
         limit: int = Query(default=20, ge=1, le=100),
     ) -> dict[str, Any]:
+        user_id = getattr(req.state, "user_id", "anonymous")
         store = _get_belief_store()
         items_raw, next_cursor, has_more = await store.get_conversation_list(
-            cursor=cursor, limit=limit
+            user_id=user_id, cursor=cursor, limit=limit
         )
         items = [
             ConversationItem(
@@ -284,9 +285,11 @@ def create_app(
         cursor: str | None = Query(default=None),
         limit: int = Query(default=50, ge=1, le=200),
     ) -> dict[str, Any]:
+        user_id = getattr(req.state, "user_id", "anonymous")
         store = _get_belief_store()
         items_raw, next_cursor, has_more = await store.get_conversation_messages(
             conversation_id=conversation_id,
+            user_id=user_id,
             cursor=cursor,
             limit=limit,
         )

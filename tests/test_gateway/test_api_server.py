@@ -428,3 +428,56 @@ class TestChatStreamEndpoint:
                 json={"message": ""},
             )
         assert resp.status_code == 422
+
+
+class TestUserIsolation:
+    async def test_conversations_isolated_by_user_header(
+        self, mock_agent_persistent, persistent_store
+    ) -> None:
+        from src.gateway.api_server import set_agent, set_belief_store
+        set_agent(mock_agent_persistent)
+        set_belief_store(persistent_store)
+
+        conv_a = str(uuid.uuid4())
+        conv_b = str(uuid.uuid4())
+
+        await mock_agent_persistent.chat_stream("msg a", conv_a).__anext__()
+        async for _ in mock_agent_persistent.chat_stream("msg a", conv_a):
+            pass
+        await mock_agent_persistent.chat_stream("msg b", conv_b).__anext__()
+        async for _ in mock_agent_persistent.chat_stream("msg b", conv_b):
+            pass
+
+        app = create_app()
+        transport = ASGITransport(app=app)
+        async with AsyncClient(transport=transport, base_url="http://test") as client:
+            resp = await client.get(
+                "/api/v1/conversations",
+                headers={"X-User-ID": "user-a"},
+            )
+        assert resp.status_code == 200
+        data = resp.json()
+        assert len(data["items"]) == 0
+
+    async def test_conversations_with_matching_user_id(
+        self, mock_agent_persistent, persistent_store
+    ) -> None:
+        from src.gateway.api_server import set_agent, set_belief_store
+        set_agent(mock_agent_persistent)
+        set_belief_store(persistent_store)
+
+        conv_id = str(uuid.uuid4())
+        await mock_agent_persistent.chat_stream("hello", conv_id).__anext__()
+        async for _ in mock_agent_persistent.chat_stream("hello", conv_id):
+            pass
+
+        app = create_app()
+        transport = ASGITransport(app=app)
+        async with AsyncClient(transport=transport, base_url="http://test") as client:
+            resp = await client.get(
+                "/api/v1/conversations",
+                headers={"X-User-ID": "anonymous"},
+            )
+        assert resp.status_code == 200
+        data = resp.json()
+        assert len(data["items"]) >= 1
