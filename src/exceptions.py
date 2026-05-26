@@ -224,6 +224,36 @@ class MCPCommandNotFoundError(ApprovalError):
     )
 
 
+class AgentError(ShuyuanCoreError):
+    code: int = 12000
+    http_status: int = 500
+    default_message: str = "多智能体操作失败 / Agent operation failed"
+
+
+class SubAgentTimeoutError(AgentError):
+    code: int = 12001
+    http_status: int = 408
+    default_message: str = (
+        "子代理执行超时 / Sub-agent execution timeout"
+    )
+
+
+class CoordinatorTimeoutError(AgentError):
+    code: int = 12002
+    http_status: int = 408
+    default_message: str = (
+        "协调器执行超时 / Coordinator execution timeout"
+    )
+
+
+class ArbitrationError(AgentError):
+    code: int = 12003
+    http_status: int = 500
+    default_message: str = (
+        "仲裁器融合失败 / Arbitration fusion failed"
+    )
+
+
 class SessionError(ShuyuanCoreError):
     code: int = 10000
     http_status: int = 404
@@ -318,6 +348,10 @@ __all__ = [
     "ApprovalNotFoundError",
     "ApprovalRequiredError",
     "MCPCommandNotFoundError",
+    "AgentError",
+    "SubAgentTimeoutError",
+    "CoordinatorTimeoutError",
+    "ArbitrationError",
     "SessionError",
     "SessionNotFoundError",
     "MessageNotFoundError",

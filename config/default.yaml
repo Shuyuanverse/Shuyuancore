@@ -179,6 +179,22 @@ tools:
   respect_robots: true
   database_readonly: true
 
+agents:
+  updaters_enabled:
+    - evidence
+    - risk
+    - innovation
+  perturbation_threshold_low: 0.3
+  perturbation_threshold_high: 0.7
+  sub_agent_max_concurrent: 5
+  sub_agent_max_total: 10
+  sub_agent_timeout_seconds: 30
+  coordinator_timeout_seconds: 30
+  user_preference_weights:
+    evidence: 1.0
+    risk: 1.0
+    innovation: 1.0
+
 gateway:
   platforms:
     cli:

@@ -332,6 +332,21 @@ class ToolsConfig(BaseModel):
     database_readonly: bool = True
 
 
+class AgentsConfig(BaseModel):
+    updaters_enabled: list[str] = Field(
+        default_factory=lambda: ["evidence", "risk", "innovation"]
+    )
+    perturbation_threshold_low: float = 0.3
+    perturbation_threshold_high: float = 0.7
+    sub_agent_max_concurrent: int = 5
+    sub_agent_max_total: int = 10
+    sub_agent_timeout_seconds: int = 30
+    coordinator_timeout_seconds: int = 30
+    user_preference_weights: dict[str, float] = Field(
+        default_factory=lambda: {"evidence": 1.0, "risk": 1.0, "innovation": 1.0}
+    )
+
+
 class GatewayPlatformConfig(BaseModel):
     enabled: bool = False
     port: int = 0
@@ -414,6 +429,7 @@ class Settings(BaseSettings):
     prediction: PredictionConfig = Field(default_factory=PredictionConfig)
     security: SecurityConfig = Field(default_factory=SecurityConfig)
     tools: ToolsConfig = Field(default_factory=ToolsConfig)
+    agents: AgentsConfig = Field(default_factory=AgentsConfig)
     gateway: GatewayConfig = Field(default_factory=GatewayConfig)
     cron: CronConfig = Field(default_factory=CronConfig)
     deploy: DeployConfig = Field(default_factory=DeployConfig)
