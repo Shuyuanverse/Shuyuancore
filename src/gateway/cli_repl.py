@@ -176,7 +176,7 @@ def _print_approval_banner(approval_id: str, tool_name: str, command: str) -> No
 
 
 async def _wait_for_approval(approval_id: str) -> bool:
-    mgr = get_approval_manager()
+    mgr = await get_approval_manager()
     try:
         approved = await asyncio.wait_for(
             mgr.wait(approval_id, timeout=300),
@@ -216,14 +216,14 @@ async def _handle_command(cmd_line: str, session: PromptSession) -> bool:
             _print_colored("用法 / Usage: /mode quick|balanced|deep", "error")
         return False
 
-    mgr = get_approval_manager()
+    mgr = await get_approval_manager()
 
     if cmd == "/approve":
         if len(parts) < 2:
             _print_colored("用法 / Usage: /approve <approval_id>", "error")
             return False
         aid = parts[1]
-        req = mgr.get_request(aid)
+        req = await mgr.aget_request(aid)
         if req is None:
             _print_colored(f"审批未找到 / Approval not found: {aid}", "error")
             return False
@@ -237,7 +237,7 @@ async def _handle_command(cmd_line: str, session: PromptSession) -> bool:
             _print_colored("用法 / Usage: /deny <approval_id>", "error")
             return False
         aid = parts[1]
-        req = mgr.get_request(aid)
+        req = await mgr.aget_request(aid)
         if req is None:
             _print_colored(f"审批未找到 / Approval not found: {aid}", "error")
             return False

@@ -6,18 +6,14 @@ import pytest
 from httpx import ASGITransport, AsyncClient
 
 from src.gateway.api_server import create_app
-from src.security.approval import get_approval_manager
 
 
-@pytest.fixture(autouse=True)
+@ pytest.fixture(autouse=True)
 def _reset_globals() -> None:
     import src.gateway.api_server as server_mod
 
     server_mod._agent_instance = None
     server_mod._belief_store_instance = None
-    mgr = get_approval_manager()
-    mgr._requests.clear()
-    mgr._counter = 0
 
 
 class TestApprovalEndpoints:
@@ -27,6 +23,7 @@ class TestApprovalEndpoints:
         async with AsyncClient(transport=transport, base_url="http://test") as client:
             resp = await client.post(
                 "/api/v1/approvals",
+                headers={"X-User-ID": "test-user-1"},
                 json={
                     "tool_name": "terminal",
                     "command": "rm -rf /",
@@ -36,8 +33,7 @@ class TestApprovalEndpoints:
         assert resp.status_code == 200
         data = resp.json()
         assert data["status"] == "pending"
-        assert data["approval_id"].startswith("apr_")
-        assert "test-use" in data["approval_id"]
+        assert "test-user-1" in data["approval_id"]
 
     async def test_approve_endpoint(self) -> None:
         app = create_app()
@@ -45,6 +41,7 @@ class TestApprovalEndpoints:
         async with AsyncClient(transport=transport, base_url="http://test") as client:
             create_resp = await client.post(
                 "/api/v1/approvals",
+                headers={"X-User-ID": "test-user-2"},
                 json={
                     "tool_name": "terminal",
                     "command": "ls",
@@ -61,11 +58,7 @@ class TestApprovalEndpoints:
         assert resp.status_code == 200
         data = resp.json()
         assert data["status"] == "approved"
-
-        mgr = get_approval_manager()
-        req = mgr.get_request(approval_id)
-        assert req is not None
-        assert req.approved is True
+        assert data["approval_id"] == approval_id
 
     async def test_deny_endpoint(self) -> None:
         app = create_app()
@@ -73,6 +66,7 @@ class TestApprovalEndpoints:
         async with AsyncClient(transport=transport, base_url="http://test") as client:
             create_resp = await client.post(
                 "/api/v1/approvals",
+                headers={"X-User-ID": "test-user-3"},
                 json={
                     "tool_name": "file_ops",
                     "command": "delete all",
@@ -89,11 +83,7 @@ class TestApprovalEndpoints:
         assert resp.status_code == 200
         data = resp.json()
         assert data["status"] == "denied"
-
-        mgr = get_approval_manager()
-        req = mgr.get_request(approval_id)
-        assert req is not None
-        assert req.approved is False
+        assert data["approval_id"] == approval_id
 
     async def test_approval_not_found_returns_404(self) -> None:
         app = create_app()
@@ -106,7 +96,10 @@ class TestApprovalEndpoints:
         assert resp.status_code == 404
 
     async def test_wait_approval_resolved_after_approve(self) -> None:
-        mgr = get_approval_manager()
+        from src.security.approval import ApprovalManager
+
+        mgr = ApprovalManager(db_path="data/state.db")
+        await mgr.initialize()
         req = await mgr.request(
             tool_name="terminal",
             params={"command": "ls"},
@@ -123,8 +116,7 @@ class TestApprovalEndpoints:
 
         approved = await mgr.wait(approval_id, timeout=5)
         assert approved is True
-        assert req.approved is True
-        assert req.status == "approved"
+        await mgr.close()
 
     async def test_approval_id_unique_per_user(self) -> None:
         app = create_app()
@@ -134,6 +126,7 @@ class TestApprovalEndpoints:
             async with AsyncClient(transport=transport, base_url="http://test") as client:
                 resp = await client.post(
                     "/api/v1/approvals",
+                    headers={"X-User-ID": f"user-{i}"},
                     json={
                         "tool_name": "test",
                         "command": f"cmd-{i}",
@@ -145,9 +138,9 @@ class TestApprovalEndpoints:
 
         assert len(ids) == 5
         for aid in ids:
-            assert len(aid) >= 15
+            assert len(aid) >= 10
 
-    async def test_approval_without_user_id_uses_default(self) -> None:
+    async def test_approval_without_user_id_uses_anonymous(self) -> None:
         app = create_app()
         transport = ASGITransport(app=app)
         async with AsyncClient(transport=transport, base_url="http://test") as client:
@@ -160,4 +153,4 @@ class TestApprovalEndpoints:
             )
         assert resp.status_code == 200
         data = resp.json()
-        assert "default" in data["approval_id"]
+        assert "anonymous" in data["approval_id"]

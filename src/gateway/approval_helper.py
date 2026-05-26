@@ -2,7 +2,10 @@ from __future__ import annotations
 
 import uuid
 
-from src.security.approval import ApprovalRequest, get_approval_manager
+from src.security.approval import (
+    ApprovalRequest,
+    get_approval_manager,
+)
 
 
 async def create_approval(
@@ -11,8 +14,8 @@ async def create_approval(
     user_id: str = "default",
     timeout: int = 300,
 ) -> ApprovalRequest:
-    mgr = get_approval_manager()
-    approval_id = f"apr_{uuid.uuid4().hex[:8]}_{user_id[:8]}"
+    mgr = await get_approval_manager()
+    approval_id = f"{user_id}_{uuid.uuid4().hex[:12]}"
     req = await mgr.request(
         tool_name=tool_name,
         params={"command": command},
@@ -28,7 +31,7 @@ async def resolve_approval(
     approved: bool,
     reason: str = "",
 ) -> ApprovalRequest:
-    mgr = get_approval_manager()
+    mgr = await get_approval_manager()
     return await mgr.resolve(
         approval_id=approval_id,
         approved=approved,
@@ -36,11 +39,11 @@ async def resolve_approval(
     )
 
 
-def get_pending_approvals() -> list[ApprovalRequest]:
-    mgr = get_approval_manager()
-    return mgr.list_pending()
+async def get_pending_approvals_by_user(user_id: str) -> list[ApprovalRequest]:
+    mgr = await get_approval_manager()
+    return await mgr.list_pending_by_user(user_id)
 
 
-def get_approval(approval_id: str) -> ApprovalRequest | None:
-    mgr = get_approval_manager()
-    return mgr.get_request(approval_id)
+async def get_approval(approval_id: str) -> ApprovalRequest | None:
+    mgr = await get_approval_manager()
+    return await mgr.aget_request(approval_id)

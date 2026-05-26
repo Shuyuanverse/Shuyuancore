@@ -136,6 +136,24 @@ def _build_error_response(status_code: int, code: int, message: str) -> JSONResp
     )
 
 
+def _extract_user_id(request: Request) -> str:
+    x_user_id = request.headers.get("X-User-ID")
+    if x_user_id:
+        return x_user_id
+
+    auth = request.headers.get("Authorization", "")
+    if auth.startswith("Bearer "):
+        token = auth[7:]
+        settings = get_settings()
+        api_keys = getattr(settings.security, "api_keys", [])
+        for entry in api_keys:
+            if entry.get("key") == token:
+                return entry.get("user_id", "default")
+        return f"token:{token[:8]}"
+
+    return "anonymous"
+
+
 def create_app(
     agent: Agent | None = None,
     belief_store: PersistentBeliefStore | None = None,
@@ -156,11 +174,14 @@ def create_app(
     )
 
     @app.middleware("http")
-    async def _inject_request_id(request: Request, call_next: Any) -> Any:
+    async def _inject_context(request: Request, call_next: Any) -> Any:
         request_id = str(uuid.uuid4())
+        user_id = _extract_user_id(request)
         request.state.request_id = request_id
+        request.state.user_id = user_id
         response = await call_next(request)
         response.headers["X-Request-ID"] = request_id
+        response.headers["X-User-ID"] = user_id
         return response
 
     @app.exception_handler(Exception)
@@ -199,7 +220,9 @@ def create_app(
         }
 
     @app.post("/api/v1/chat/stream")
-    async def chat_stream(request: StreamChatRequest) -> StreamingResponse:
+    async def chat_stream(
+        request: StreamChatRequest, req: Request
+    ) -> StreamingResponse:
         agent = _agent_instance
         if agent is None:
             agent = _build_agent_from_config()
@@ -210,9 +233,7 @@ def create_app(
 
         async def _event_generator() -> AsyncIterator[str]:
             message_id = str(uuid.uuid4())
-            full_content_parts: list[str] = []
             async for token in agent.chat_stream(request.message, conversation_id):
-                full_content_parts.append(token)
                 yield format_sse_event("message", {"content": token})
             yield format_sse_event(
                 "done",
@@ -234,6 +255,7 @@ def create_app(
 
     @app.get("/api/v1/conversations", response_model=PaginatedResponse)
     async def list_conversations(
+        req: Request,
         cursor: str | None = Query(default=None),
         limit: int = Query(default=20, ge=1, le=100),
     ) -> dict[str, Any]:
@@ -258,12 +280,15 @@ def create_app(
     )
     async def list_messages(
         conversation_id: str,
+        req: Request,
         cursor: str | None = Query(default=None),
         limit: int = Query(default=50, ge=1, le=200),
     ) -> dict[str, Any]:
         store = _get_belief_store()
         items_raw, next_cursor, has_more = await store.get_conversation_messages(
-            conversation_id=conversation_id, cursor=cursor, limit=limit
+            conversation_id=conversation_id,
+            cursor=cursor,
+            limit=limit,
         )
         items = [
             MessageItem(
@@ -279,15 +304,17 @@ def create_app(
     @app.post("/api/v1/approvals", response_model=ApprovalCreateResponse)
     async def create_approval_endpoint(
         request: ApprovalCreateRequest,
+        req: Request,
     ) -> dict[str, Any]:
-        req = await create_approval(
+        user_id = getattr(req.state, "user_id", request.user_id)
+        result = await create_approval(
             tool_name=request.tool_name,
             command=request.command,
-            user_id=request.user_id,
+            user_id=user_id,
         )
         return {
-            "approval_id": req.approval_id,
-            "status": req.status,
+            "approval_id": result.approval_id,
+            "status": result.status,
         }
 
     @app.post(
@@ -298,12 +325,12 @@ def create_app(
         approval_id: str,
         action: ApprovalAction,
     ) -> dict[str, Any]:
-        req = get_approval(approval_id)
-        if req is None:
+        existing = await get_approval(approval_id)
+        if existing is None:
             raise HTTPException(status_code=404, detail="Approval not found")
         resolved = await resolve_approval(
             approval_id=approval_id,
-            approved=action.approved,
+            approved=True,
             reason=action.reason,
         )
         return {
@@ -320,8 +347,8 @@ def create_app(
         approval_id: str,
         action: ApprovalAction,
     ) -> dict[str, Any]:
-        req = get_approval(approval_id)
-        if req is None:
+        existing = await get_approval(approval_id)
+        if existing is None:
             raise HTTPException(status_code=404, detail="Approval not found")
         resolved = await resolve_approval(
             approval_id=approval_id,

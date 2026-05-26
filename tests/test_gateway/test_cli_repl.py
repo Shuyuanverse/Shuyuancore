@@ -15,7 +15,6 @@ from src.gateway.cli_repl import (
     set_agent,
 )
 from src.models.interfaces import IModelProvider
-from src.security.approval import get_approval_manager
 
 
 class _MockModelProvider(IModelProvider):
@@ -75,10 +74,12 @@ def mock_agent() -> Agent:
 
 
 @pytest.fixture(autouse=True)
-def _reset_approval_manager() -> None:
-    mgr = get_approval_manager()
-    mgr._requests.clear()
-    mgr._counter = 0
+async def _reset_approval_manager() -> None:
+    from src.security.approval import _managers
+
+    for mgr in list(_managers.values()):
+        await mgr.cleanup(max_age=0)
+    _managers.clear()
 
 
 @pytest.fixture(autouse=True)
@@ -160,7 +161,10 @@ class TestHandleCommand:
     async def test_approve_command(self) -> None:
         from unittest.mock import MagicMock
 
-        mgr = get_approval_manager()
+        from src.security.approval import ApprovalManager
+
+        mgr = ApprovalManager(db_path="data/state.db")
+        await mgr.initialize()
         req = await mgr.request(
             tool_name="test", params={}, user_id="test-user"
         )
@@ -170,14 +174,18 @@ class TestHandleCommand:
         result = await _handle_command(f"/approve {aid}", session)
         assert result is False
 
-        resolved = mgr.get_request(aid)
+        resolved = await mgr.aget_request(aid)
         assert resolved is not None
         assert resolved.status == "approved"
+        await mgr.close()
 
     async def test_deny_command(self) -> None:
         from unittest.mock import MagicMock
 
-        mgr = get_approval_manager()
+        from src.security.approval import ApprovalManager
+
+        mgr = ApprovalManager(db_path="data/state.db")
+        await mgr.initialize()
         req = await mgr.request(
             tool_name="test", params={}, user_id="test-user"
         )
@@ -187,9 +195,10 @@ class TestHandleCommand:
         result = await _handle_command(f"/deny {aid}", session)
         assert result is False
 
-        resolved = mgr.get_request(aid)
+        resolved = await mgr.aget_request(aid)
         assert resolved is not None
         assert resolved.status == "denied"
+        await mgr.close()
 
     async def test_approve_nonexistent(self) -> None:
         from unittest.mock import MagicMock
