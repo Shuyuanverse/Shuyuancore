@@ -97,6 +97,24 @@ class EmbeddingConfig(BaseModel):
 
 
 class MemoryConfig(BaseModel):
+    decay_rates: dict[str, float] = {
+        "layer_1": 0.0005,
+        "layer_2": 0.005,
+        "layer_3": 0.01,
+        "layer_4": 0.015,
+        "layer_5": 0.01,
+        "layer_6": 0.0,
+    }
+    confidence_floor: float = 0.1
+    wake_threshold: float = 0.6
+    readiness_threshold: float = 0.5
+    max_wakeups_per_belief_per_day: int = 2
+    max_wakeups_per_session: int = 5
+    cooldown_base_minutes: int = 30
+    ai_importance_threshold: float = 0.6
+    ai_importance_working: float = 0.5
+    composite_min_rounds: int = 3
+    composite_confidence: float = 0.8
     core_memory_limit: int = 2200
     user_model_limit: int = 1375
     consolidation_threshold: float = 0.8

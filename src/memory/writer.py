@@ -5,6 +5,7 @@ import re
 import uuid
 from typing import Any
 
+from src.config import get_settings
 from src.core.interfaces import Belief, IBeliefStore
 from src.memory.interfaces import IEmotionAnalyzer, IEntityExtractor
 
@@ -137,9 +138,6 @@ class ManualMemoryWriter:
         return created
 
 
-_IMPORTANCE_THRESHOLD: float = 0.6
-
-
 class AiInferenceWriter:
 
     def __init__(
@@ -155,6 +153,7 @@ class AiInferenceWriter:
         self._emotion_analyzer = emotion_analyzer
         self._conversation_id = conversation_id
         self._source = source
+        self._threshold: float = get_settings().memory.ai_importance_threshold
 
     async def process_llm_output(
         self,
@@ -163,7 +162,7 @@ class AiInferenceWriter:
         timestamp_ms: int,
         metadata: dict[str, Any] | None = None,
     ) -> Belief | None:
-        if importance < _IMPORTANCE_THRESHOLD:
+        if importance < self._threshold:
             return None
 
         emotion = self._emotion_analyzer.analyze(llm_content)
@@ -203,13 +202,16 @@ class CompositeBeliefDetector:
         self._emotion_analyzer = emotion_analyzer
         self._conversation_id = conversation_id
         self._source = source
+        cfg = get_settings().memory
+        self._min_rounds: int = cfg.composite_min_rounds
+        self._composite_confidence: float = cfg.composite_confidence
 
     async def process_multi_turn(
         self,
         turns: list[dict[str, Any]],
         timestamp_ms: int,
     ) -> list[Belief]:
-        if len(turns) < 3:
+        if len(turns) < self._min_rounds:
             return []
 
         combined_text = " ".join(
@@ -238,8 +240,8 @@ class CompositeBeliefDetector:
             id=str(uuid.uuid4()),
             content=combined_text[:500],
             source=self._source,
-            confidence=0.7,
-            base_confidence=0.7,
+            confidence=self._composite_confidence,
+            base_confidence=self._composite_confidence,
             last_accessed=timestamp_ms,
             memory_type="fact",
             layer=3,

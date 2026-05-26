@@ -8,8 +8,10 @@ import aiosqlite
 
 from src.core.interfaces import Belief, IBeliefStore
 from src.memory.decay import current_time_ms
+from src.memory.embedding import EmbeddingService
 from src.memory.propagation import overthrow as propagation_overthrow
 from src.memory.propagation import propagate_confidence as propagation_propagate
+from src.memory.vector_store import VectorStore
 
 logger = logging.getLogger(__name__)
 
@@ -44,8 +46,15 @@ def _belief_from_row(row: aiosqlite.Row) -> Belief:
 
 class PersistentBeliefStore(IBeliefStore):
 
-    def __init__(self, db_path: str = _DB_PATH) -> None:
+    def __init__(
+        self,
+        db_path: str = _DB_PATH,
+        embedding_service: EmbeddingService | None = None,
+        vector_store: VectorStore | None = None,
+    ) -> None:
         self._db_path: str = db_path
+        self._embedding_service: EmbeddingService | None = embedding_service
+        self._vector_store: VectorStore | None = vector_store
         self._conn: aiosqlite.Connection | None = None
 
     async def _get_conn(self) -> aiosqlite.Connection:
@@ -169,6 +178,26 @@ class PersistentBeliefStore(IBeliefStore):
 
         await conn.commit()
         logger.debug("Belief added: %s -> %s", belief_id, belief.content[:60])
+
+        if self._embedding_service and self._vector_store:
+            try:
+                vector = await self._embedding_service.embed(belief.content)
+                if vector is not None:
+                    await self._vector_store.add(
+                        belief_id,
+                        vector,
+                        metadata={
+                            "layer": str(belief.layer),
+                            "conversation_id": conversation_id,
+                        },
+                    )
+            except Exception:
+                logger.warning(
+                    "vector_embedding_skipped belief_id=%s",
+                    belief_id,
+                    exc_info=True,
+                )
+
         return belief_id
 
     async def get(
@@ -296,13 +325,37 @@ class PersistentBeliefStore(IBeliefStore):
         top_k: int = 10,
         min_confidence: float = 0.1,
     ) -> list[tuple[Belief, float]]:
-        conn = await self._get_conn()
         sanitized = query.strip()
         if not sanitized:
             return []
 
         results: list[tuple[Belief, float]] = []
+        seen_ids: set[str] = set()
 
+        if self._vector_store and self._embedding_service:
+            try:
+                query_vector = await self._embedding_service.embed(sanitized)
+                if query_vector is not None:
+                    vector_results = await self._vector_store.search(
+                        query_vector, top_k
+                    )
+                    for belief_id, score in vector_results:
+                        belief = await self.get_by_id(belief_id)
+                        if (
+                            belief is not None
+                            and belief.status == "active"
+                            and belief.confidence >= min_confidence
+                            and belief.id not in seen_ids
+                        ):
+                            results.append((belief, score))
+                            seen_ids.add(belief.id)
+            except Exception:
+                logger.warning(
+                    "vector_search_failed, falling back to text search",
+                    exc_info=True,
+                )
+
+        conn = await self._get_conn()
         try:
             cursor = await conn.execute(
                 """
@@ -321,10 +374,12 @@ class PersistentBeliefStore(IBeliefStore):
             if rows:
                 for row in rows:
                     belief = _belief_from_row(row)
-                    rank = row["rank"] if "rank" in row.keys() else 0.0
-                    score = 1.0 / (1.0 + abs(rank))
-                    score = max(0.0, min(1.0, score))
-                    results.append((belief, score))
+                    if belief.id not in seen_ids:
+                        rank = row["rank"] if "rank" in row.keys() else 0.0
+                        score = 1.0 / (1.0 + abs(rank))
+                        score = max(0.0, min(1.0, score))
+                        results.append((belief, score))
+                        seen_ids.add(belief.id)
         except aiosqlite.OperationalError:
             pass
 
@@ -339,7 +394,6 @@ class PersistentBeliefStore(IBeliefStore):
             (f"%{sanitized}%", min_confidence, top_k),
         )
         rows = await cursor.fetchall()
-        seen_ids = {b.id for b, _ in results}
         for row in rows:
             belief = _belief_from_row(row)
             if belief.id not in seen_ids:

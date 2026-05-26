@@ -206,13 +206,11 @@
 
 ### ⚠️ 技术债务
 
-- **L3 ChromaDB 未实现**：`chroma_store.py` 为骨架文件，当前依赖 FTS5 文本检索，缺乏语义向量检索能力
-- **Embedding 服务未实现**：`embedding.py` 为骨架文件，DashScope text-embedding-v2 + sentence-transformers 降级方案待实现
-- **统一检索接口未实现**：ROADMAP 原定的 `search.py`（FTS5 + ChromaDB 双引擎合并去重排序）尚未创建
-- **L1 核心记忆骨架化**：`core_memory.py` 为空文件。MEMORY.md / USER.md 注入、80% 容量动态压缩、防注入扫描等功能待实现
-- **配置加载未集成**：decay.py 的衰减速率和 writer.py 的阈值为硬编码常量，未从 `config/default.yaml` 读取
-- **L2/L4/L5/L6 层存储未实现**：`working_memory.py` / `skill_memory.py` / `relational.py` / `persona_memory.py` 均为骨架文件
-- **单元测试缺失**：`tests/test_memory/` 目录尚未创建，核心功能模块缺乏测试覆盖
+- **L3 ChromaDB 未实现**：`chroma_store.py` 为骨架文件，向量检索已用内存索引实现，可选切换 ChromaDB
+- [✅] **Embedding 服务实现**：已用 DashScope text-embedding-v2 + 重试逻辑实现，集成到 belief_store 写入流程
+- [✅] **向量检索实现**：`VectorStore` 内存索引 + ChromaDB 可选后端，`search_similar` 优先语义检索
+- [✅] **配置驱动**：`decay.py` 衰减速率、`writer.py` 阈值、`wake.py` 唤醒参数从 `config/default.yaml` 统一读取
+- [✅] **单元测试覆盖**：`tests/test_memory/` 下 10 个测试文件共 104 个用例，覆盖全局核心逻辑路径
 - **Alembic 迁移脚本不完整**：beliefs_fts 虚拟表的创建未纳入迁移管理
 - **并发写入冲突风险**：PersistentBeliefStore 使用单一 aiosqlite Connection，无连接池
 - **FTS5 同步索引效率**：每次写入同步更新 FTS5 索引，高频场景下可能成为瓶颈

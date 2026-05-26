@@ -2,19 +2,16 @@ from __future__ import annotations
 
 import math
 import time
+from functools import lru_cache
 
+from src.config import get_settings
 from src.core.interfaces import Belief
 
-_DECAY_RATES: dict[int, float] = {
-    1: 0.0005,
-    2: 0.005,
-    3: 0.01,
-    4: 0.015,
-    5: 0.01,
-    6: 0.0,
-}
-_DEFAULT_DECAY_RATE: float = 0.01
-_MIN_CONFIDENCE: float = 0.1
+
+@lru_cache(maxsize=1)
+def _get_decay_rates() -> dict[int, float]:
+    raw = get_settings().memory.decay_rates
+    return {int(k.split("_")[1]): v for k, v in raw.items()}
 
 
 def current_time_ms() -> int:
@@ -27,6 +24,10 @@ def current_confidence(belief: Belief, now_ms: int | None = None) -> float:
 
     now = now_ms if now_ms is not None else current_time_ms()
     elapsed_days = max(0.0, (now - belief.last_accessed) / 86400000.0)
-    rate = _DECAY_RATES.get(belief.layer, _DEFAULT_DECAY_RATE)
+
+    rates = _get_decay_rates()
+    rate = rates.get(belief.layer, 0.01)
+
     confidence = belief.base_confidence * math.exp(-rate * elapsed_days)
-    return max(confidence, _MIN_CONFIDENCE)
+    config = get_settings().memory
+    return max(confidence, config.confidence_floor)

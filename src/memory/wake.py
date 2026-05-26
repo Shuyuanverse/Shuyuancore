@@ -4,6 +4,7 @@ import logging
 import re
 import time
 
+from src.config import get_settings
 from src.core.interfaces import Belief
 from src.memory.decay import current_confidence
 from src.memory.interfaces import IEmotionAnalyzer, IEntityExtractor
@@ -117,6 +118,9 @@ class WakeFrequencyTracker:
         self._session_tracker: dict[str, int] = {}
         self._session_window_ms: int = session_window_ms
         self._last_reset: int = 0
+        cfg = get_settings().memory
+        self._max_per_belief: int = cfg.max_wakeups_per_belief_per_day
+        self._max_per_session: int = cfg.max_wakeups_per_session
 
     def record_belief_wake(self, belief_id: str) -> None:
         now_ms = int(time.time() * 1000)
@@ -137,8 +141,9 @@ class WakeFrequencyTracker:
     def session_wake_count(self, session_id: str, window_ms: int = 3600000) -> int:
         return self._session_tracker.get(session_id, 0)
 
-    def should_suppress(self, belief_id: str, max_per_hour: int = 5) -> bool:
-        return self.belief_wake_count(belief_id) >= max_per_hour
+    def should_suppress(self, belief_id: str, max_per_hour: int | None = None) -> bool:
+        limit = max_per_hour if max_per_hour is not None else self._max_per_belief
+        return self.belief_wake_count(belief_id) >= limit
 
     def reset_session(self, session_id: str) -> None:
         self._session_tracker.pop(session_id, None)
