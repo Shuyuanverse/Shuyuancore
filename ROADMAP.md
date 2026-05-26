@@ -558,14 +558,14 @@
 
 ### ⚠️ 技术债务
 
-- [⚠️] **审批管理器为全局单例**：`ApprovalManager` 使用模块级单例，多用户场景下需改为用户级
-- [⚠️] **对话列表未支持 user_id 过滤**：`get_conversation_list` 未按用户隔离，多租户场景需添加
-- [⚠️] **游标编码未加 HMAC 签名**：`encode_cursor`/`decode_cursor` 无校验，客户端可篡改游标
+- [✅] **审批管理器为全局单例**：`ApprovalManager` 已改为 DB 持久化 + 用户级隔离，通过 `get_approval_manager(db_path)` 工厂函数获取
+- [✅] **对话列表未支持 user_id 过滤**：`get_conversation_list` 和 `get_conversation_messages` 已支持 user_id 参数，API 通过 X-User-ID 头隔离
+- [✅] **游标编码未加 HMAC 签名**：`encode_cursor`/`decode_cursor` 已实现 HMAC-SHA256 签名 + 过期时间，支持防篡改和防重放
 - [⚠️] **平台适配器为骨架文件**：`telegram.py`、`wechat.py` 等适配器均为空占位，待后续实现
-- [⚠️] **main.py 与 cli.py 命令分散**：`main.py` 仅含 serve/repl，`cli.py` 含 model/health/mode，未来应统一入口
-- [⚠️] **缺少 rate limiting 和安全中间件**：API 未实现请求频率限制和认证
-- [⚠️] **SSE 流式对话主循环无审批中断**：当前 chat_stream 仅发送 message/done 事件，未在工具调用时挂起等待审批
-- [⚠️] **pytest-asyncio 未在 dev 依赖中**：当前仅手动安装，`pyproject.toml` dev depends 中已有但安装可能遗漏
+- [✅] **main.py 与 cli.py 命令分散**：已统一入口，main.py 支持所有子命令（model/health/mode/serve/repl），cli.py 为 thin wrapper
+- [✅] **缺少 rate limiting 和安全中间件**：已实现令牌桶限流（rate_limit_per_minute=60）+ Bearer Token 认证 + 白名单路径（/health, /docs）
+- [✅] **SSE 流式对话主循环无审批中断**：已实现 asyncio.Event 挂起/恢复机制，SSE 流可暂停等待审批后继续输出
+- [✅] **pytest-asyncio 未在 dev 依赖中**：pyproject.toml dev 依赖已更新为 pytest-asyncio>=0.23.0
 
 ---
 
