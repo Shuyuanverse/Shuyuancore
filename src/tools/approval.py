@@ -1,0 +1,29 @@
+from __future__ import annotations
+
+from src.security.approval import get_approval_manager, ApprovalRequest
+from src.config import get_settings
+
+
+async def request_approval(
+    tool_name: str,
+    params: dict,
+    user_id: str = "default",
+) -> ApprovalRequest:
+    config = get_settings().tools
+    mgr = get_approval_manager()
+    return await mgr.request(
+        tool_name=tool_name,
+        params=params,
+        user_id=user_id,
+        timeout=config.approval_timeout,
+    )
+
+
+async def wait_for_approval(approval_id: str) -> bool:
+    config = get_settings().tools
+    mgr = get_approval_manager()
+    return await mgr.wait(approval_id, timeout=config.approval_timeout)
+
+
+def get_pending_approvals() -> list[ApprovalRequest]:
+    return get_approval_manager().list_pending()

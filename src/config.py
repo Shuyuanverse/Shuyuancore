@@ -317,6 +317,21 @@ class SecurityConfig(BaseModel):
     permission_grading: bool = True
 
 
+class ToolsConfig(BaseModel):
+    sandbox: str = "docker"
+    default_timeout: int = 60
+    approval_timeout: int = 300
+    terminal_whitelist: list[str] = Field(
+        default_factory=lambda: ["ls", "pwd", "echo", "cat", "head", "tail", "grep", "which", "whoami", "date"]
+    )
+    code_exec_timeout: int = 30
+    code_exec_memory_limit: int = 256
+    web_timeout: int = 30
+    web_user_agent: str = "ShuyuanCore/1.0"
+    respect_robots: bool = True
+    database_readonly: bool = True
+
+
 class GatewayPlatformConfig(BaseModel):
     enabled: bool = False
     port: int = 0
@@ -398,6 +413,7 @@ class Settings(BaseSettings):
     evolution: EvolutionConfig = Field(default_factory=EvolutionConfig)
     prediction: PredictionConfig = Field(default_factory=PredictionConfig)
     security: SecurityConfig = Field(default_factory=SecurityConfig)
+    tools: ToolsConfig = Field(default_factory=ToolsConfig)
     gateway: GatewayConfig = Field(default_factory=GatewayConfig)
     cron: CronConfig = Field(default_factory=CronConfig)
     deploy: DeployConfig = Field(default_factory=DeployConfig)

@@ -151,8 +151,17 @@ class ToolApprovalTimeoutError(ToolError):
     code: int = 6002
     http_status: int = 408
     default_message: str = (
-        "工具审批超时（15 分钟内未审批）"
-        " / Tool approval timeout (not approved within 15 minutes)"
+        "工具审批超时（5 分钟内未审批）"
+        " / Tool approval timeout (not approved within 5 minutes)"
+    )
+
+
+class ToolSandboxError(ToolError):
+    code: int = 6004
+    http_status: int = 500
+    default_message: str = (
+        "沙箱执行失败（Docker 不可用或资源不足）"
+        " / Tool sandbox execution failed (Docker unavailable or insufficient resources)"
     )
 
 
@@ -300,6 +309,7 @@ __all__ = [
     "ToolExecutionError",
     "ToolApprovalTimeoutError",
     "ToolOperationDeniedError",
+    "ToolSandboxError",
     "MCPError",
     "MCPConnectionError",
     "MCPToolNotFoundError",

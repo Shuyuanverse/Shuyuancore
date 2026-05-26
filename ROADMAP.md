@@ -351,41 +351,57 @@
 
 ### 工具接口（`src/tools/interfaces.py`）
 
-- [ ] 定义 `ITool` 抽象基类（execute/validate/describe）
-- [ ] 定义 `ToolRegistry` 注册表（注册/发现/状态/依赖检查）
-
-### 核心工具实现
-
-- [ ] 实现 `TerminalTool`（shell 命令执行，危险命令审批 — 依据安全规则）
-- [ ] 实现 `FileOpsTool`（文件读写/搜索/列出目录）
-- [ ] 实现 `WebTool`（HTTP 请求/网页抓取/搜索）
-- [ ] 实现 `MemoryTool`（查询/写入/删除记忆 — 调用 src/memory/ 接口）
-- [ ] 实现 `SkillsTool`（加载/执行技能 — 调用 src/skills/ 接口）
-
-### 扩展工具实现（14 个，按需分批）
-
-- [ ] 数据库操作工具（SQL 查询/迁移/备份）
-- [ ] Git 操作工具
-- [ ] API 调试工具
-- [ ] 文档生成工具
-- [ ] 社交媒体工具（小红书/抖音/微博/微信公众号）
-- [ ] Email 工具
-- [ ] 日历工具
-- [ ] 电子表格工具
-- [ ] 翻译工具
-- [ ] 项目管理工具
-- [ ] 知识库工具
-- [ ] 文件转换工具
-- [ ] 监控工具
-- [ ] 图表生成工具
+- [✅] 定义 `ITool` 抽象基类（execute/validate/describe）
+- [✅] 定义 `IToolRegistry` 注册表接口（register/get/list/execute）
+- [✅] 定义 `ToolResult`, `ToolSpec`, `ToolParameter` 数据类
 
 ### 工具执行基础设施
 
-- [ ] 实现工具执行沙箱隔离（依据安全配置 sandbox=docker）
-- [ ] 实现工具审批流程（危险命令 → 15 分钟超时审批 — 依据安全规则）
-- [ ] 实现工具执行审计日志（`audit_log` 表写入 — 依据规则 5.4 节）
-- [ ] 编写单元测试 `tests/test_tools/`
-- [ ] 提交架构自评报告
+- [✅] 实现工具执行沙箱隔离（`src/tools/sandbox.py` → `src/security/sandbox.py`，Docker 沙箱 + 本地降级）
+- [✅] 实现工具审批流程（`src/tools/approval.py` → `src/security/approval.py`，5 分钟超时 — 依据安全规则）
+- [✅] 实现工具执行审计日志（`src/security/audit.py`，参数脱敏、内存存储）
+- [✅] 实现 `ToolRegistry` 注册表（`src/tools/registry.py`，注册/发现/执行管道/审批集成/审计）
+
+### Stage 1 核心工具实现
+
+- [✅] 实现 `TerminalTool`（shell 命令执行，危险命令审批 — 依据安全规则）
+- [✅] 实现 `FileOpsTool`（文件读写/搜索/列出目录/删除，路径安全检测）
+- [✅] 实现 `ProcessTool`（进程列表/终止）
+- [✅] 实现 `CodeExecTool`（Python/JavaScript 代码沙箱执行，强制 Docker）
+- [✅] 实现 `MemoryTool`（记忆查询/写入/删除 — 调用 src/memory/ 接口）
+- [✅] 实现 `SkillsTool`（技能列表/获取/创建/更新/删除/执行 — 调用 src/skills/ 接口）
+
+### Stage 1 配置与异常更新
+
+- [✅] 更新 `src/config.py` — 新增 `ToolsConfig`（12 个配置项）
+- [✅] 更新 `config/default.yaml` — 新增 `tools:` 配置段
+- [✅] 更新 `src/exceptions.py` — 新增 `ToolSandboxError`，修复 `ToolApprovalTimeoutError` 超时描述
+- [✅] 更新 `pyproject.toml` — 新增可选依赖分组（tools/playwright/office/ocr/chart/crypto/media/all）
+- [✅] 创建 `src/security/approval.py` — ApprovalManager（异步审批 + 超时）
+- [✅] 创建 `src/security/audit.py` — AuditLogger（审计日志 + 参数脱敏）
+- [✅] 创建 `src/security/sandbox.py` — SandboxExecutor（Docker 优先 + 本地降级）
+
+### Stage 1 测试覆盖
+
+- [✅] `tests/test_tools/test_core.py` — 20 个用例（覆盖 interfaces/approval/audit/sandbox/registry）
+- [✅] `tests/test_tools/test_terminal.py` — 9 个用例（覆盖执行/验证/危险检测/沙箱不可用）
+- [✅] `tests/test_tools/test_file_ops.py` — 8 个用例（覆盖 read/write/delete/list/路径安全）
+- [✅] `tests/test_tools/test_process.py` — 6 个用例（覆盖 list/kill/validations）
+- [✅] `tests/test_tools/test_code_exec.py` — 8 个用例（覆盖 python/js/沙箱不可用）
+- [✅] `tests/test_tools/test_memory_tool.py` — 6 个用例（覆盖 search/write/delete）
+- [✅] `tests/test_tools/test_skills_tool.py` — 6 个用例（覆盖 list/create/delete）
+
+### ⚠️ 技术债务（Stage 1）
+
+- [⚠️] **security/approval.py 全局单例**：ApprovalManager 使用模块级单例，多用户场景下需改为用户级
+- [⚠️] **AuditLogger 内存存储**：日志在内存中，未持久化到 SQLite，高频场景会丢失日志
+- [⚠️] **SandboxExecutor Docker 缓存锁定**：_docker_available 缓存后不会重新检测
+- [⚠️] **TerminalTool 本地降级**：Docker 不可用时返回"需要审批"错误，需 Agent 循环配合而非自动触发审批
+- [⚠️] **memory/skills 工具依赖**：依赖的具体 store 在当前可能不完整，使用 try/except ImportError 处理
+- [⚠️] **Docker/Playwright 等可选依赖**：`shuyuancore[tools]` 等扩展包需用户手动安装
+- [⚠️] **架构自评报告**：已提交 `reports/arch_review_tools_stage1.md`
+
+### 后续 Stage（待实现）
 
 ---
 

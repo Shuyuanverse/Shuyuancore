@@ -20,6 +20,22 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+tools = ["docker>=7.0"]
+playwright = ["playwright>=1.40"]
+office = ["openpyxl>=3.1", "python-docx>=1.0", "reportlab>=4.0"]
+ocr = ["pytesseract>=0.3"]
+chart = ["matplotlib>=3.7", "plotly>=5.15"]
+crypto = ["cryptography>=41.0"]
+media = ["Pillow>=10.0"]
+all = [
+    "shuyuancore[tools]",
+    "shuyuancore[playwright]",
+    "shuyuancore[office]",
+    "shuyuancore[ocr]",
+    "shuyuancore[chart]",
+    "shuyuancore[crypto]",
+    "shuyuancore[media]",
+]
 dev = [
     "pytest>=7.0",
     "pytest-asyncio>=0.21",

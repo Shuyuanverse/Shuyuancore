@@ -157,6 +157,28 @@ security:
   output_filter: true
   permission_grading: true
 
+tools:
+  sandbox: docker
+  default_timeout: 60
+  approval_timeout: 300
+  terminal_whitelist:
+    - ls
+    - pwd
+    - echo
+    - cat
+    - head
+    - tail
+    - grep
+    - which
+    - whoami
+    - date
+  code_exec_timeout: 30
+  code_exec_memory_limit: 256
+  web_timeout: 30
+  web_user_agent: ShuyuanCore/1.0
+  respect_robots: true
+  database_readonly: true
+
 gateway:
   platforms:
     cli:
