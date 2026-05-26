@@ -56,6 +56,7 @@ core, memory, skills, tools, agents, persona, gateway, cron, models, evolution, 
 • **模块可独立禁用**：通过配置开关可以禁用某个模块，不影响其他模块运行。
 • **删除操作必须级联清理所有关联存储**：
 例如删除对话时，必须同时从 SQLite 删除 conversations + messages，并从 ChromaDB 删除 session\_id 对应的向量记录。禁止留下孤儿数据。
+· **核心 Agent 的信念存储（BeliefStore）和读出器（Reader）应通过接口（interfaces.py）定义**，便于后续替换持久化实现或升级为完整信念场。
 ### 2.3 配置规则（含关键参数锁定）
 • 所有可变值从配置读取：包括但不限于 API Key、超时、阈值、路径、模型名称。
 • 配置优先级：环境变量 > config/default.yaml > 代码默认值。

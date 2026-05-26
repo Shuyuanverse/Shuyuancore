@@ -114,36 +114,40 @@
 
 ---
 
-## Phase 3: 核心 Agent（Core）
+## Phase 3: 核心 Agent（基于信念场退化实现）
 
-*开发顺序依据规则 4.2.3*
+### 3.1 信念存储（`src/core/belief_store.py`）
+- [✅] 定义 `Belief` 数据类（字段：id, content, source, confidence, timestamp, dependencies, metadata）
+- [✅] 实现 `BeliefStore` 类（内存字典，以 conversation_id 分区），提供 add/get/clear 等方法
+- [✅] 编写单元测试 `tests/test_core/test_belief_store.py`
 
-### Agent 主循环（`src/core/agent.py`）
+### 3.2 信念读出器（`src/core/reader.py`）
+- [✅] 实现 `Reader` 类，接收 BeliefStore，提供 `read(conversation_id, user_query=None, max_tokens=4000)` 方法
+- [✅] 读出逻辑：按时间倒序取最近 N 条信念，拼接 content 作为上下文
+- [✅] 编写单元测试 `tests/test_core/test_reader.py`
 
-- [ ] 实现 `Agent` 主类骨架（依据技术架构 2.1 节 Agent 主循环 7 步流程）
-- [ ] 实现 `chat(message, user_id, platform)` — 主对话入口
-- [ ] 实现 `_prepare_context(message, user_id)` — 上下文准备（注入核心记忆 + 检索历史 + 匹配技能）
+### 3.3 工具调用集成（信念场中的工具）
+- [✅] 修改 Agent 类，在 LLM 流式响应中实时检测 tool_calls（按已批准方案）
+- [✅] 执行工具并将结果作为 Belief(source="tool") 添加到信念存储
+- [✅] 将工具结果追加到上下文，继续 LLM 生成
+- [✅] 编写单元测试 `tests/test_core/test_tool_integration.py`
 
-### 上下文管理（`src/core/context.py`）
+### 3.4 Agent 主类（`src/core/agent.py`）
+- [✅] Agent.__init__ 依赖注入：model_provider, belief_store, reader, tool_registry
+- [✅] 实现 chat_stream(message, conversation_id=None) 方法：
+  - 自动生成 conversation_id
+  - 将用户消息作为 Belief(source="user") 添加到存储
+  - 调用 reader.read() 获取上下文
+  - 实现流式工具调用循环（实时检测 tool_calls）
+  - yield 每个 token
+  - 将最终回复作为 Belief(source="assistant") 添加到存储
+  - 异步触发 _background_update（空实现）
+- [✅] 编写单元测试 `tests/test_core/test_agent.py`
 
-- [ ] 实现上下文窗口管理（依据技术架构 2.1 节步骤 [2]）
-- [ ] 实现动态压缩（达到容量阈值时压缩低优先级记忆 — 依据技术架构 L1 核心记忆节）
-- [ ] 实现上下文 token 计数预估
-
-### 对话管理（`src/core/conversation.py`）
-
-- [ ] 实现 `ConversationManager`（SQLite CRUD：创建/获取/归档/删除会话）
-- [ ] 实现消息管理（保存/检索消息，分页支持 — 对齐 API 3.1 节）
-- [ ] 实现会话级联删除（删除对话时级联删除 messages + ChromaDB 向量 — 依据规则 2.2 节）
-- [ ] 实现游标分页（cursor-based pagination — 对齐 API 响应格式）
-
-### 三 LLM 分工编排（`src/core/orchestrator.py`）
-
-- [ ] 实现主 LLM 执行路径（实时交互 — 依据技术架构 2.1 节三 LLM 分工表）
-- [ ] 实现复盘 LLM 异步路径（后台总结/提炼/更新）
-- [ ] 实现工具 LLM 调用路径（参数构造 + 结果解析）
-- [ ] 编写单元测试 `tests/test_core/`
-- [ ] 提交架构自评报告
+### 技术债务
+- [⚠️] 信念存储仅内存，未持久化（Phase 4）
+- [⚠️] 置信度固定为 1.0，无动态更新
+- [⚠️] 未实现依赖传播和相关性排序
 
 ---
 
@@ -420,8 +424,8 @@
 | Phase | 模块 | 任务数 | 状态 |
 |---|---|---|---|
 | Phase 1 | 基础设施 | 20 | 12 ✅ / 8 ⬜ |
-| Phase 2 | 模型层 | 10 | 全部待开始 |
-| Phase 3 | 核心 Agent | 9 | 全部待开始 |
+| Phase 2 | 模型层 | 10 | 10 ✅ |
+| Phase 3 | 核心 Agent | 14 | 14 ✅ |
 | Phase 4 | 记忆系统 | 14 | 全部待开始 |
 | Phase 5 | 人格编译 | 10 | 全部待开始 |
 | Phase 6 | 技能系统 | 10 | 全部待开始 |
@@ -429,4 +433,4 @@
 | Phase 8 | 多智能体 | 6 | 全部待开始 |
 | Phase 9 | 网关与 API | 18 | 全部待开始 |
 | Phase 10 | 部署与测试 | 9 | 全部待开始 |
-| **合计** | | **~113** | **12 ✅ / ~101 ⬜** |
+| **合计** | | **~118** | **36 ✅ / ~82 ⬜** |
