@@ -133,6 +133,19 @@ class SkillsConfig(BaseModel):
     stale_days: int = 30
     archive_days: int = 90
     difficulty_driven: bool = True
+    matching_timeout_ms: int = 200
+    value_score_threshold: float = 0.7
+    correction_keywords: list[str] = Field(
+        default_factory=lambda: [
+            "不对", "错了", "不是", "改一下",
+            "重新", "错了错了", "我意思是", "你理解错了",
+        ]
+    )
+    refinement_keywords: list[str] = Field(
+        default_factory=lambda: [
+            "再加", "补充", "注意", "别忘了", "也要", "同时", "顺便",
+        ]
+    )
 
 
 class PersonaFeatureFlagsConfig(BaseModel):

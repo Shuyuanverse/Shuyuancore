@@ -61,6 +61,25 @@ skills:
   stale_days: 30
   archive_days: 90
   difficulty_driven: true
+  matching_timeout_ms: 200
+  value_score_threshold: 0.7
+  correction_keywords:
+    - "不对"
+    - "错了"
+    - "不是"
+    - "改一下"
+    - "重新"
+    - "错了错了"
+    - "我意思是"
+    - "你理解错了"
+  refinement_keywords:
+    - "再加"
+    - "补充"
+    - "注意"
+    - "别忘了"
+    - "也要"
+    - "同时"
+    - "顺便"
 
 persona:
   feature_flags:
