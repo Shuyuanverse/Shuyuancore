@@ -73,22 +73,39 @@ class EvidenceUpdater(IUpdater):
 
 def _parse_updater_json(raw: str, source: str) -> UpdaterResult:
     import json
-    import re
 
-    match = re.search(r"\{[^{}]*\}", raw)
-    if match:
-        try:
-            data = json.loads(match.group(0))
-            confidence = float(data.get("confidence", 0.5))
-            confidence = max(0.0, min(1.0, confidence))
-            return UpdaterResult(
-                content=str(data.get("content", "")),
-                confidence=confidence,
-                reasoning=str(data.get("reasoning", "")),
-                source=source,
-            )
-        except (json.JSONDecodeError, ValueError, KeyError):
-            pass
+    start = raw.find("{")
+    if start == -1:
+        return UpdaterResult(
+            content=raw.strip(),
+            confidence=0.5,
+            reasoning="JSON 解析失败，使用原始输出",
+            source=source,
+        )
+
+    depth = 0
+    end = start
+    for i, ch in enumerate(raw[start:], start):
+        if ch == "{":
+            depth += 1
+        elif ch == "}":
+            depth -= 1
+            if depth == 0:
+                end = i + 1
+                break
+
+    try:
+        data = json.loads(raw[start:end])
+        confidence = float(data.get("confidence", 0.5))
+        confidence = max(0.0, min(1.0, confidence))
+        return UpdaterResult(
+            content=str(data.get("content", "")),
+            confidence=confidence,
+            reasoning=str(data.get("reasoning", "")),
+            source=source,
+        )
+    except (json.JSONDecodeError, ValueError, KeyError):
+        pass
 
     return UpdaterResult(
         content=raw.strip(),
