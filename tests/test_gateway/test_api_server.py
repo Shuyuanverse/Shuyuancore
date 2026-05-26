@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import uuid
 from collections.abc import AsyncIterator
 from typing import Any
@@ -335,3 +336,95 @@ class TestCorsMiddleware:
             )
         assert resp.status_code == 200
         assert "access-control-allow-origin" in resp.headers
+
+
+class TestChatStreamEndpoint:
+    async def test_sse_stream_returns_events(self, mock_agent: Agent) -> None:
+        set_agent(mock_agent)
+        app = create_app()
+        transport = ASGITransport(app=app)
+        async with AsyncClient(transport=transport, base_url="http://test") as client:
+            async with client.stream(
+                "POST",
+                "/api/v1/chat/stream",
+                json={"message": "Hello", "conversation_id": "test-conv-sse"},
+            ) as response:
+                assert response.status_code == 200
+                assert response.headers["content-type"].startswith("text/event-stream")
+
+                raw = ""
+                async for chunk in response.aiter_text():
+                    raw += chunk
+
+        lines = [line for line in raw.split("\n") if line]
+        events = []
+        for i in range(0, len(lines), 2):
+            if (
+                i + 1 < len(lines)
+                and lines[i].startswith("event:")
+                and lines[i + 1].startswith("data:")
+            ):
+                events.append(
+                    {
+                        "event": lines[i][7:],
+                        "data": lines[i + 1][6:],
+                    }
+                )
+
+        assert len(events) > 0
+        event_types = [e["event"] for e in events]
+        assert "message" in event_types
+        assert "done" in event_types
+
+    async def test_sse_stream_content_assembles(self, mock_agent: Agent) -> None:
+        set_agent(mock_agent)
+        app = create_app()
+        transport = ASGITransport(app=app)
+        async with AsyncClient(transport=transport, base_url="http://test") as client:
+            async with client.stream(
+                "POST",
+                "/api/v1/chat/stream",
+                json={"message": "Hi"},
+            ) as response:
+                raw = ""
+                async for chunk in response.aiter_text():
+                    raw += chunk
+
+        content_parts = []
+        for line in raw.split("\n"):
+            if line.startswith("data:"):
+                try:
+                    data = json.loads(line[6:])
+                    if "content" in data:
+                        content_parts.append(data["content"])
+                except json.JSONDecodeError:
+                    pass
+
+        assembled = "".join(content_parts)
+        assert assembled == "Hello from mock"
+
+    async def test_sse_done_event_has_conversation_id(self, mock_agent: Agent) -> None:
+        set_agent(mock_agent)
+        app = create_app()
+        transport = ASGITransport(app=app)
+        async with AsyncClient(transport=transport, base_url="http://test") as client:
+            async with client.stream(
+                "POST",
+                "/api/v1/chat/stream",
+                json={"message": "Hi", "conversation_id": "conv-done-test"},
+            ) as response:
+                raw = ""
+                async for chunk in response.aiter_text():
+                    raw += chunk
+
+        assert "conv-done-test" in raw
+
+    async def test_sse_rejects_empty_message(self) -> None:
+        app = create_app()
+        transport = ASGITransport(app=app)
+        async with AsyncClient(transport=transport, base_url="http://test") as client:
+            resp = await client.post(
+                "/api/v1/chat/stream",
+                json={"message": ""},
+            )
+        assert resp.status_code == 422

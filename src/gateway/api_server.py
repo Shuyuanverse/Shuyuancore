@@ -2,11 +2,12 @@ from __future__ import annotations
 
 import logging
 import uuid
+from collections.abc import AsyncIterator
 from typing import Any
 
 from fastapi import FastAPI, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, StreamingResponse
 
 from src.config import get_settings
 from src.core.agent import Agent
@@ -24,8 +25,9 @@ from src.gateway.api_models import (
     HealthResponse,
     MessageItem,
     PaginatedResponse,
+    StreamChatRequest,
 )
-from src.gateway.utils import error_response
+from src.gateway.utils import error_response, format_sse_event
 from src.memory.belief_store import PersistentBeliefStore
 from src.models.interfaces import IModelProvider
 
@@ -186,6 +188,40 @@ def create_app(
             "approval_required": False,
             "approval_id": None,
         }
+
+    @app.post("/api/v1/chat/stream")
+    async def chat_stream(request: StreamChatRequest) -> StreamingResponse:
+        agent = _agent_instance
+        if agent is None:
+            agent = _build_agent_from_config()
+            if agent is None:
+                raise HTTPException(status_code=503, detail="Agent not available")
+
+        conversation_id = request.conversation_id or str(uuid.uuid4())
+
+        async def _event_generator() -> AsyncIterator[str]:
+            message_id = str(uuid.uuid4())
+            full_content_parts: list[str] = []
+            async for token in agent.chat_stream(request.message, conversation_id):
+                full_content_parts.append(token)
+                yield format_sse_event("message", {"content": token})
+            yield format_sse_event(
+                "done",
+                {
+                    "conversation_id": conversation_id,
+                    "message_id": message_id,
+                },
+            )
+
+        return StreamingResponse(
+            _event_generator(),
+            media_type="text/event-stream",
+            headers={
+                "Cache-Control": "no-cache",
+                "Connection": "keep-alive",
+                "X-Accel-Buffering": "no",
+            },
+        )
 
     @app.get("/api/v1/conversations", response_model=PaginatedResponse)
     async def list_conversations(
