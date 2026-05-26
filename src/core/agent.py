@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import logging
 import uuid
 from typing import Any, AsyncIterator
 
@@ -38,6 +39,8 @@ from src.models.interfaces import (
 
 _MAX_TOOL_CALLS_PER_TURN = 5
 
+logger = logging.getLogger(__name__)
+
 
 class Agent:
 
@@ -50,6 +53,7 @@ class Agent:
         memory_store: IMemoryStore | None = None,
         persona_guard: IPersonaGuard | None = None,
         skill_engine: ISkillEngine | None = None,
+        skill_store: Any | None = None,
         entity_extractor: IEntityExtractor | None = None,
         emotion_analyzer: IEmotionAnalyzer | None = None,
     ) -> None:
@@ -60,6 +64,7 @@ class Agent:
         self._memory_store = memory_store or NoOpMemoryStore()
         self._persona_guard = persona_guard or NoOpPersonaGuard()
         self._skill_engine = skill_engine or NoOpSkillEngine()
+        self._skill_store = skill_store
         self._entity_extractor = entity_extractor or JiebaEntityExtractor()
         self._emotion_analyzer = emotion_analyzer or SnowNlpEmotionAnalyzer()
 
@@ -299,3 +304,20 @@ class Agent:
         for belief in recent_beliefs:
             belief.last_accessed = now_ms
             await self._belief_store.update(belief)
+
+        if self._skill_store:
+            try:
+                from src.skills.extractor import extract_skill
+
+                await extract_skill(
+                    conversation_id=conversation_id,
+                    message=message,
+                    response=response,
+                    belief_store=self._belief_store,
+                    skill_store=self._skill_store,
+                    model_provider=self._model_provider,
+                )
+            except Exception:
+                logger.exception(
+                    "skill extraction failed conv=%s", conversation_id
+                )
