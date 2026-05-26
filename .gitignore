@@ -9,3 +9,8 @@ build/
 .mypy_cache/
 .ruff_cache/
 reports/
+data/state.db
+data/logs/
+data/chroma/
+data/backups/
+.env
