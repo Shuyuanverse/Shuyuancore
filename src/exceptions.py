@@ -105,6 +105,12 @@ class SkillNotFoundError(SkillError):
     default_message: str = "技能不存在 / Skill not found"
 
 
+class SkillImportError(SkillError):
+    code: int = 4003
+    http_status: int = 400
+    default_message: str = "技能导入失败 / Skill import failed"
+
+
 class SkillMarketError(SkillError):
     code: int = 4002
     http_status: int = 502

@@ -8,6 +8,12 @@ from alembic import op
 import sqlalchemy as sa
 
 
+revision: str = "0002"
+down_revision: str = "0001"
+branch_labels: None = None
+depends_on: None = None
+
+
 def upgrade():
     op.create_table(
         'evolution_proposals',
