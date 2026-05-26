@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from src.skills.curator import run_curation
 from src.skills.extractor import (
     calculate_value_score,
     count_corrections,
@@ -7,6 +8,7 @@ from src.skills.extractor import (
     extract_skill,
     has_explicit_save,
 )
+from src.skills.importer import export_skills, import_skills
 from src.skills.interfaces import ISkillGraph, ISkillStore
 from src.skills.manager import PersistentSkillGraph, PersistentSkillStore
 from src.skills.matcher import format_skill_for_prompt, match_skill
@@ -23,4 +25,7 @@ __all__ = [
     "has_explicit_save",
     "match_skill",
     "format_skill_for_prompt",
+    "run_curation",
+    "export_skills",
+    "import_skills",
 ]
