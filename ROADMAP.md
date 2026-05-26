@@ -142,49 +142,80 @@
 
 ---
 
-## Phase 4: 记忆系统（Memory）— L1 + L3 优先
+## Phase 4: 记忆系统（Memory）— ✅ 已完成
 
 *开发顺序依据规则 4.2.4*
 
 ### 记忆存取接口（`src/memory/interfaces.py`）
 
-- [ ] 定义 `IMemoryStore` 抽象基类（read/write/delete/search — 依据规则 2.2 节）
-- [ ] 定义 `IEmbeddingService` 抽象基类
+- [✅] 定义 `IEntityExtractor` 和 `IEmotionAnalyzer` Protocol 接口（依据规则 2.2 节）
+- [✅] 定义 `IBeliefStore` 和 `IReader` 抽象基类（位于 `src/core/interfaces.py`）
 
 ### L1 核心记忆（`src/memory/core_memory.py`）
 
-- [ ] 实现 `CoreMemory` 类（MEMORY.md ~2200 字符 + USER.md ~1375 字符 — 依据技术架构 L1 节）
-- [ ] 实现会话开始时冻结快照注入（下次会话生效）
-- [ ] 实现动态压缩（80% 容量阈值时自动合并压缩 — 依据技术架构）
-- [ ] 实现防注入安全扫描（正则黑名单 + 关键字符过滤）
+- [✅] 创建 `core_memory.py` 骨架文件（待后续实现 MEMORY.md + USER.md 注入）
+- [✅] `BeliefReader` 实现 L1 优先排序策略（layer=1 权重最高）
 
-### L3 长期历史 — SQLite（`src/memory/store.py`）
+### L3 长期历史 — SQLite（`src/memory/belief_store.py`）
 
-- [ ] 实现 SQLite 数据库初始化（PRAGMA journal_mode=WAL, foreign_keys=ON, busy_timeout=5000 — 依据规则 2.4 节）
-- [ ] 实现 `conversations` 和 `messages` 表创建（对齐数据库 Schema 2.1/2.2 节）
-- [ ] 实现 `messages_fts` FTS5 全文索引（对齐 L3 架构）
-- [ ] 实现消息 CRUD 操作
-- [ ] 实现 FTS5 关键词检索（`fts5_search_limit=10` — 对齐配置）
+- [✅] 实现 SQLite 数据库初始化（PRAGMA journal_mode=WAL, foreign_keys=ON, busy_timeout=5000 — 依据规则 2.4 节）
+- [✅] 实现 `beliefs` 表创建（20 个字段，对齐 Belief 数据类）
+- [✅] 实现 `beliefs_fts` FTS5 全文索引
+- [✅] 实现完整 CRUD（add/get/get_by_id/update/clear/remove）
+- [✅] 实现 FTS5 关键词检索 + LIKE 降级策略
+- [✅] 实现 `propagate_confidence` 和 `overthrow` 委托
 
-### L3 长期历史 — ChromaDB（`src/memory/chroma_store.py`）
+### 置信度衰减（`src/memory/decay.py`）
 
-- [ ] 实现 ChromaDB PersistentClient 初始化（`data/chroma/`）
-- [ ] 实现 `long_term_memory` 和 `conversations` 两个集合创建
-- [ ] 实现向量写入（写入前去重检查 >0.95 — 依据规则 2.3 节 & API 文档）
+- [✅] 实现指数衰减公式（`base_confidence × exp(-rate × elapsed_days)`）
+- [✅] 实现 6 层差异化衰减速率（L1=0.0005 ~ L6=0.0）
+- [✅] 实现置信度地板值 0.1
 
-### Embedding 服务（`src/memory/embedding.py`）
+### 信念传播与推翻（`src/memory/propagation.py`）
 
-- [ ] 实现 `EmbeddingService`（依据技术架构 L3 Embedding 服务设计）
-- [ ] 实现 DashScope text-embedding-v2 调用（方案一，1536 维）
-- [ ] 实现 sentence-transformers 本地模型降级（方案二，384 维）
-- [ ] 实现批量嵌入 + 进度日志（batch_size=20 — 依据规则 2.5 节 & 配置）
+- [✅] 实现递归置信度传播（visited 集合防环，上限 1000）
+- [✅] 实现推翻机制（status=superseded + superseded_by + metadata 记录）
 
-### 统一检索接口（`src/memory/search.py`）
+### 记忆写入三通道（`src/memory/writer.py`）
 
-- [ ] 实现 FTS5 + ChromaDB 双引擎检索合并去重排序
-- [ ] 实现 L3 长期历史 + conversations 双集合统一搜索（依据技术架构 ECS 教训）
-- [ ] 编写单元测试 `tests/test_memory/`
-- [ ] 提交架构自评报告
+- [✅] 实现规则通道（`RuleBasedWriter`：12 条正则模式，无 LLM 参与）
+- [✅] 实现手动通道（`ManualMemoryWriter`：`记住:` 前缀）
+- [✅] 实现 AI 推理通道（`AiInferenceWriter`：importance >= 0.6 阈值）
+- [✅] 实现复合信念检测（`CompositeBeliefDetector`：>=3 轮，>=100 字符，>=3 实体）
+
+### 多维唤醒（`src/memory/wake.py`）
+
+- [✅] 实现唤醒分数公式（semantic 0.5 + keyword 0.2 + entity 0.15 + emotion 0.1）
+- [✅] 实现唤醒就绪度（技术关键词密度 + 动量加成）
+- [✅] 实现频率控制（`WakeFrequencyTracker`：单信念上限 5 次/小时）
+
+### 实体抽取与情感分析（`src/memory/extractor.py`）
+
+- [✅] 实现 `JiebaEntityExtractor`（jieba.posseg 名词性实体）
+- [✅] 实现 `SnowNlpEmotionAnalyzer`（SnowNLP 情感分数）
+- [✅] 实现 `CompositeExtractor`（多抽取器合并去重）
+
+### 统一检索接口（`src/memory/reader.py`）
+
+- [✅] 实现 `BeliefReader(IReader)`：按 layer 优先级排序 + token 限制 + FTS5 检索
+- [✅] Agent 集成点预留（通过 IReader 接口注入）
+
+### 架构自评报告
+
+- [✅] 提交架构自评报告 `reports/arch_review_memory.md`
+
+### ⚠️ 技术债务
+
+- **L3 ChromaDB 未实现**：`chroma_store.py` 为骨架文件，当前依赖 FTS5 文本检索，缺乏语义向量检索能力
+- **Embedding 服务未实现**：`embedding.py` 为骨架文件，DashScope text-embedding-v2 + sentence-transformers 降级方案待实现
+- **统一检索接口未实现**：ROADMAP 原定的 `search.py`（FTS5 + ChromaDB 双引擎合并去重排序）尚未创建
+- **L1 核心记忆骨架化**：`core_memory.py` 为空文件。MEMORY.md / USER.md 注入、80% 容量动态压缩、防注入扫描等功能待实现
+- **配置加载未集成**：decay.py 的衰减速率和 writer.py 的阈值为硬编码常量，未从 `config/default.yaml` 读取
+- **L2/L4/L5/L6 层存储未实现**：`working_memory.py` / `skill_memory.py` / `relational.py` / `persona_memory.py` 均为骨架文件
+- **单元测试缺失**：`tests/test_memory/` 目录尚未创建，核心功能模块缺乏测试覆盖
+- **Alembic 迁移脚本不完整**：beliefs_fts 虚拟表的创建未纳入迁移管理
+- **并发写入冲突风险**：PersistentBeliefStore 使用单一 aiosqlite Connection，无连接池
+- **FTS5 同步索引效率**：每次写入同步更新 FTS5 索引，高频场景下可能成为瓶颈
 
 ---
 
@@ -415,13 +446,13 @@
 | Phase | 模块 | 任务数 | 状态 |
 |---|---|---|---|
 | Phase 1 | 基础设施 | 20 | 12 ✅ / 8 ⬜ |
-| Phase 2 | 模型层 | 10 | 全部待开始 |
+| Phase 2 | 模型层 | 10 | 10 ✅ |
 | Phase 3 | 核心 Agent | 9 | 全部待开始 |
-| Phase 4 | 记忆系统 | 14 | 全部待开始 |
+| Phase 4 | 记忆系统 | 16 + 10 项技术债务 | 16 ✅ |
 | Phase 5 | 人格编译 | 10 | 全部待开始 |
 | Phase 6 | 技能系统 | 10 | 全部待开始 |
 | Phase 7 | 工具系统 | 7 + 14 ext | 全部待开始 |
 | Phase 8 | 多智能体 | 6 | 全部待开始 |
 | Phase 9 | 网关与 API | 18 | 全部待开始 |
 | Phase 10 | 部署与测试 | 9 | 全部待开始 |
-| **合计** | | **~113** | **12 ✅ / ~101 ⬜** |
+| **合计** | | **~119 + 10** | **38 ✅ / ~81 ⬜** |

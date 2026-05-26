@@ -30,26 +30,23 @@ models:
       base_url: http://localhost:11434
 
 memory:
-  core_memory_limit: 2200
-  user_model_limit: 1375
-  consolidation_threshold: 0.8
-  fts5_search_limit: 10
-  vector_search_limit: 5
-  working:
-    expire_days: 30
-    auto_cleanup: true
-  chroma:
-    persist_directory: data/chroma
-    client_type: persistent
-    collections:
-      long_term_memory:
-        metadata: [source, timestamp, topic, importance]
-      conversations:
-        metadata: [session_id, user_id, role, timestamp]
-  embedding:
-    provider: dashscope
-    dedup_threshold: 0.95
-    batch_size: 20
+  decay_rates:
+    layer_1: 0.0005
+    layer_2: 0.005
+    layer_3: 0.01
+    layer_4: 0.015
+    layer_5: 0.01
+    layer_6: 0.0
+  confidence_floor: 0.1
+  wake_threshold: 0.6
+  readiness_threshold: 0.5
+  max_wakeups_per_belief_per_day: 2
+  max_wakeups_per_session: 5
+  cooldown_base_minutes: 30
+  ai_importance_threshold: 0.6
+  ai_importance_working: 0.5
+  composite_min_rounds: 3
+  composite_confidence: 0.8
 
 skills:
   auto_extract: true

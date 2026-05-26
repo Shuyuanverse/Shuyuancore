@@ -9,38 +9,86 @@ from typing import Any
 class Belief:
     id: str
     content: str
-    source: str  # user | assistant | tool | system
+    source: str
     confidence: float = 1.0
+    base_confidence: float = 1.0
+    last_accessed: int = 0
+    memory_type: str = "chat"
+    layer: int = 3
+    entities: list[str] = field(default_factory=list)
+    emotion: float = 0.5
+    depends_on: list[str] = field(default_factory=list)
+    child_belief_ids: list[str] = field(default_factory=list)
+    superseded_by: str | None = None
+    status: str = "active"
+    is_composite: bool = False
     timestamp: int = 0
-    dependencies: list[str] = field(default_factory=list)
     metadata: dict[str, Any] = field(default_factory=dict)
+
+
+MEMORY_TYPE_LAYER_MAP: dict[str, int] = {
+    "identity": 1,
+    "preference": 1,
+    "fact": 3,
+    "task": 2,
+    "agreement": 2,
+    "emotion": 5,
+    "chat": 3,
+}
 
 
 class IBeliefStore(ABC):
 
     @abstractmethod
-    def add(self, conversation_id: str, belief: Belief) -> None:
+    async def add(self, conversation_id: str, belief: Belief) -> str:
         ...
 
     @abstractmethod
-    def get(
+    async def get(
         self, conversation_id: str, limit: int = 50
     ) -> list[Belief]:
         ...
 
     @abstractmethod
-    def clear(self, conversation_id: str) -> None:
+    async def get_by_id(self, belief_id: str) -> Belief | None:
         ...
 
     @abstractmethod
-    def remove(self, conversation_id: str, belief_id: str) -> None:
+    async def update(self, belief: Belief) -> None:
+        ...
+
+    @abstractmethod
+    async def clear(self, conversation_id: str) -> None:
+        ...
+
+    @abstractmethod
+    async def remove(self, conversation_id: str, belief_id: str) -> None:
+        ...
+
+    @abstractmethod
+    async def search_similar(
+        self,
+        query: str,
+        top_k: int = 10,
+        min_confidence: float = 0.1,
+    ) -> list[tuple[Belief, float]]:
+        ...
+
+    @abstractmethod
+    async def propagate_confidence(
+        self, belief_id: str, delta: float, visited: set[str] | None = None
+    ) -> None:
+        ...
+
+    @abstractmethod
+    async def overthrow(self, old_id: str, new_id: str, reason: str) -> None:
         ...
 
 
 class IReader(ABC):
 
     @abstractmethod
-    def read(
+    async def read(
         self,
         conversation_id: str,
         user_query: str | None = None,
