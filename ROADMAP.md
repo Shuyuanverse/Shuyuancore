@@ -32,16 +32,21 @@
 - [✅] 编写单元测试 `tests/test_exceptions.py`（135 个用例全部通过）
 - [✅] 提交架构自评报告 `reports/arch_review_exceptions.md`
 
-### 日志系统（`src/logging.py`）
+### 日志系统（`src/logging.py`）— ✅ 已完成
 
-- [ ] 实现基础日志配置（控制台输出 + 文件输出，从 `Settings.deploy` 读取 log_level）
-- [ ] 实现请求/关联 ID 自动注入（correlation ID / request ID，trace context 穿透）
-- [ ] 实现日志轮转（`RotatingFileHandler`，单文件 50MB，保留 5 个 — 对齐 `LogRotationConfig`）
-- [ ] 实现结构化日志输出（`structlog` JSON 格式，生产环境用，开发环境用彩色控制台）
-- [ ] 实现敏感信息过滤（API Key / Token 自动打码，依据规则 5.5 安全准则）
-- [ ] 集成 `src/config.py`：从 `DeployConfig.log_level` / `LogRotationConfig` 读取参数
-- [ ] 编写单元测试 `tests/test_logging.py`
-- [ ] 提交架构自评报告
+- [✅] 实现基础日志配置（控制台输出 + 文件输出，从 `Settings.deploy` 读取 log_level）
+- [✅] 实现请求/关联 ID 自动注入（correlation ID / request ID，trace context 穿透）
+- [✅] 实现日志轮转（`RotatingFileHandler`，单文件 50MB，保留 5 个 — 对齐 `LogRotationConfig`）
+- [✅] 实现结构化日志输出（`structlog` JSON 格式，生产环境用，开发环境用彩色控制台）
+- [✅] 实现敏感信息过滤（API Key / Token 自动打码，依据规则 5.5 安全准则）
+- [✅] 集成 `src/config.py`：从 `DeployConfig.log_level` / `LogRotationConfig` 读取参数
+- [✅] 编写 31 个单元测试 `tests/test_logging.py`
+- [✅] 提交架构自评报告（已合并到 Phase 2 报告中）
+
+### ⚠️ 技术债务（Phase 1）
+
+- **TODO**: 签名 `_setup_logging` 参数与环境配置解耦，后续若新增 `DeployConfig.environment` 字段可切换 dev/prod 模式
+- **TODO**: colorlog 彩色控制台输出在 structlog 环境下可进一步美化
 
 ---
 
@@ -103,7 +108,7 @@
 
 ### ⚠️ 技术债务
 
-- **`src/logging.py` 依赖缺失**：`_client.py` 和 `router.py` 回退到标准 `logging`，后续集成结构化日志
+- [✅] ~~**`src/logging.py` 依赖缺失**：`_client.py` 和 `router.py` 回退到标准 `logging`，后续集成结构化日志~~
 - **`chat_stream` 未在单元测试中覆盖**：建议 Phase 9 集成时补充端到端测试
 - **Router 不支持配置热加载**：后续可通过 `/config/reload` 端点扩展
 

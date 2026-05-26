@@ -1,12 +1,12 @@
 from __future__ import annotations
 
-import logging
 import time
 from dataclasses import dataclass
 from typing import Any
 
 from src.config import get_settings
 from src.exceptions import ModelCallError, ModelSwitchError
+from src.logging import get_logger
 from src.models.interfaces import (
     ChatResult,
     EmbeddingResult,
@@ -15,7 +15,7 @@ from src.models.interfaces import (
     ProviderRegistry,
 )
 
-_logger = logging.getLogger("shuyuancore.models.router")
+_logger = get_logger("shuyuancore.models.router")
 
 _FAILOVER_RECOVER_SECONDS = 300
 _FAILOVER_CONSECUTIVE_429_LIMIT = 3
