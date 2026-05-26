@@ -197,7 +197,7 @@ Agent的核心是一个循环：接收消息→准备上下文→执行→生成
 │
 ▼
 [5] 安全检查（14层防线）
-├── 风格保护检测（松刹车，drift\_threshold=0.25）
+├── 风格保护检测（松刹车，drift_threshold=0.25）
 ├── 危险命令拦截（需审批）
 ├── 审查Agent质量检查（漂移阈值0.15）
 ├── 敏感操作二次确认
@@ -221,13 +221,13 @@ Agent的核心是一个循环：接收消息→准备上下文→执行→生成
 **关键类设计**：
 **// python**class Agent:
 """ShuyuanCore主Agent类"""
-async def chat(self, message: str, user\_id: str, platform: str) -> str:
+async def chat(self, message: str, user_id: str, platform: str) -> str:
 """主对话入口"""
-async def \_prepare\_context(self, message, user\_id) -> list[dict]:
+async def _prepare_context(self, message, user_id) -> list[dict]:
 """准备上下文：记忆+技能+用户模型+预测"""
-async def \_execute(self, context, message) -> AgentResponse:
+async def _execute(self, context, message) -> AgentResponse:
 """执行：单链或多视角（2-5个视角+仲裁）"""
-async def \_background\_update(self, message, response, user\_id):
+async def _background_update(self, message, response, user_id):
 """后台异步更新：记忆/技能/用户模型/预测/自演化"""
 **三LLM分工**：
 |  |  |  |  |
