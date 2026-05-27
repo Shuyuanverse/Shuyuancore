@@ -13,4 +13,6 @@ data/state.db
 data/logs/
 data/chroma/
 data/backups/
+data/memories/
+data/skills/
 .env
