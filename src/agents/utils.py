@@ -3,6 +3,7 @@ from __future__ import annotations
 import uuid
 from typing import Any
 
+from src.config import get_settings
 from src.core.interfaces import Belief, IBeliefStore
 from src.memory.decay import current_time_ms
 
@@ -11,8 +12,20 @@ async def compute_perturbation_strength(
     belief_store: IBeliefStore,
     user_message: str,
 ) -> float:
+    cfg = get_settings().agents
+
+    semantic_weight = cfg.perturbation_semantic_weight
+    contradiction_weight = cfg.perturbation_contradiction_weight
+    density_weight = cfg.perturbation_density_weight
+    decision_weight = cfg.perturbation_decision_weight
+
+    total_weight = (
+        semantic_weight + contradiction_weight + density_weight + decision_weight
+    )
+    if total_weight <= 0:
+        return 0.5
+
     score = 0.0
-    weight_count = 0.0
 
     similar = await belief_store.search_similar(
         user_message, top_k=5, min_confidence=0.1
@@ -20,8 +33,7 @@ async def compute_perturbation_strength(
     if similar:
         max_sim = max(s for _, s in similar)
         semantic_distance = 1.0 - max_sim
-        score += semantic_distance * 0.4
-        weight_count += 0.4
+        score += semantic_distance * semantic_weight
 
     recent = await belief_store.get("__global__", limit=30)
     contradict_pairs = 0
@@ -31,8 +43,16 @@ async def compute_perturbation_strength(
                 if _are_contradicting(recent[i], recent[j]):
                     contradict_pairs += 1
     contradiction_factor = min(contradict_pairs / max(len(recent), 1), 1.0)
-    score += contradiction_factor * 0.35
-    weight_count += 0.35
+    score += contradiction_factor * contradiction_weight
+
+    if len(recent) >= 5:
+        timestamps = [b.timestamp for b in recent if b.timestamp]
+        if timestamps:
+            span = max(timestamps) - min(timestamps)
+            if span > 0:
+                density = len(timestamps) / span * 3600000
+                density_factor = min(density / 10.0, 1.0)
+                score += density_factor * density_weight
 
     decision_keywords = [
         "要不要", "应不应该", "该不该", "是不是该", "是否应该",
@@ -40,11 +60,7 @@ async def compute_perturbation_strength(
         "怎么办", "如何选择", "能不能", "可以吗",
     ]
     if any(kw in user_message for kw in decision_keywords):
-        score += 0.25
-    weight_count += 0.25
-
-    if weight_count > 0:
-        score = score / weight_count
+        score += decision_weight
 
     return min(max(score, 0.0), 1.0)
 

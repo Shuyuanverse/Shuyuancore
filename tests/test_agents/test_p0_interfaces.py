@@ -252,7 +252,7 @@ class TestComputePerturbationStrength:
         store.get = AsyncMock(return_value=[])
 
         result = await compute_perturbation_strength(store, "hello")
-        assert result > 0.2
+        assert result > 0.1
 
     @pytest.mark.asyncio
     async def test_contradictions_increase_strength(self) -> None:
@@ -279,7 +279,7 @@ class TestComputePerturbationStrength:
         store.get = AsyncMock(return_value=beliefs)
 
         result = await compute_perturbation_strength(store, "hello")
-        assert result > 0.2
+        assert result > 0.1
 
     @pytest.mark.asyncio
     async def test_result_in_valid_range(self) -> None:

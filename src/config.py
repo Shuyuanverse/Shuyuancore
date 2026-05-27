@@ -346,6 +346,10 @@ class AgentsConfig(BaseModel):
     sub_agent_max_total: int = 10
     sub_agent_timeout_seconds: int = 30
     sub_agent_belief_threshold: float = 0.5
+    perturbation_semantic_weight: float = 0.4
+    perturbation_contradiction_weight: float = 0.3
+    perturbation_density_weight: float = 0.15
+    perturbation_decision_weight: float = 0.15
     coordinator_timeout_seconds: int = 30
     user_preference_weights: dict[str, float] = Field(
         default_factory=lambda: {"evidence": 1.0, "risk": 1.0, "innovation": 1.0}
