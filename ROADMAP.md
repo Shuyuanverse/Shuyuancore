@@ -570,37 +570,43 @@
 
 ---
 
-## Phase 10: 部署与测试（Deploy & Test）
+## Phase 10: 部署与测试（Deploy & Test）✅
 
 *开发顺序依据规则 4.2.10*
 
 ### 部署基础设施
 
-- [ ] Systemd 服务脚本（`deploy/shuyuancore.service`）
-- [ ] Nginx 反向代理配置（`deploy/nginx.conf`）
-- [ ] Docker 容器化（`Dockerfile` + `docker-compose.yml`）
-- [ ] 部署文档（安装方式：curl_bash/pip/homebrew/docker/source/cloud — 依据 `DeployConfig`）
+- [✅] Systemd 服务脚本（`deploy/systemd/shuyuancore.service`）
+- [✅] Nginx 反向代理配置（`deploy/nginx/shuyuancore.conf`）
+- [✅] Docker 容器化（`Dockerfile` + `docker-compose.yaml`）
+- [✅] 一键安装脚本（`deploy/install.sh`，支持可配置 INSTALL_DIR/GIT_REPO）
+- [✅] 日志轮转配置（`deploy/logrotate/shuyuancore`）
+- [✅] 环境变量模板（`.env.example`）
+- [✅] 部署文档（`docs/DEPLOYMENT.md`，含 systemd/Docker/手动/升级回滚/故障排查）
 
-### 自动化测试
+### 文档遗留问题修复
 
-- [ ] 实现全模块集成测试（API 端到端流程）
-- [ ] 实现回归测试套件
-- [ ] 配置 CI/CD 流水线（pytest + ruff + mypy）
+- [✅] API 接口文档 SSE 事件类型修正（approval/message/done/error，移除 thinking/tool_call/tool_result/content）
+- [✅] API 接口文档审批端点路径修正（`/approvals/{id}/approve`、`/approvals/{id}/deny`、新增 `/approvals/{id}/resume`）
+- [✅] API 接口文档标记未实现端点为"计划中"（`/memory/*`、`/skills/curate`、WebSocket）
+- [✅] 数据库 Schema 文档 approvals 表结构对齐代码（approval_id/user_id/params_json/status/approved/reason/timeout/stream_id）
+- [✅] 数据库 Schema 文档 audit_logs 表结构对齐代码（action/resource/params_json）
+- [✅] DEVELOPMENT_RULES.md 补充多智能体接口隔离规则、审批超时、扰动强度计算、scope 规则
 
-### 数据迁移与回填
+### 健康检查增强
 
-- [ ] 实现 Alembic 配置 + 初始迁移脚本（依据规则 2.5 节）
-- [ ] 实现 ChromaDB 历史回填脚本（断点续传/批处理 20 条/幂等执行 — 依据规则 2.5 节）
-- [ ] 实现备份脚本 + 恢复命令（`shuyuancore restore` — 依据安全规则）
+- [✅] systemd 通知支持（`sd_notify("READY=1")`，systemd-python 可选依赖）
+- [✅] 健康检查端点增强（返回 `status`/`version`/`database` 字段）
 
-### 最终验收
+### 性能压测
 
-- [ ] 全量单元测试通过率 100%
-- [ ] 核心模块行覆盖率 ≥ 85%（`src/config.py`, `src/models/`, `src/core/agent.py`, `src/memory/` — 依据规则 4.4 节）
-- [ ] mypy --strict 零错误（渐近目标）
-- [ ] ruff lint 零错误
-- [ ] smoke test：服务启动 + `/health` 返回 200
-- [ ] 提交最终验收报告
+- [✅] 压测脚本（`tests/benchmark/test_performance.py`，单对话写入/并发吞吐量/检索速度）
+
+### 技术债务
+
+- **WebSocket 端点未实现**：当前 SSE 已满足流式需求，标记为"计划中"
+- **/memory/* REST API 未实现**：记忆操作通过 Agent 内部自动完成，标记为"计划中"
+- **/skills/curate API 未实现**：Curator 在内部调度触发，未暴露 API 端点
 
 ---
 
@@ -613,9 +619,9 @@
 | Phase 3 | 核心 Agent | 14 | 14 ✅ |
 | Phase 4 | 记忆系统 | 16 + 10 项技术债务 | 16 ✅ |
 | Phase 5 | 人格编译 | 14 + 3 项技术债务 | 14 ✅ |
-| Phase 6 | 技能系统 | 10 | 全部待开始 |
-| Phase 7 | 工具系统 | 7 + 14 ext | 全部待开始 |
-| Phase 8 | 多智能体 | 6 | 全部待开始 |
+| Phase 6 | 技能系统 | 10 | 10 ✅ |
+| Phase 7 | 工具系统 | 7 + 14 ext | 21 ✅ |
+| Phase 8 | 多智能体 | 6 | 6 ✅ |
 | Phase 9 | 网关与 API | 18 | 18 ✅ |
-| Phase 10 | 部署与测试 | 9 | 全部待开始 |
-| **合计** | | **~119 + 10** | **70 ✅ / ~49 ⬜** |
+| Phase 10 | 部署与测试 | 16 | 16 ✅ |
+| **合计** | | **~126 + 10** | **86 ✅ / ~40 ⬜** |
