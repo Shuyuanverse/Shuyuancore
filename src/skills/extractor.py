@@ -1,17 +1,19 @@
 from __future__ import annotations
 
+import asyncio
 import json
 import logging
 from typing import Any
 
 from src.config import get_settings
 from src.core.interfaces import IBeliefStore
-from src.memory.decay import current_time_ms
 from src.models.interfaces import IModelProvider
 from src.skills.interfaces import ISkillStore
 from src.skills.utils import generate_node_id
 
 logger = logging.getLogger(__name__)
+
+_extraction_lock = asyncio.Lock()
 
 CORRECTION_KEYWORDS: list[str] = [
     "不对", "错了", "不是", "改一下",
@@ -126,12 +128,31 @@ async def extract_skill(
     if not settings.skills.auto_extract:
         return None
 
+    if _extraction_lock.locked():
+        logger.info("extraction_skipped: another extraction task in progress")
+        return None
+
+    async with _extraction_lock:
+        return await _do_extract(
+            conversation_id, message, response,
+            belief_store, skill_store, model_provider,
+        )
+
+
+async def _do_extract(
+    conversation_id: str,
+    message: str,
+    response: str,
+    belief_store: IBeliefStore,
+    skill_store: ISkillStore,
+    model_provider: IModelProvider,
+) -> str | None:
     if has_explicit_save(message + response):
         explicit_save_flag = True
         threshold = 0.0
     else:
         explicit_save_flag = False
-        threshold = settings.skills.value_score_threshold
+        threshold = get_settings().skills.value_score_threshold
 
     recent = await belief_store.get(conversation_id, limit=50)
     if not recent:
