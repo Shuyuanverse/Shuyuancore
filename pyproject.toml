@@ -17,10 +17,10 @@ dependencies = [
     "structlog>=24.0",
     "colorlog>=6.0",
     "jieba>=0.42.1",
+    "snownlp>=0.12.3",
     "fastapi>=0.110.0",
     "uvicorn[standard]>=0.27.0",
     "prompt-toolkit>=3.0.0",
-    "slowapi>=0.1.9",
     "tiktoken>=0.5.0",
 ]
 
@@ -32,6 +32,7 @@ ocr = ["pytesseract>=0.3"]
 chart = ["matplotlib>=3.7", "plotly>=5.15"]
 crypto = ["cryptography>=41.0"]
 media = ["Pillow>=10.0"]
+vector = ["chromadb>=0.4.22"]
 all = [
     "shuyuancore[tools]",
     "shuyuancore[playwright]",
@@ -40,6 +41,7 @@ all = [
     "shuyuancore[chart]",
     "shuyuancore[crypto]",
     "shuyuancore[media]",
+    "shuyuancore[vector]",
 ]
 dev = [
     "pytest>=7.0",
@@ -48,7 +50,6 @@ dev = [
     "mypy>=1.0",
     "alembic>=1.13",
     "jieba>=0.42",
-    "snownlp>=0.12",
 ]
 
 [tool.hatch.build.targets.wheel]
