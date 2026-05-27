@@ -4,12 +4,11 @@ import argparse
 import asyncio
 import logging
 import sys
-from typing import NoReturn
 
 from src.config import get_settings
 from src.models.dashscope import DashScopeProvider
 from src.models.deepseek import DeepSeekProvider
-from src.models.openai_compat import OpenAICompatProvider, OllamaProvider
+from src.models.openai_compat import OllamaProvider, OpenAICompatProvider
 from src.models.router import Router
 
 logger = logging.getLogger(__name__)
@@ -93,7 +92,10 @@ def cmd_model_switch(args: argparse.Namespace) -> None:
     router = _build_router()
     try:
         result = router.switch_model(args.role, args.model)
-        print(f"\u6a21\u578b\u5df2\u5207\u6362\u81f3: {result['model']} (\u89d2\u8272: {result['role']})")
+        print(
+            f"\u6a21\u578b\u5df2\u5207\u6362\u81f3: {result['model']}"
+            f" (\u89d2\u8272: {result['role']})"
+        )
         print(f"Model switched to: {result['model']} (role: {result['role']})")
     except Exception as exc:
         print(f"\u5207\u6362\u5931\u8d25 / Switch failed: {exc}", file=sys.stderr)
@@ -145,7 +147,10 @@ def cmd_mode(args: argparse.Namespace) -> None:
         print(f"\u65e0\u6548\u7684\u6a21\u5f0f / Invalid mode: {args.mode}", file=sys.stderr)
         print(f"\u53ef\u7528\u503c / Valid values: {', '.join(valid_modes)}", file=sys.stderr)
         sys.exit(1)
-    print(f"\u591a\u667a\u80fd\u4f53\u6a21\u5f0f\u5df2\u5207\u6362\u81f3: {args.mode}\uff08\u4f1a\u8bdd\u7ea7\uff0c\u4e0d\u6301\u4e45\u5316\uff09")
+    print(
+        f"\u591a\u667a\u80fd\u4f53\u6a21\u5f0f\u5df2\u5207\u6362\u81f3: {args.mode}"
+        f"\uff08\u4f1a\u8bdd\u7ea7\uff0c\u4e0d\u6301\u4e45\u5316\uff09"
+    )
     print(f"Multi-agent mode set to: {args.mode} (session-level, not persisted)")
 
 
@@ -159,10 +164,14 @@ def main() -> None:
     )
     subparsers = parser.add_subparsers(dest="command", help="Available commands")
 
-    model_parser = subparsers.add_parser("model", help="\u6a21\u578b\u7ba1\u7406 / Model management")
+    model_parser = subparsers.add_parser(
+        "model", help="\u6a21\u578b\u7ba1\u7406 / Model management"
+    )
     model_subparsers = model_parser.add_subparsers(dest="model_command")
 
-    switch_parser = model_subparsers.add_parser("switch", help="\u5207\u6362\u6a21\u578b / Switch model")
+    switch_parser = model_subparsers.add_parser(
+        "switch", help="\u5207\u6362\u6a21\u578b / Switch model"
+    )
     switch_parser.add_argument("role", help="\u89d2\u8272 (chat/code/math/tool/review/main)")
     switch_parser.add_argument("model", help="\u6a21\u578b\u89c4\u683c (\u5982 dashscope/qwen-max)")
     switch_parser.set_defaults(func=cmd_model_switch)
@@ -181,7 +190,11 @@ def main() -> None:
     health_parser.set_defaults(func=cmd_health)
 
     mode_parser = subparsers.add_parser(
-        "mode", help="\u591a\u667a\u80fd\u4f53\u534f\u4f5c\u6a21\u5f0f / Multi-agent collaboration mode"
+        "mode",
+        help=(
+            "\u591a\u667a\u80fd\u4f53\u534f\u4f5c\u6a21\u5f0f"
+            " / Multi-agent collaboration mode"
+        ),
     )
     mode_parser.add_argument(
         "mode",
