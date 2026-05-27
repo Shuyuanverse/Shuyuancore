@@ -201,7 +201,7 @@ gateway:
       enabled: true
     api:
       enabled: true
-      port: 8000
+      port: 8005
     telegram:
       enabled: false
       token: ${TELEGRAM_BOT_TOKEN}

@@ -76,10 +76,13 @@ def _build_router() -> Router:
 def cmd_serve(_args: argparse.Namespace) -> None:
     import uvicorn
 
+    from src.config import get_settings
     from src.gateway.api_server import create_app
 
+    settings = get_settings()
+    port = settings.deploy.port
     app = create_app()
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run(app, host="0.0.0.0", port=port)
 
 
 def cmd_repl(_args: argparse.Namespace) -> None:
