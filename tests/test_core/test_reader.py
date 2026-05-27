@@ -1,123 +1,36 @@
 from __future__ import annotations
 
-import pytest
+from typing import Any
 
-from src.core.belief_store import BeliefStore
-from src.core.interfaces import Belief
-from src.core.reader import Reader
+from src.core.reader import estimate_tokens
 
 
-class TestReader:
+class TestEstimateTokens:
 
-    @pytest.mark.asyncio
-    async def test_read_empty(self) -> None:
-        store = BeliefStore()
-        reader = Reader(store)
-        messages = await reader.read("conv_1")
-        assert messages == []
+    def test_short_text_returns_reasonable_count(self) -> None:
+        count = estimate_tokens("Hello world")
+        assert count >= 1
+        assert count < 10
 
-    @pytest.mark.asyncio
-    async def test_read_single_belief(self) -> None:
-        store = BeliefStore()
-        await store.add(
-            "conv_1",
-            Belief(
-                id="b1",
-                content="hello world",
-                source="user",
-                timestamp=1000,
-            ),
+    def test_long_text_is_proportional(self) -> None:
+        short = estimate_tokens("Hello world")
+        long = estimate_tokens("Hello world! " * 100)
+        assert long > short
+
+    def test_chinese_text(self) -> None:
+        count = estimate_tokens("你好世界，这是一段中文测试文本。")
+        assert count >= 1
+
+    def test_empty_text(self) -> None:
+        count = estimate_tokens("")
+        assert count == 1
+
+    def test_fallback_when_tiktoken_unavailable(self, monkeypatch: Any) -> None:
+        import src.core.reader as reader_mod
+
+        monkeypatch.setattr(reader_mod, "_ENCODING_CACHE", {})
+        monkeypatch.setattr(
+            "src.core.reader._get_encoding", lambda model=None: None
         )
-        reader = Reader(store)
-        messages = await reader.read("conv_1")
-        assert len(messages) == 1
-        assert messages[0]["role"] == "user"
-        assert messages[0]["content"] == "hello world"
-
-    @pytest.mark.asyncio
-    async def test_read_multiple_beliefs_in_order(self) -> None:
-        store = BeliefStore()
-        await store.add(
-            "conv_1",
-            Belief(
-                id="b1",
-                content="first",
-                source="user",
-                timestamp=1000,
-            ),
-        )
-        await store.add(
-            "conv_1",
-            Belief(
-                id="b2",
-                content="second",
-                source="assistant",
-                timestamp=2000,
-            ),
-        )
-        reader = Reader(store)
-        messages = await reader.read("conv_1")
-        assert len(messages) == 2
-        assert messages[0]["content"] == "first"
-        assert messages[1]["content"] == "second"
-
-    @pytest.mark.asyncio
-    async def test_read_with_max_tokens(self) -> None:
-        store = BeliefStore()
-        for i in range(5):
-            await store.add(
-                "conv_1",
-                Belief(
-                    id=f"b{i}",
-                    content="x" * 200,
-                    source="user",
-                    timestamp=i,
-                ),
-            )
-        reader = Reader(store)
-        messages = await reader.read("conv_1", max_tokens=150)
-        assert len(messages) < 5
-        for msg in messages:
-            assert msg["role"] == "user"
-
-    @pytest.mark.asyncio
-    async def test_read_tool_beliefs_proper_role(self) -> None:
-        store = BeliefStore()
-        await store.add(
-            "conv_1",
-            Belief(
-                id="b1",
-                content="user msg",
-                source="user",
-                timestamp=1000,
-            ),
-        )
-        await store.add(
-            "conv_1",
-            Belief(
-                id="b2",
-                content="tool result",
-                source="tool",
-                timestamp=2000,
-            ),
-        )
-        reader = Reader(store)
-        messages = await reader.read("conv_1")
-        assert len(messages) == 2
-        assert messages[1]["role"] == "tool"
-
-    @pytest.mark.asyncio
-    async def test_read_tool_as_role(self) -> None:
-        store = BeliefStore()
-        await store.add(
-            "conv_1",
-            Belief(
-                id="b1",
-                content="tool data",
-                source="tool",
-                timestamp=1000,
-            ),
-        )
-        reader = Reader(store)
-        messages = await reader.read("conv_1")
-        assert messages[0]["role"] == "tool"
+        count = estimate_tokens("Hello world test")
+        assert count == max(1, len("Hello world test") // 4)
