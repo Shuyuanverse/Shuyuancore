@@ -511,7 +511,7 @@
 
 ### ⚠️ 技术债务
 
-- 用户心理模型权重（`user_preference_weights`）当前固定为 1.0，需后续接入 L5
+- [✅] **用户心理模型权重（`user_preference_weights`）当前固定为 1.0**：已从 config 加载，agent.py 创建 UpdateContext 时注入 `cfg.agents.user_preference_weights`
 - 扰动强度计算使用简单启发式（语义距离 + 矛盾对 + 决策词），可升级为信念场复杂度模型
 - [✅] **子代理的信念写入 scope 未实现自动传播决策**：已实现信念置信度阈值过滤（`sub_agent_belief_threshold`），仅将高置信度信念纳入上下文
 - 多视角并行时模型路由可进一步优化（按视角动态选模型）

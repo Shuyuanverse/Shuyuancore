@@ -152,7 +152,9 @@ class Agent:
             if self._coordinator is not None and tool_call_count == 0:
                 try:
                     from src.agents.interfaces import UpdateContext
+                    from src.config import get_settings
 
+                    cfg = get_settings()
                     ctx = UpdateContext(
                         conversation_id=conversation_id,
                         user_id=conversation_id,
@@ -160,6 +162,7 @@ class Agent:
                         history=context,
                         belief_store=self._belief_store,
                         skill_store=self._skill_store,
+                        user_preference_weights=cfg.agents.user_preference_weights,
                     )
                     coordinator_result = await self._coordinator.run(ctx)
                     full_response = coordinator_result
