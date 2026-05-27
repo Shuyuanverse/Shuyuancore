@@ -526,12 +526,64 @@ Coordinator (src/agents/coordinator.py)
 - **用户偏好权重**：默认等权 1.0，预留 L5 用户心理模型接入点
 - **LLM 角色**：仅做最终文本语言润色，不参与决策
 
-#### 子代理（agents/sub_agent.py）
+#### 信念场扰动强度计算详解
+
+扰动强度 `P` 由四个维度加权计算，实现于 `src/agents/utils.py` 的 `compute_perturbation_strength()` 函数：
+
+```
+P = w1 * D_semantic + w2 * C_contradiction + w3 * D_density + w4 * K_technical
+```
+
+其中：
+
+| 维度 | 符号 | 权重 | 计算方法 | 数据来源 |
+|------|------|------|---------|---------|
+| 语义距离 | D_semantic | 0.40 | 消息嵌入与最近信念集合的平均余弦距离：`1 - cos(msg_emb, beliefs_emb)` | EmbeddingService 计算 |
+| 矛盾信念对 | C_contradiction | 0.30 | `min(count(pairs with confidence>0.6) / 3, 1.0)` | belief_store.search_similar |
+| 强决策词汇密度 | D_density | 0.15 | 决策类关键词命中数 / 消息总词数（决策词表约50个） | utils.py DECISION_KEYWORDS |
+| 技术关键词密度 | K_technical | 0.15 | 技术类关键词命中数 / 消息总词数（技术词表约80个） | utils.py TECHNICAL_KEYWORDS |
+
+**决策词表示例**（DECISION_KEYWORDS）："决定/选择/应该/比较/权衡/方案/策略/风险/利弊/哪个更好/推荐/建议/计划"
+
+**技术词表示例**（TECHNICAL_KEYWORDS）："架构/接口/协议/算法/性能/并发/分布式/缓存/数据库/部署/监控/测试"
+
+**扰动强度决定更新器调度**：
+- `P < 0.3`：仅证据更新器（简单事实问题）
+- `0.3 ≤ P < 0.7`：证据 + 风险更新器（需要判断的问题）
+- `P ≥ 0.7`：证据 + 风险 + 创新更新器（复杂决策问题）
+
+**手动覆盖**：用户可通过 `/mode quick|balanced|deep` Slash 命令覆盖，存储在会话级内存中（`self._mode_override`），不持久化。
+
+#### 子代理信念共享机制明细
 
 - 隔离执行 + 共享 IBeliefStore 读权限
 - 写入带 scope 前缀的信念（`source="sub_agent:{scope}"`）
 - 通过 asyncio.Queue 与主 Agent 通信
 - 子代理上限可配置（默认 5，最大 10），超时 30 秒
+
+**数据流**：
+```
+主Agent
+  │ 创建 SubAgentContext (含 scope, task, history)
+  │
+  ▼
+SubAgent.run()
+  │
+  ├─ 初始化：创建子Agent实例（非共享主Agent实例，隔离执行）
+  ├─ 执行：子Agent独立调用 LLM + 工具
+  ├─ 信念读取：通过共享 IBeliefStore 读取（read-only）
+  ├─ 信念写入：`belief_store.add(source="sub_agent:{scope}", ...)`
+  │   - 写入带 scope 前缀，便于后续审计和过滤
+  │   - 限定写入范围：只能读写当前 scope 前缀的信念
+  ├─ 结果回传：通过 asyncio.Queue 发送 SubAgentResult
+  └─ 清理：释放资源
+```
+
+**隔离规则**：
+- 子 Agent 不共享主 Agent 的 `reader` 上下文（避免读写冲突）
+- 子 Agent 不共享主 Agent 的 `tool_registry` 中的审批状态（每个子 Agent 独立审批）
+- 子 Agent 的超时不影响主 Agent 或其他子 Agent（`asyncio.wait_for` 隔离）
+- 子 Agent 的日志带有 `sub_agent:{scope}` 标签，便于追踪
 
 #### 配置（config/default.yaml agents: 节）
 
@@ -697,7 +749,7 @@ async def execute(self, tool\_name, params, approval\_callback=None):
 | 钉钉 | 审批流集成、群机器人 |
 | QQ | 消息推送、文件传输 |
 | CLI | 富文本输出、进度条、交互式确认 |
-| API | RESTful接口 + WebSocket推送 + 完整对话历史API（分页） |
+| API | RESTful接口 + WebSocket推送 + 完整对话历史API（游标分页，HMAC签名防篡改） |
 #### REST API设计（gateway/api.py）
 ShuyuanCore的API必须包含完整的对话历史端点：
 GET /api/v1/conversations # 获取对话列表
@@ -706,12 +758,85 @@ GET /api/v1/conversations/{id}/messages # 获取对话消息（分页）
 POST /api/v1/conversations # 创建新对话
 DELETE /api/v1/conversations/{id} # 删除对话
 GET /api/v1/conversations/{id}/messages/search # 搜索对话内容
-关键设计要求：
+**关键设计要求**：
 1. 后端必须存储完整对话历史（SQLite），不依赖前端localStorage
-2. 消息API必须支持分页（page + per\_page 或 cursor-based）
+2. 消息API必须支持分页（cursor-based + HMAC签名）
 3. 必须支持before参数实现"上拉加载更多"
 4. 前端可以缓存最近消息到localStorage，但权威数据源是后端
 5. localStorage仅作为离线展示的降级方案，不能作为主存储
+
+#### 游标分页的 HMAC 签名防篡改设计
+
+实现于 `src/gateway/utils.py` 的 `encode_cursor()` / `decode_cursor()`：
+
+```
+编码流程：
+  timestamp = int(time.time())
+  payload = f"{timestamp}:{last_belief_id}"
+  signature = hmac.new(CURSOR_SECRET, payload.encode(), "sha256").hexdigest()[:16]
+  cursor = base64.urlsafe_b64encode(f"{payload}:{signature}".encode())
+
+解码流程：
+  decoded = base64.urlsafe_b64decode(cursor).decode()
+  timestamp, last_id, signature = decoded.rsplit(":", 2)
+  expected_sig = hmac.new(CURSOR_SECRET, f"{timestamp}:{last_id}".encode(), "sha256").hexdigest()[:16]
+  if not hmac.compare_digest(signature, expected_sig): raise InvalidCursorError
+  if time.time() - int(timestamp) > 3600: raise CursorExpiredError
+  return last_id, int(timestamp)
+```
+
+**安全特性**：
+- **HMAC-SHA256 签名**：使用 `CURSOR_SECRET` 密钥，防止客户端伪造游标
+- **时序安全比较**：`hmac.compare_digest()` 防止时序攻击
+- **1 小时过期**：游标超过 3600 秒自动失效，防止重放攻击
+- **Base64 URL Safe 编码**：适合放在 URL query 参数中
+- **`CURSOR_SECRET` 配置**：从 `security.cursor_secret` 读取，默认随机生成
+
+#### API 限流与认证中间件设计
+
+**限流中间件**（`src/gateway/api_server.py` 中 `_check_rate_limit()`）：
+
+实现令牌桶算法，按用户 ID 各自独立限流：
+
+```
+算法：令牌桶（Token Bucket）
+  - 容量：rate_limit_per_minute（默认 60 个令牌）
+  - 补充速率：rate_limit_per_minute / 60（每秒补充 1 个令牌）
+  - 实现：collections.defaultdict + asyncio.Lock（每个 user_id 独立桶）
+
+检查流程：
+  1. 从请求头提取 user_id（X-User-ID 或 X-API-Key）
+  2. 查找 user_id 对应的令牌桶
+  3. 如果桶不存在，创建新桶（满容量）
+  4. 如果桶为空，返回 429 Too Many Requests
+  5. 如果桶有令牌，消耗一个令牌，放行
+```
+
+**认证中间件**（`src/gateway/api_server.py` 中 `_extract_user_id()`）：
+
+三级提取流程：
+```
+1. X-User-ID 头（直接指定用户 ID，用于 CLI/内部调用）
+2. Authorization: Bearer <token> 头
+   → 在 api_keys 配置中查找匹配
+   → 匹配成功则返回用户名
+3. 若都没有 → 返回 anonymous（匿名用户）
+```
+
+**API Key 配置**（config/default.yaml）：
+```yaml
+security:
+  rate_limit_per_minute: 60
+  api_keys:
+    admin: "sk-admin-xxx"
+    user1: "sk-user1-xxx"
+  cursor_secret: "auto-generated-or-env-var"
+```
+
+**安全边界**：
+- 限流基于内存字典，服务重启后重置（非持久化）
+- 未配置 API Key 时允许所有请求通过（开发模式）
+- 生产环境应配置 API Key 并设置 `rate_limit_per_minute`
 ### 2.8 定时任务（cron/scheduler.py）
 定义方式：自然语言 或 cron语法
 存储：SQLite表（jobs: id, schedule, skill, prompt, deliver*to, last*run, next\_run）

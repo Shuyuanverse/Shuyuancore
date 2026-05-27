@@ -82,7 +82,38 @@ Pydantic 默认禁止 extra 输入，任何未定义参数都会导致启动崩�
 | 多维审视视角数 | 2-5个 | 产品方案 | Agent 根据复杂度自定 |
 | 人格编译输入 | 100字 ～ 100万字 | 产品方案 | 低于100字报错 |
 | 语言样本数量 | 500-1000条 | 产品方案 | 按场景分类 |
-### 2.4 数据库规则（SQLite + ChromaDB）
+### 2.5 多智能体协作接口隔离规则
+
+• 多智能体协作定义四个核心接口，必须通过接口隔离通信：
+  ◦ **`IUpdater`**（更新器接口）：`update(ctx: UpdateContext) -> UpdaterResult`
+    - 实现类：EvidenceUpdater（证据）、RiskUpdater（风险）、InnovationUpdater（创新）
+    - 每个更新器运行在隔离的上下文中，通过 `UpdateContext` 获取信念、消息、历史
+  ◦ **`IReviewer`**（审查器接口）：`review(ctx: UpdateContext, draft: str) -> dict`
+    - 实现类：Reviewer
+    - 检查维度：完整性、准确性、一致性、安全底线
+    - 不检查风格（由人格保护层负责）
+  ◦ **`IArbitrator`**（仲裁器接口）：`arbitrate(ctx, updater_results) -> str`
+    - 实现类：Arbitrator
+    - 冲突检测：Jaccard相似度 < 0.5 或置信度差距 > 0.4
+    - 无冲突时选置信度最高结果
+    - 有冲突时执行置信度加权融合 + LLM 语言润色
+  ◦ **`ISubAgent`**（子代理接口）：`run(task, scope, context) -> str`
+• 子代理信念写入必须带 `scope` 前缀：`source="sub_agent:{scope}"`
+• 子代理共享 `IBeliefStore` 读权限，但写入范围限定在当前 scope
+• 子代理通过 `asyncio.Queue` 与主 Agent 通信，上限可配置（默认5，最大10）
+• 信念场扰动强度由以下四维加权计算：
+  ◦ 语义距离权重 0.4（消息嵌入与最近信念集合的余弦距离）
+  ◦ 矛盾信念对权重 0.3（confidence > 0.6 的矛盾信念对数量）
+  ◦ 强决策词汇密度权重 0.15（决策类关键词占比）
+  ◦ 技术关键词密度权重 0.15
+• 扰动强度决定启用哪些更新器：
+  ◦ < 0.3：仅证据更新器
+  ◦ 0.3 ~ 0.7：证据 + 风险更新器
+  ◦ ≥ 0.7：证据 + 风险 + 创新更新器
+• 工具审批超时默认 300 秒（5 分钟），配置项 `tools.approval_timeout`，超时自动拒绝
+• 游标分页使用 HMAC-SHA256 签名防篡改，`CURSOR_SECRET` 从环境变量或配置文件读取，默认随机生成
+
+### 2.6 数据库规则（SQLite + ChromaDB）
 • **唯一数据库文件**：data/state.db，所有表放在一起，禁止多文件副本。
 • **连接必须执行 PRAGMA**：每个新连接（包括连接池创建的）必须执行：
 **// sql**PRAGMA journal\_mode = WAL;
