@@ -17,6 +17,38 @@ logger = logging.getLogger(__name__)
 
 _DB_PATH: str = "data/state.db"
 
+_CHINESE_PATTERN = None
+
+
+def _has_chinese(text: str) -> bool:
+    global _CHINESE_PATTERN
+    if _CHINESE_PATTERN is None:
+        import re
+        _CHINESE_PATTERN = re.compile(r"[\u4e00-\u9fff\u3400-\u4dbf]")
+    return bool(_CHINESE_PATTERN.search(text))
+
+
+def _tokenize_fts_query(query: str) -> str:
+    if not _has_chinese(query):
+        return query
+    try:
+        import jieba
+
+        words = list(jieba.cut(query, cut_all=False))
+        words = [w.strip() for w in words if w.strip()]
+        if not words:
+            return query
+        fts_parts = " OR ".join(f'"{w}"' for w in words if len(w) > 1)
+        for w in words:
+            if len(w) == 1:
+                fts_parts = fts_parts + f" {w}" if fts_parts else w
+        if not fts_parts:
+            return query
+        return fts_parts
+    except ImportError:
+        logger.warning("jieba not available, using raw query for FTS5")
+        return query
+
 
 def _belief_from_row(row: aiosqlite.Row) -> Belief:
     return Belief(
@@ -377,6 +409,7 @@ class PersistentBeliefStore(IBeliefStore):
                 )
 
         conn = await self._get_conn()
+        fts_query = _tokenize_fts_query(sanitized)
         try:
             cursor = await conn.execute(
                 """
@@ -389,7 +422,7 @@ class PersistentBeliefStore(IBeliefStore):
                 ORDER BY rank
                 LIMIT ?
                 """,
-                (sanitized, min_confidence, top_k),
+                (fts_query, min_confidence, top_k),
             )
             rows = await cursor.fetchall()
             if rows:
