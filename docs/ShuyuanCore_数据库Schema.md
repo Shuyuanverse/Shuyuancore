@@ -135,36 +135,35 @@ FOREIGN KEY (parent_goal_id) REFERENCES goals(id)
 );
 CREATE INDEX idx_goals_user ON goals(user_id, status, created_at DESC);
 ### 2.7 审计日志表
-**// sql**-- audit_log: 行为审计（所有工具调用和敏感操作）
-CREATE TABLE audit_log (
-id INTEGER PRIMARY KEY AUTOINCREMENT,
-user_id TEXT NOT NULL,
-action TEXT NOT NULL, -- "tool_call", "approve", "deny", "model_switch"
-target TEXT, -- 操作对象："terminal", "apr_001"
-details TEXT, -- JSON详情：{"command": "rm -rf", "params": {}}
-ip_address TEXT,
-platform TEXT DEFAULT 'cli',
-result TEXT DEFAULT 'success', -- success/failure/pending
-error_message TEXT,
-created_at INTEGER NOT NULL
+**// sql**-- audit_logs: 行为审计（对应 src/security/audit.py）
+CREATE TABLE audit_logs (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id TEXT NOT NULL,
+    action TEXT NOT NULL,           -- "tool_call", "approve", "deny", "model_switch"
+    resource TEXT,                  -- 操作资源："terminal", "apr_001"
+    params_json TEXT,               -- JSON详情：{"command": "ls -la", "params": {}}
+    created_at INTEGER NOT NULL
 );
-CREATE INDEX idx_audit_user ON audit_log(user_id, created_at DESC);
-CREATE INDEX idx_audit_action ON audit_log(action, created_at DESC);
+CREATE INDEX idx_audit_logs_user ON audit_logs(user_id, created_at DESC);
+CREATE INDEX idx_audit_logs_action ON audit_logs(action, created_at DESC);
 ### 2.8 审批记录表
-**// sql**-- approvals: 危险命令审批记录
+**// sql**-- approvals: 工具调用审批记录（对应 src/security/approval.py）
 CREATE TABLE approvals (
-id TEXT PRIMARY KEY, -- apr_001
-tool_name TEXT NOT NULL,
-command TEXT NOT NULL,
-requested_by TEXT NOT NULL,
-approved_by TEXT,
-status TEXT DEFAULT 'pending' CHECK(status IN ('pending', 'approved', 'denied', 'expired')),
-expires_at INTEGER NOT NULL, -- 审批超时时间（默认15分钟）
-result TEXT, -- 执行结果
-executed_at INTEGER,
-created_at INTEGER NOT NULL
+    approval_id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    tool_name TEXT NOT NULL,
+    params_json TEXT NOT NULL,       -- JSON格式的命令参数
+    status TEXT NOT NULL DEFAULT 'pending' CHECK(status IN ('pending', 'approved', 'denied')),
+    approved INTEGER DEFAULT 0,      -- 0=未审批, 1=已通过
+    reason TEXT,                     -- 审批/拒绝原因
+    resolved_by TEXT,                -- 审批人用户ID
+    timeout INTEGER NOT NULL,        -- 超时时间（Unix秒级时间戳）
+    stream_id TEXT,                  -- 关联的SSE流ID
+    created_at INTEGER NOT NULL,     -- 创建时间（Unix毫秒级时间戳）
+    resolved_at INTEGER              -- 审批时间（Unix毫秒级时间戳）
 );
 CREATE INDEX idx_approvals_status ON approvals(status, created_at DESC);
+CREATE INDEX idx_approvals_user_tool ON approvals(user_id, tool_name);
 ### 2.9 模块演化表
 **// sql**-- evolution_modules: 自演化产生的模块
 CREATE TABLE evolution_modules (
