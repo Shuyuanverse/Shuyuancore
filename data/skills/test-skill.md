@@ -1,16 +1,13 @@
 ---
 name: test-skill
-description: A test skill
+description: a test skill
 node_type: skill
 tags: []
 preconditions: []
-boundaries: []
-failure_modes: []
-dependencies: []
-version_history:
-- version: '1.0'
-  date: 1779839241798
-  change: initial creation
+boundaries: null
+failure_modes: null
+dependencies: null
+version_history: null
 status: active
-is_pinned: false
+is_pinned: 0
 ---
