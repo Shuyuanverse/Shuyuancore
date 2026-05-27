@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import asyncio
 import json
 import logging
 import time
@@ -104,13 +103,6 @@ class AuditLogger:
         )
         if len(self._cache) > self._max_entries:
             self._cache = self._cache[-self._max_entries // 2:]
-
-        try:
-            loop = asyncio.get_event_loop()
-            if loop.is_running():
-                loop.create_task(self._flush_entry(entry))
-        except RuntimeError:
-            pass
 
     async def log_async(
         self,
