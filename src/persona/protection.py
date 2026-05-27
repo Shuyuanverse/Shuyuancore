@@ -74,9 +74,22 @@ class StyleProtectionPipeline:
         return result
 
     def _extract_style_vector(self, text: str) -> list[float]:
+        from src.persona.style_encoder import StyleEncoder
+        encoder = StyleEncoder()
+        dims = encoder.encode(text)
+        raw = [
+            dims.formality, dims.warmth, dims.directness,
+            dims.playfulness, dims.detail_orientation,
+            dims.emotional_expression, dims.pace,
+        ]
         import numpy as np
-        np.random.seed(len(text) % 10000)
-        return list(np.random.uniform(0, 1, self.config.anchor_dimensions))
+        seed = int(sum(raw) * 1e6) % (2**31)
+        rng = np.random.default_rng(seed=seed)
+        repeat = self.config.anchor_dimensions // 7 + 1
+        base = np.array(raw * repeat)[:self.config.anchor_dimensions]
+        noise = rng.normal(0, 0.02, self.config.anchor_dimensions)
+        vec = np.clip(base + noise, 0, 1)
+        return vec.tolist()
 
     def _cosine_distance(self, v1: list[float], v2: list[float]) -> float:
         if len(v1) != len(v2):
