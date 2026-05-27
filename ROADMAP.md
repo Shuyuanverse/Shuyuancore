@@ -398,7 +398,7 @@
 - [✅] **SandboxExecutor Docker 缓存锁定**：_docker_available 添加 TTL 缓存失效（60 秒自动重新检测），改为实例变量避免跨实例干扰
 - [✅] **TerminalTool 本地降级**：Docker 不可用时，白名单命令（ls/pwd/echo/cat/head/tail/grep/which/whoami/date）自动本地执行，非白名单命令返回审批提示
 - [⚠️] **本地执行无沙箱隔离**：白名单命令直接在宿主机执行，缺乏资源限制和权限隔离，后续可考虑 subprocess 资源限制或切换至 nsjail
-- [⚠️] **memory/skills 工具依赖**：依赖的具体 store 在当前可能不完整，使用 try/except ImportError 处理
+- [✅] **memory/skills 工具依赖**：memory.py 移除 try/except ImportError，改为直接导入 PersistentBeliefStore（该模块已是稳定生产代码）；skills.py 使用接口注入（ISkillStore），无 ImportError 问题
 - [⚠️] **Docker/Playwright 等可选依赖**：`shuyuancore[tools]` 等扩展包需用户手动安装
 - [⚠️] **架构自评报告**：已提交 `reports/arch_review_tools_stage1.md`
 

@@ -5,21 +5,22 @@ import uuid
 from typing import Any
 
 from src.core.interfaces import Belief
+from src.memory.belief_store import PersistentBeliefStore
 from src.memory.interfaces import IEntityExtractor
 from src.memory.reader import BeliefReader
 from src.tools.interfaces import ITool, ToolParameter, ToolResult, ToolSpec
 
-try:
-    from src.memory.belief_store import PersistentBeliefStore
-except ImportError:
-    PersistentBeliefStore = None  # type: ignore[assignment, misc]
-
 
 class MemoryTool(ITool):
-
-    VALID_OPERATIONS: frozenset[str] = frozenset({
-        "search", "read", "write", "delete", "list",
-    })
+    VALID_OPERATIONS: frozenset[str] = frozenset(
+        {
+            "search",
+            "read",
+            "write",
+            "delete",
+            "list",
+        }
+    )
 
     def __init__(
         self,
@@ -91,9 +92,7 @@ class MemoryTool(ITool):
         errors: list[str] = []
         operation: str = params.get("operation", "")
         if operation not in self.VALID_OPERATIONS:
-            errors.append(
-                f"operation 必须是 {', '.join(sorted(self.VALID_OPERATIONS))}"
-            )
+            errors.append(f"operation 必须是 {', '.join(sorted(self.VALID_OPERATIONS))}")
         if operation == "search" and not params.get("query"):
             errors.append("search 操作需要提供 query 参数")
         if operation in ("read", "delete") and not params.get("belief_id"):
@@ -114,21 +113,25 @@ class MemoryTool(ITool):
         try:
             if operation == "search":
                 result = await self._execute_search(
-                    params, conversation_id,
+                    params,
+                    conversation_id,
                 )
             elif operation == "read":
                 result = await self._execute_read(params)
             elif operation == "write":
                 result = await self._execute_write(
-                    params, conversation_id,
+                    params,
+                    conversation_id,
                 )
             elif operation == "delete":
                 result = await self._execute_delete(
-                    params, conversation_id,
+                    params,
+                    conversation_id,
                 )
             elif operation == "list":
                 result = await self._execute_list(
-                    params, conversation_id,
+                    params,
+                    conversation_id,
                 )
             else:
                 return ToolResult(
