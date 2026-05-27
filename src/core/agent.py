@@ -315,6 +315,15 @@ class Agent:
             await self._belief_store.add(conversation_id, assistant_belief)
             yield full_response
 
+        if full_response:
+            asyncio.create_task(
+                self._background_update(
+                    message=message,
+                    response=full_response,
+                    conversation_id=conversation_id,
+                )
+            )
+
     async def _background_update(
         self,
         message: str,
