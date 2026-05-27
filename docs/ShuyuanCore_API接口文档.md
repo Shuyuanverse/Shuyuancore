@@ -1,5 +1,5 @@
 # ShuyuanCore API 接口文档
-版本：v1.0-rev2 | 日期：2026-05-26
+版本：v1.0-rev3 | 日期：2026-05-27
 ## 一、通用规范
 ### 1.1 基础信息
 - **Base URL**：`https://agentx.example.com/api/v1`
@@ -73,7 +73,9 @@ Token获取：通过CLI `agentx auth login` 或 首次setup生成
 POST请求支持幂等（v1.0-rev2补充，approve/deny专用）：
 **// http**Idempotency-Key: <unique-key>
 同一 approval_id 只能审批一次，重复请求返回首次结果。推荐客户端生成唯一key（如UUID）携带在 Idempotency-Key HTTP 头中。
-### 1.6 WebSocket 实时推送
+### 1.6 WebSocket 实时推送（计划中）
+> **技术债务**：WebSocket 端点尚未在后端实现。当前 SSE 已满足流式通信需求，WebSocket 将在后续版本补充。
+
 **// ws**wss://agentx.example.com/ws/v1
 连接时需在query参数中携带token：
 `wss://agentx.example.com/ws/v1?token=<jwt_token>`
@@ -225,12 +227,22 @@ POST请求支持幂等（v1.0-rev2补充，approve/deny专用）：
 "temperature": 0.7,             // 可选
 "identity_id": "default"        // 可选，覆盖当前身份
 }
-**流式响应（SSE）**：
-**// sse**data: {"type": "thinking", "content": "正在分析文件..."}
-data: {"type": "tool_call", "tool": "code_exec", "params": "import pandas..."}
-data: {"type": "tool_result", "tool": "code_exec", "result": "..."}
-data: {"type": "content", "content": "根据分析结果..."}
-data: {"type": "done", "tokens_used": 456}
+**流式响应（SSE）**——实际发送四种事件：
+// approval 事件（触发危险操作审批时发送）
+event: approval
+data: {"approval_id": "apr_001", "message": "确认执行命令: ls -la", "tool_name": "terminal", "stream_id": "stream_xxx"}
+
+// message 事件（流式文本输出）
+event: message
+data: {"content": "根据分析结果..."}
+
+// error 事件（发生错误时发送）
+event: error
+data: {"code": 1001, "message": "参数缺失"}
+
+// done 事件（流式结束）
+event: done
+data: {}
 **非流式响应**：
 **// json**{
 "code": 0,
@@ -265,7 +277,9 @@ data: {"type": "done", "tokens_used": 456}
 "request_id": "uuid"
 }
 v1.0-rev2补充：软删除后将session状态标记为deleted，同时触发ChromaDB中该会话对话记录的异步清理任务（后台运行，不影响接口响应）。
-### 3.2 记忆系统
+### 3.2 记忆系统（计划中）
+> **技术债务**：以下 /memory/* 端点在当前后端代码中尚未实现。当前记忆操作通过 Agent 内部逻辑自动完成。这些端点将在后续版本补充。
+
 #### GET /memory/core
 获取核心记忆（MEMORY.md + USER.md）
 **// json**{
@@ -409,7 +423,9 @@ v1.0-rev2补充：此接口为增量更新，只修改请求体中提供的字�
 "updated_at": 1716604800000
 }
 }
-#### POST /skills/curate
+#### POST /skills/curate（计划中）
+> **技术债务**：Curator 回收逻辑在 `src/skills/curator.py` 中实现（确定性 + LLM 审查），但未暴露为 API 端点。当前通过内部调度触发。此端点在后续版本补充。
+
 触发Curator审查（dry_run模式）
 **// json**{
 "dry_run": true  // true=预览，false=实际执行
@@ -951,33 +967,39 @@ MCP服务器列表
 **错误响应**：
 **// json**{"code": 11000, "message": "配置缺失", "data": {"file": "config/default.yaml", "error": "文件不存在"}, "request_id": "uuid"}
 **// json**{"code": 1002, "message": "参数格式错误", "data": {"file": "config/default.yaml", "error": "YAML解析失败：第5行缩进错误"}, "request_id": "uuid"}
-#### POST /api/v1/approve
+#### POST /api/v1/approvals/{approval_id}/approve
 审批危险操作（支持幂等键）
 **认证**：Bearer Token (admin)
 支持幂等键（Idempotency-Key HTTP头），防止重复审批。同一 approval_id 只能审批一次，重复请求返回首次结果。
-**请求头**：建议携带 Idempotency-Key: <unique-key>
 **请求体**：
 **// json**{
-"approval_id": "apr_001",
 "reason": "确认执行"
 }
 **成功响应**：
 **// json**{"code": 0, "message": "success", "data": {"approved": "apr_001", "executed": true}, "request_id": "uuid"}
 **错误响应**（重复审批）：
 **// json**{"code": 1005, "message": "幂等键重复", "data": {"approval_id": "apr_001", "previous_status": "approved"}, "request_id": "uuid"}
-#### POST /api/v1/deny
+#### POST /api/v1/approvals/{approval_id}/deny
 拒绝危险操作（支持幂等键）
 **认证**：Bearer Token (admin)
-同 approve，支持幂等键防止重复操作。
 **请求体**：
 **// json**{
-"approval_id": "apr_001",
 "reason": "拒绝执行"
 }
+**成功响应**：
+**// json**{"code": 0, "message": "success", "data": {"denied": "apr_001"}, "request_id": "uuid"}
+#### POST /api/v1/approvals/{approval_id}/resume
+审批后恢复流式响应
+**认证**：Bearer Token (admin)
+审批通过后，调用此端点让 Agent 继续执行被暂停的流式响应。
+**请求体**：无
+**成功响应**：
+**// json**{"code": 0, "message": "success", "data": {"resumed": true}, "request_id": "uuid"}
 ## 四、Changelog
 |  |  |  |
 | --- | --- | --- |
 | **版本** | **日期** | **变更** |
 | v1.0 | 2026-05-26 | 初始版本，覆盖全部11个模块60+接口 |
 | v1.0-rev2 | 2026-05-26 | 修订：认证章节补充用户数据隔离说明；游标分页补充cursor编码格式；PATCH /memory/core明确不会置空未提供字段；搜索接口cursor格式说明；jobs错误码8001补充完整示例含reason；approve/deny补充Idempotency-Key请求头提示；config脱敏规则明确api*key*env返回原值；/config/reload补充错误响应（文件不存在/YAML解析失败）；DELETE /conversations补充ChromaDB异步清理要求；/identities响应增加profile*id字段；/skills/curate dry*run模式返回preview预览；/memory/search补充relevance范围0~1 |
+| v1.0-rev3 | 2026-05-27 | Phase 10 文档修复：SSE 事件类型修正为 approval/message/done/error（移除过时的 thinking/tool_call/tool_result/content）；审批端点路径修正为 /approvals/{id}/approve、/approvals/{id}/deny、新增 /approvals/{id}/resume；/memory/* 和 /skills/curate 标记为"计划中"并记录技术债务；WebSocket 标记为计划中 |
 *文档结束 | ShuyuanCore API 接口文档 v1.0 | 2026-05-26*
