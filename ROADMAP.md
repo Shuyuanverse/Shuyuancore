@@ -396,7 +396,8 @@
 - [⚠️] **security/approval.py 全局单例**：ApprovalManager 使用模块级单例，多用户场景下需改为用户级
 - [⚠️] **AuditLogger 内存存储**：日志在内存中，未持久化到 SQLite，高频场景会丢失日志
 - [⚠️] **SandboxExecutor Docker 缓存锁定**：_docker_available 缓存后不会重新检测
-- [⚠️] **TerminalTool 本地降级**：Docker 不可用时返回"需要审批"错误，需 Agent 循环配合而非自动触发审批
+- [✅] **TerminalTool 本地降级**：Docker 不可用时，白名单命令（ls/pwd/echo/cat/head/tail/grep/which/whoami/date）自动本地执行，非白名单命令返回审批提示
+- [⚠️] **本地执行无沙箱隔离**：白名单命令直接在宿主机执行，缺乏资源限制和权限隔离，后续可考虑 subprocess 资源限制或切换至 nsjail
 - [⚠️] **memory/skills 工具依赖**：依赖的具体 store 在当前可能不完整，使用 try/except ImportError 处理
 - [⚠️] **Docker/Playwright 等可选依赖**：`shuyuancore[tools]` 等扩展包需用户手动安装
 - [⚠️] **架构自评报告**：已提交 `reports/arch_review_tools_stage1.md`

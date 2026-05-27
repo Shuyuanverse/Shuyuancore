@@ -9,7 +9,6 @@ from src.tools.builtin.terminal import TerminalTool
 
 
 class TestTerminalTool:
-
     def test_terminal_get_spec(self) -> None:
         tool = TerminalTool()
         spec = tool.get_spec()
@@ -35,7 +34,9 @@ class TestTerminalTool:
         mock_sandbox.check_available = AsyncMock(return_value=True)
         mock_sandbox.execute_command = AsyncMock(
             return_value=SandboxResult(
-                success=True, stdout="file1\nfile2", stderr="",
+                success=True,
+                stdout="file1\nfile2",
+                stderr="",
                 exit_code=0,
             ),
         )
@@ -58,8 +59,11 @@ class TestTerminalTool:
         mock_sandbox.check_available = AsyncMock(return_value=True)
         mock_sandbox.execute_command = AsyncMock(
             return_value=SandboxResult(
-                success=False, stdout="", stderr="cmd not found",
-                error="command not found", exit_code=127,
+                success=False,
+                stdout="",
+                stderr="cmd not found",
+                error="command not found",
+                exit_code=127,
             ),
         )
         mock_audit = MagicMock()
@@ -89,7 +93,7 @@ class TestTerminalTool:
         assert tool._contains_dangerous_command("grep pattern file") is False
 
     @pytest.mark.asyncio
-    async def test_terminal_sandbox_unavailable(self) -> None:
+    async def test_terminal_sandbox_unavailable_nonwhitelist(self) -> None:
         mock_sandbox = MagicMock()
         mock_sandbox.check_available = AsyncMock(return_value=False)
         mock_audit = MagicMock()
@@ -99,10 +103,56 @@ class TestTerminalTool:
             patch("src.tools.builtin.terminal.get_audit_logger", return_value=mock_audit),
         ):
             tool = TerminalTool()
-            result = await tool.execute({"command": "ls"})
+            result = await tool.execute({"command": "rm -rf /tmp/test"})
 
         assert result.success is False
         assert "审批" in result.error
+
+    @pytest.mark.asyncio
+    async def test_terminal_local_downgrade_whitelist(self) -> None:
+        mock_sandbox = MagicMock()
+        mock_sandbox.check_available = AsyncMock(return_value=False)
+        mock_audit = MagicMock()
+
+        with (
+            patch("src.tools.builtin.terminal.ToolSandbox", return_value=mock_sandbox),
+            patch("src.tools.builtin.terminal.get_audit_logger", return_value=mock_audit),
+        ):
+            tool = TerminalTool()
+            result = await tool.execute({"command": "echo hello"})
+
+        assert result.success is True
+        assert result.data is not None
+        assert result.data.get("mode") == "local"
+        assert "hello" in result.data.get("stdout", "")
+
+    @pytest.mark.asyncio
+    async def test_terminal_local_downgrade_failure(self) -> None:
+        mock_sandbox = MagicMock()
+        mock_sandbox.check_available = AsyncMock(return_value=False)
+        mock_audit = MagicMock()
+
+        with (
+            patch("src.tools.builtin.terminal.ToolSandbox", return_value=mock_sandbox),
+            patch("src.tools.builtin.terminal.get_audit_logger", return_value=mock_audit),
+        ):
+            tool = TerminalTool()
+            result = await tool.execute({"command": "cat /nonexistent_file_xyz"})
+
+        assert result.success is False
+        assert result.data is not None
+        assert result.data.get("exit_code", 0) != 0
+
+    def test_terminal_is_whitelisted(self) -> None:
+        tool = TerminalTool()
+        from src.config import get_settings
+
+        settings = get_settings()
+        assert tool._is_whitelisted("ls -la", settings) is True
+        assert tool._is_whitelisted("pwd", settings) is True
+        assert tool._is_whitelisted("echo hello", settings) is True
+        assert tool._is_whitelisted("rm -rf /", settings) is False
+        assert tool._is_whitelisted("dd if=/dev/zero of=/dev/sda", settings) is False
 
     @pytest.mark.asyncio
     async def test_terminal_parse_error(self) -> None:
