@@ -11,6 +11,7 @@ import aiosqlite
 from src.core.interfaces import Belief, IBeliefStore
 from src.exceptions import SkillNotFoundError
 from src.memory.decay import current_time_ms
+from src.memory.propagation import propagate_confidence
 from src.skills.interfaces import ISkillGraph, ISkillStore
 from src.skills.models import SkillNode
 from src.skills.utils import (
@@ -311,6 +312,21 @@ class PersistentSkillStore(ISkillStore):
         md_path = _SKILLS_DIR / f"{name}.md"
         md_content = node_to_markdown(snode)
         md_path.write_text(md_content, encoding="utf-8")
+
+        confidence = node.get("confidence")
+        if confidence is not None and self._belief_store:
+            belief_id = existing.get("belief_id", "")
+            if belief_id:
+                old_conf = existing.get("confidence", 0.6) or 0.6
+                delta = round(confidence - old_conf, 4)
+                if abs(delta) > 0.001:
+                    await conn.execute(
+                        "UPDATE beliefs SET confidence = ?, base_confidence = ? WHERE id = ?",
+                        (confidence, confidence, belief_id),
+                    )
+                    await propagate_confidence(
+                        self._belief_store, belief_id, delta
+                    )
 
         logger.info("skill_updated name=%s", name)
 
