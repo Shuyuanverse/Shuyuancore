@@ -142,6 +142,9 @@ prediction:
   feedback_loop: true
 
 security:
+  allowed_origins:
+    - "http://localhost:3000"
+    - "http://localhost:5173"
   require_approval: true
   sandbox: docker
   audit_log: true

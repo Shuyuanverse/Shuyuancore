@@ -319,6 +319,7 @@ class SecurityConfig(BaseModel):
     cursor_secret: str = ""
     api_keys: list[dict[str, str]] = Field(default_factory=list)
     rate_limit_per_minute: int = 60
+    allowed_origins: list[str] = Field(default_factory=list)
 
 
 class ToolsConfig(BaseModel):
