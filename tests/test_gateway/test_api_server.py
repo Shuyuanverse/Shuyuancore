@@ -338,7 +338,7 @@ class TestCorsMiddleware:
             resp = await client.options(
                 "/health",
                 headers={
-                    "Origin": "http://example.com",
+                    "Origin": "http://localhost:3000",
                     "Access-Control-Request-Method": "GET",
                 },
             )
