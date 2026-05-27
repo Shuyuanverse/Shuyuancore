@@ -5,6 +5,7 @@ import logging
 from src.agents.interfaces import IReviewer, UpdateContext
 from src.config import get_settings
 from src.models.interfaces import IModelProvider
+from src.models.router import Router
 
 logger = logging.getLogger(__name__)
 
@@ -29,11 +30,34 @@ _REVIEW_SYSTEM_PROMPT = """你是一个逻辑审查员。
 
 
 class Reviewer(IReviewer):
-
-    def __init__(self, model_provider: IModelProvider) -> None:
+    def __init__(
+        self,
+        model_provider: IModelProvider,
+        router: Router | None = None,
+    ) -> None:
         self._model_provider = model_provider
+        self._router = router
 
     async def review(self, ctx: UpdateContext, draft: str) -> dict:
+        if self._router:
+            result = await self._router.chat(
+                history=[
+                    {"role": "system", "content": _REVIEW_SYSTEM_PROMPT},
+                    {
+                        "role": "user",
+                        "content": (
+                            f"用户问题：{ctx.message}\n\n"
+                            f"待审查文本：\n{draft}\n\n"
+                            "请审查以上文本的逻辑质量。"
+                        ),
+                    },
+                ],
+                task_type="review",
+                temperature=0.1,
+                max_tokens=500,
+            )
+            return _parse_review_json(result.content)
+
         cfg = get_settings()
         model = cfg.models.routing.review
 
@@ -61,17 +85,13 @@ class Reviewer(IReviewer):
             logger.exception("reviewer_failed")
             return _default_review_pass()
 
-    async def _check_against_beliefs(
-        self, ctx: UpdateContext, draft: str
-    ) -> list[dict[str, str]]:
+    async def _check_against_beliefs(self, ctx: UpdateContext, draft: str) -> list[dict[str, str]]:
         issues: list[dict[str, str]] = []
         if not ctx.belief_store:
             return issues
 
         try:
-            similar = await ctx.belief_store.search_similar(
-                draft, top_k=5, min_confidence=0.6
-            )
+            similar = await ctx.belief_store.search_similar(draft, top_k=5, min_confidence=0.6)
             for belief, sim in similar:
                 if belief.confidence > 0.9 and sim > 0.8:
                     if belief.content.lower() != draft[: len(belief.content)].lower():
@@ -81,9 +101,7 @@ class Reviewer(IReviewer):
                             issues.append(
                                 {
                                     "dimension": "accuracy",
-                                    "description": (
-                                        f"与高置信信念不一致 (id={belief.id[:8]}..)"
-                                    ),
+                                    "description": (f"与高置信信念不一致 (id={belief.id[:8]}..)"),
                                 }
                             )
         except Exception:

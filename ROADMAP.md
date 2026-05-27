@@ -515,7 +515,7 @@
 - [✅] **用户心理模型权重（`user_preference_weights`）当前固定为 1.0**：已从 config 加载，agent.py 创建 UpdateContext 时注入 `cfg.agents.user_preference_weights`
 - [✅] **扰动强度计算升级**：新增信念密度因子（`perturbation_density_weight`）和可配置权重（3 项权重从 4 个 config 字段读取）
 - [✅] **子代理的信念写入 scope 未实现自动传播决策**：已实现信念置信度阈值过滤（`sub_agent_belief_threshold`），仅将高置信度信念纳入上下文
-- 多视角并行时模型路由可进一步优化（按视角动态选模型）
+- [✅] **多视角并行时模型路由**：Reviewer 支持通过 Router 动态路由（task_type="review"），可配置 fallback 和按视角选模型
 - [✅] **`sub_agent._execute` 接入 LLM 进行复杂子任务**：已实现，当传入 `router` 时使用 LLM 处理，无 router 时回退到文本摘要
 - `/mode` 命令为 CLI 子命令，真正的 REPL 交互需 Phase 9 集成
 
