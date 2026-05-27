@@ -1,0 +1,15 @@
+{
+  "timestamp": "2026-05-27T22:16:33.943652+00:00",
+  "total_questions": 3,
+  "systems": [
+    "shuyuancore"
+  ],
+  "metrics": {
+    "shuyuancore": {
+      "overall": 0.0,
+      "avg_latency_ms": 0.0,
+      "open_domain": 0.0,
+      "temporal": 0.0
+    }
+  }
+}
