@@ -146,6 +146,7 @@ class SkillsConfig(BaseModel):
             "再加", "补充", "注意", "别忘了", "也要", "同时", "顺便",
         ]
     )
+    llm_review_enabled: bool = False
 
 
 class PersonaFeatureFlagsConfig(BaseModel):

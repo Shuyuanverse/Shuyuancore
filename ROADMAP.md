@@ -336,10 +336,10 @@
 
 ### ⚠️ 技术债务
 
-- **Curator LLM 审查未实现**：留到 Phase 7+
+- [✅] **Curator LLM 审查未实现**：已实现，`run_curation` 新增 `router` 参数，`_llm_review_skills` 调用 LLM 评估技能质量（配置开关 `llm_review_enabled`）
 - **向量检索依赖现有信念集合**：无独立技能 ChromaDB 集合
 - **置信度更新为同步**：写入 `beliefs` 表后需异步传播
-- **`_try_exact_match` 使用独立 DB 连接**：无连接池
+- [✅] **`_try_exact_match` 使用独立 DB 连接**：已使用 `skill_store.list_skills()` 复用连接池
 - **技能 Markdown 文件无 BCP-47 语言标记**：后续可扩展
 - [✅] **导入未支持 source='community' 自动覆盖**：已修复，importer.py 支持 `manifest.json` 中 source 字段的导出和导入
 
