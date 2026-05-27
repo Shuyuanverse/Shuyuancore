@@ -1,0 +1,26 @@
+[Unit]
+Description=ShuyuanCore API Server
+After=network.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=shuyuancore
+Group=shuyuancore
+WorkingDirectory=/opt/shuyuancore
+EnvironmentFile=/opt/shuyuancore/.env
+ExecStart=/opt/shuyuancore/venv/bin/python -m uvicorn src.gateway.api_server:create_app --factory --host 0.0.0.0 --port 8005 --workers 1
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+
+# Security hardening
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+ReadWritePaths=/opt/shuyuancore/data /opt/shuyuancore/config
+
+[Install]
+WantedBy=multi-user.target

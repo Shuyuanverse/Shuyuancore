@@ -48,7 +48,8 @@ class PaginatedResponse(BaseModel):
 
 class HealthResponse(BaseModel):
     status: str
-    version: str
+    version: str | None = None
+    database: str | None = None
 
 
 class ApprovalAction(BaseModel):

@@ -1,0 +1,20 @@
+version: '3.8'
+
+services:
+  shuyuancore:
+    build: .
+    ports:
+      - "8005:8005"
+    environment:
+      - DASHSCOPE_API_KEY=${DASHSCOPE_API_KEY}
+      - DEEPSEEK_API_KEY=${DEEPSEEK_API_KEY}
+    volumes:
+      - ./data:/app/data
+      - ./config:/app/config
+    restart: always
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8005/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s

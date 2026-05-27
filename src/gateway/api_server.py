@@ -191,6 +191,17 @@ def create_app(
 
     app = FastAPI(title="ShuyuanCore", version="1.0.0")
 
+    @app.on_event("startup")
+    async def _notify_systemd():
+        try:
+            from systemd import daemon as sd_daemon  # type: ignore[import-untyped]
+            sd_daemon.notify("READY=1")
+            logger.info("systemd notification sent: READY=1")
+        except ImportError:
+            logger.debug("systemd-python not available, skipping sd_notify")
+        except Exception:
+            logger.exception("systemd notification failed")
+
     settings = get_settings()
     if settings.security.cursor_secret:
         set_cursor_secret(settings.security.cursor_secret)
@@ -252,7 +263,18 @@ def create_app(
 
     @app.get("/health", response_model=HealthResponse)
     async def health() -> dict[str, str]:
-        return {"status": "healthy", "version": "1.0.0"}
+        db_status = "disconnected"
+        try:
+            store = _get_belief_store()
+            store._db  # access to check if initialized
+            db_status = "connected"
+        except Exception:
+            pass
+        return {
+            "status": "healthy",
+            "version": "1.0.0",
+            "database": db_status,
+        }
 
     @app.post("/api/v1/chat", response_model=ChatResponse)
     async def chat(request: ChatRequest) -> dict[str, Any]:
