@@ -11,6 +11,15 @@ from src.memory.decay import current_time_ms
 
 logger = logging.getLogger(__name__)
 
+_LLM_SUBAGENT_PROMPT = (
+    "你是一个子代理，负责执行以下任务。\n\n"
+    "作用域: {scope}\n"
+    "任务: {task}\n\n"
+    "以下是相关的上下文信念:\n{belief_context}\n\n"
+    "请基于以上上下文，完成指派的任务。"
+    "返回一个清晰、简洁的结果（不超过 500 字）。"
+)
+
 
 class SubAgent(ISubAgent):
 
@@ -19,11 +28,14 @@ class SubAgent(ISubAgent):
         belief_store: IBeliefStore,
         scope: str,
         timeout: int | None = None,
+        router: object | None = None,
     ) -> None:
         self._belief_store = belief_store
         self._scope = scope
         cfg = get_settings()
         self._timeout = timeout or cfg.agents.sub_agent_timeout_seconds
+        self._router = router
+        self._belief_threshold = cfg.agents.sub_agent_belief_threshold
 
     async def run(self, task: str, scope: str, context: dict[str, str]) -> str:
         scope = scope or self._scope
@@ -44,14 +56,32 @@ class SubAgent(ISubAgent):
     async def _execute(self, task: str, scope: str, context: dict[str, str]) -> str:
         conversation_id = context.get("conversation_id", "sub_agent_default")
         beliefs_raw = await self._belief_store.get(conversation_id, limit=10)
+
+        threshold = self._belief_threshold
+        filtered = [b for b in beliefs_raw if b.confidence >= threshold]
         context_summary = "\n".join(
-            f"[{b.source}] {b.content[:100]}" for b in beliefs_raw
+            f"[{b.source}] (conf={b.confidence:.2f}) {b.content[:100]}"
+            for b in (filtered or beliefs_raw[:3])
         )
 
-        summary = (
-            f"[子代理 scope={scope}] 任务: {task}\n"
-            f"上下文: {context_summary[:500]}"
-        )
+        if self._router is not None:
+            try:
+                prompt = _LLM_SUBAGENT_PROMPT.format(
+                    scope=scope,
+                    task=task,
+                    belief_context=context_summary[:1500],
+                )
+                result = await self._router.chat(
+                    history=[{"role": "user", "content": prompt}],
+                    temperature=0.5,
+                    max_tokens=512,
+                )
+                summary = result.content.strip()
+            except Exception:
+                logger.exception("sub_agent_llm_failed: scope=%s", scope)
+                summary = self._build_text_summary(task, scope, context_summary)
+        else:
+            summary = self._build_text_summary(task, scope, context_summary)
 
         belief = Belief(
             id=str(uuid.uuid4()),
@@ -72,3 +102,9 @@ class SubAgent(ISubAgent):
             logger.exception("sub_agent_belief_write_failed")
 
         return summary
+
+    def _build_text_summary(self, task: str, scope: str, context_summary: str) -> str:
+        return (
+            f"[子代理 scope={scope}] 任务: {task}\n"
+            f"上下文: {context_summary[:500]}"
+        )
