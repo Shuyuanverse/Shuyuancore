@@ -21,7 +21,7 @@ async def skill_env(tmp_path):
         """
         CREATE TABLE IF NOT EXISTS skill_nodes (
             node_id TEXT PRIMARY KEY, name TEXT UNIQUE NOT NULL,
-            node_type TEXT, belief_id TEXT, description TEXT,
+            node_type TEXT, belief_id TEXT, source TEXT NOT NULL DEFAULT 'manual', description TEXT,
             tags TEXT, preconditions TEXT,
             causality_level0 TEXT, causality_level1 TEXT, causality_level2 TEXT,
             boundaries TEXT, failure_modes TEXT, dependencies TEXT,

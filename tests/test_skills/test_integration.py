@@ -179,7 +179,7 @@ async def test_skill_graph_edge_sync_to_belief():
         """
         CREATE TABLE IF NOT EXISTS skill_nodes (
             node_id TEXT PRIMARY KEY, name TEXT UNIQUE NOT NULL,
-            node_type TEXT, belief_id TEXT, description TEXT,
+            node_type TEXT, belief_id TEXT, source TEXT NOT NULL DEFAULT 'manual', description TEXT,
             tags TEXT, preconditions TEXT,
             causality_level0 TEXT, causality_level1 TEXT, causality_level2 TEXT,
             boundaries TEXT, failure_modes TEXT, dependencies TEXT,
@@ -220,17 +220,17 @@ async def test_skill_graph_edge_sync_to_belief():
         ("bb", "skill b", "skill", 0.7, 0.7, now, "skill", 4, "active", "[]"),
     )
     await conn.execute(
-        "INSERT INTO skill_nodes VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        "INSERT INTO skill_nodes VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
         (
-            "n-from", "skill-a", "skill", "ba", "desc",
+            "n-from", "skill-a", "skill", "ba", "manual", "desc",
             "[]", "[]", "", "", "", "[]", "[]", "[]", "[]",
             "active", 0, now, now,
         ),
     )
     await conn.execute(
-        "INSERT INTO skill_nodes VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        "INSERT INTO skill_nodes VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
         (
-            "n-to", "skill-b", "skill", "bb", "desc",
+            "n-to", "skill-b", "skill", "bb", "manual", "desc",
             "[]", "[]", "", "", "", "[]", "[]", "[]", "[]",
             "active", 0, now, now,
         ),

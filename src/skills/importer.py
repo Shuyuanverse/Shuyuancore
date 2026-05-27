@@ -8,10 +8,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from src.config import get_settings
-from src.core.interfaces import IBeliefStore
 from src.exceptions import SkillImportError
-from src.memory.decay import current_time_ms
 from src.skills.manager import PersistentSkillGraph, PersistentSkillStore
 from src.skills.utils import generate_node_id
 
@@ -73,6 +70,7 @@ async def export_skills(
         ),
         "skills": skill_names,
         "dependencies": list(dependencies),
+        "source": "community",
     }
 
     tmp_zip = _EXPORT_DIR / f"_tmp_{datetime.now(timezone.utc).timestamp()}.zip"
@@ -194,7 +192,9 @@ async def import_skills(
             node_data.pop("created_at", None)
             node_data.pop("updated_at", None)
             node_data["node_id"] = generate_node_id()
-            node_id = await skill_store.create_skill(
+            import_source = manifest.get("source", "community")
+            node_data["source"] = import_source
+            await skill_store.create_skill(
                 node_data, conversation_id="import"
             )
             imported.append(skill_name)

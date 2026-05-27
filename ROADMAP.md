@@ -341,7 +341,7 @@
 - **置信度更新为同步**：写入 `beliefs` 表后需异步传播
 - **`_try_exact_match` 使用独立 DB 连接**：无连接池
 - **技能 Markdown 文件无 BCP-47 语言标记**：后续可扩展
-- **导入未支持 source='community' 自动覆盖**：当前仅依据 version_history 判断
+- [✅] **导入未支持 source='community' 自动覆盖**：已修复，importer.py 支持 `manifest.json` 中 source 字段的导出和导入
 
 ---
 

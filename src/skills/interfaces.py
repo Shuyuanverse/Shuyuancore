@@ -8,7 +8,7 @@ class ISkillStore(ABC):
 
     @abstractmethod
     async def list_skills(
-        self, status: str = "active"
+        self, status: str = "active", source: str | None = None
     ) -> list[dict[str, Any]]:
         ...
 

@@ -24,7 +24,7 @@ async def test_curation_no_skills(tmp_path):
         """
         CREATE TABLE skill_nodes (
             node_id TEXT PRIMARY KEY, name TEXT UNIQUE NOT NULL,
-            node_type TEXT, belief_id TEXT, description TEXT,
+            node_type TEXT, belief_id TEXT, source TEXT NOT NULL DEFAULT 'manual', description TEXT,
             tags TEXT, preconditions TEXT,
             causality_level0 TEXT, causality_level1 TEXT, causality_level2 TEXT,
             boundaries TEXT, failure_modes TEXT, dependencies TEXT,
@@ -66,7 +66,7 @@ async def test_curation_skips_pinned(tmp_path):
         """
         CREATE TABLE skill_nodes (
             node_id TEXT PRIMARY KEY, name TEXT UNIQUE NOT NULL,
-            node_type TEXT, belief_id TEXT, description TEXT,
+            node_type TEXT, belief_id TEXT, source TEXT NOT NULL DEFAULT 'manual', description TEXT,
             tags TEXT, preconditions TEXT,
             causality_level0 TEXT, causality_level1 TEXT, causality_level2 TEXT,
             boundaries TEXT, failure_modes TEXT, dependencies TEXT,
@@ -91,9 +91,9 @@ async def test_curation_skips_pinned(tmp_path):
     )
     now = int(time.time() * 1000)
     await conn.execute(
-        "INSERT INTO skill_nodes VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        "INSERT INTO skill_nodes VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
         (
-            "n1", "pinned-skill", "skill", "b1", "desc",
+            "n1", "pinned-skill", "skill", "b1", "manual", "desc",
             "[]", "[]", "", "", "", "[]", "[]", "[]", "[]",
             "active", 1, now, now,
         ),
@@ -121,7 +121,7 @@ async def test_curation_stales_old_skill(tmp_path):
         """
         CREATE TABLE skill_nodes (
             node_id TEXT PRIMARY KEY, name TEXT UNIQUE NOT NULL,
-            node_type TEXT, belief_id TEXT, description TEXT,
+            node_type TEXT, belief_id TEXT, source TEXT NOT NULL DEFAULT 'manual', description TEXT,
             tags TEXT, preconditions TEXT,
             causality_level0 TEXT, causality_level1 TEXT, causality_level2 TEXT,
             boundaries TEXT, failure_modes TEXT, dependencies TEXT,
@@ -149,9 +149,9 @@ async def test_curation_stales_old_skill(tmp_path):
     archived_ts = _relative_ms(91)
 
     await conn.execute(
-        "INSERT INTO skill_nodes VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        "INSERT INTO skill_nodes VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
         (
-            "n-stale", "stale-skill", "skill", "b-stale", "desc",
+            "n-stale", "stale-skill", "skill", "b-stale", "manual", "desc",
             "[]", "[]", "", "", "", "[]", "[]", "[]", "[]",
             "active", 0, now, now,
         ),
@@ -162,9 +162,9 @@ async def test_curation_stales_old_skill(tmp_path):
     )
 
     await conn.execute(
-        "INSERT INTO skill_nodes VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        "INSERT INTO skill_nodes VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
         (
-            "n-arch", "archived-skill", "skill", "b-arch", "desc",
+            "n-arch", "archived-skill", "skill", "b-arch", "manual", "desc",
             "[]", "[]", "", "", "", "[]", "[]", "[]", "[]",
             "active", 0, now, now,
         ),
@@ -193,7 +193,7 @@ async def test_curation_recent_skill_not_affected(tmp_path):
         """
         CREATE TABLE skill_nodes (
             node_id TEXT PRIMARY KEY, name TEXT UNIQUE NOT NULL,
-            node_type TEXT, belief_id TEXT, description TEXT,
+            node_type TEXT, belief_id TEXT, source TEXT NOT NULL DEFAULT 'manual', description TEXT,
             tags TEXT, preconditions TEXT,
             causality_level0 TEXT, causality_level1 TEXT, causality_level2 TEXT,
             boundaries TEXT, failure_modes TEXT, dependencies TEXT,
@@ -218,9 +218,9 @@ async def test_curation_recent_skill_not_affected(tmp_path):
     )
     now = int(time.time() * 1000)
     await conn.execute(
-        "INSERT INTO skill_nodes VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        "INSERT INTO skill_nodes VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
         (
-            "n-recent", "recent-skill", "skill", "b-recent", "desc",
+            "n-recent", "recent-skill", "skill", "b-recent", "manual", "desc",
             "[]", "[]", "", "", "", "[]", "[]", "[]", "[]",
             "active", 0, now, now,
         ),

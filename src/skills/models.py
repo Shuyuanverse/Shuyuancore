@@ -10,6 +10,7 @@ class SkillNode:
     name: str
     node_type: str = "skill"
     belief_id: str = ""
+    source: str = "manual"
     description: str = ""
     tags: list[str] = field(default_factory=list)
     preconditions: list[dict[str, Any]] = field(default_factory=list)

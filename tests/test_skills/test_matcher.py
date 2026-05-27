@@ -80,7 +80,7 @@ async def test_exact_match_via_skill_command():
         """
         CREATE TABLE IF NOT EXISTS skill_nodes (
             node_id TEXT PRIMARY KEY, name TEXT UNIQUE NOT NULL,
-            node_type TEXT, belief_id TEXT, description TEXT,
+            node_type TEXT, belief_id TEXT, source TEXT NOT NULL DEFAULT 'manual', description TEXT,
             tags TEXT, preconditions TEXT,
             causality_level0 TEXT, causality_level1 TEXT, causality_level2 TEXT,
             boundaries TEXT, failure_modes TEXT, dependencies TEXT,
@@ -105,9 +105,9 @@ async def test_exact_match_via_skill_command():
     )
     now = 1000000
     await conn.execute(
-        "INSERT INTO skill_nodes VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        "INSERT INTO skill_nodes VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
         (
-            "n2", "api-test-suite", "skill", "b2", "API testing",
+            "n2", "api-test-suite", "skill", "b2", "manual", "API testing",
             '["api", "test"]', "[]", "", "", "", "[]", "[]", "[]", "[]",
             "active", 0, now, now,
         ),

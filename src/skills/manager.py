@@ -8,7 +8,6 @@ from typing import Any
 
 import aiosqlite
 
-from src.config import get_settings
 from src.core.interfaces import Belief, IBeliefStore
 from src.exceptions import SkillNotFoundError
 from src.memory.decay import current_time_ms
@@ -46,18 +45,23 @@ class PersistentSkillStore(ISkillStore):
         return self._conn
 
     async def list_skills(
-        self, status: str = "active"
+        self, status: str = "active", source: str | None = None
     ) -> list[dict[str, Any]]:
         conn = await self._get_conn()
+        where_clause = "WHERE sn.status = ?"
+        params: list[Any] = [status]
+        if source is not None:
+            where_clause += " AND sn.source = ?"
+            params.append(source)
         cursor = await conn.execute(
-            """
+            f"""
             SELECT sn.*, b.confidence, b.last_accessed
             FROM skill_nodes sn
             LEFT JOIN beliefs b ON sn.belief_id = b.id
-            WHERE sn.status = ?
+            {where_clause}
             ORDER BY sn.created_at DESC
             """,
-            (status,),
+            tuple(params),
         )
         rows = await cursor.fetchall()
         return [self._row_to_dict(r) for r in rows]
@@ -109,6 +113,7 @@ class PersistentSkillStore(ISkillStore):
             name=node.get("name", ""),
             node_type=node.get("node_type", "skill"),
             belief_id="",
+            source=node.get("source", "manual"),
             description=node.get("description", ""),
             tags=node.get("tags", []),
             preconditions=node.get("preconditions", []),
@@ -162,9 +167,9 @@ class PersistentSkillStore(ISkillStore):
                 description, tags, preconditions,
                 causality_level0, causality_level1, causality_level2,
                 boundaries, failure_modes, dependencies,
-                version_history, status, is_pinned,
+                version_history, status, is_pinned, source,
                 created_at, updated_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
                 skill_node.node_id,
@@ -183,6 +188,7 @@ class PersistentSkillStore(ISkillStore):
                 json.dumps(skill_node.version_history, ensure_ascii=False),
                 skill_node.status,
                 1 if skill_node.is_pinned else 0,
+                skill_node.source,
                 skill_node.created_at,
                 skill_node.updated_at,
             ),
