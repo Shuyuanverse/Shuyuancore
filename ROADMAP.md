@@ -453,7 +453,7 @@
 
 ### ⚠️ 技术债务（Stage 4）
 
-- [⚠️] **社交媒体工具依赖模拟数据**：XiaoHongShuTool 和 DouYinTool 使用 mock/模拟数据作为降级方案，真实 API 端点可能因平台变更而失效
+- [✅] **社交媒体工具依赖模拟数据**：XiaoHongShuTool 和 DouYinTool 已实现"真实 API 优先 → 失败时优雅降级到 mock 数据"模式，mock 数据带 source=mock 标记，补充了 mock 降级测试
 - [⚠️] **Playwright/pytesseract 等系统级依赖**：browser.py 和 media.py 的某些功能需要系统级安装，非纯 Python 依赖
 - [⚠️] **matplotlib/plotly 可选依赖**：ChartTool 的图表功能需要用户安装 `shuyuancore[chart]`
 - [⚠️] **CryptoTool 密钥管理**：MASTER_KEY 从环境变量读取或自动生成，未集成密钥轮换和持久化存储
