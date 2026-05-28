@@ -223,6 +223,7 @@
 - [✅] **配置驱动**：`decay.py` 衰减速率、`writer.py` 阈值、`wake.py` 唤醒参数从 `config/default.yaml` 统一读取
 - [✅] **单元测试覆盖**：`tests/test_memory/` 下 10 个测试文件共 104 个用例，覆盖全局核心逻辑路径
 - **Alembic 迁移脚本不完整**：beliefs_fts 虚拟表的创建未纳入迁移管理
+- [✅] **数据库迁移 + 信念绝对时间戳**：新增 `conversation_date` 字段（VARCHAR(10) ISO日期），创建 Alembic 迁移 0008，更新 Belief 数据类、PersistentBeliefStore CRUD 及 Agent 写入逻辑
 - **并发写入冲突风险**：PersistentBeliefStore 使用单一 aiosqlite Connection，无连接池
 - **FTS5 同步索引效率**：每次写入同步更新 FTS5 索引，高频场景下可能成为瓶颈
 

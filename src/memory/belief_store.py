@@ -68,6 +68,7 @@ def _belief_from_row(row: aiosqlite.Row) -> Belief:
         status=row["status"],
         is_composite=bool(row["is_composite"]),
         timestamp=row["timestamp"],
+        conversation_date=row["conversation_date"] if row["conversation_date"] else "",
         metadata=(
             json.loads(row["metadata_json"])
             if row["metadata_json"] and row["metadata_json"] != "{}"
@@ -123,6 +124,7 @@ class PersistentBeliefStore(IBeliefStore):
                 status TEXT NOT NULL DEFAULT 'active',
                 is_composite INTEGER NOT NULL DEFAULT 0,
                 timestamp INTEGER NOT NULL DEFAULT 0,
+                conversation_date TEXT DEFAULT '',
                 metadata_json TEXT DEFAULT '{}',
                 created_at INTEGER NOT NULL DEFAULT 0,
                 updated_at INTEGER NOT NULL DEFAULT 0
@@ -195,9 +197,9 @@ class PersistentBeliefStore(IBeliefStore):
                 confidence, base_confidence, last_accessed,
                 memory_type, layer, entities, emotion,
                 depends_on, child_belief_ids, superseded_by,
-                status, is_composite, timestamp, metadata_json,
-                created_at, updated_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                status, is_composite, timestamp, conversation_date,
+                metadata_json, created_at, updated_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
                 belief_id,
@@ -218,6 +220,7 @@ class PersistentBeliefStore(IBeliefStore):
                 belief.status,
                 1 if belief.is_composite else 0,
                 belief.timestamp or now_ms,
+                belief.conversation_date,
                 json.dumps(belief.metadata, ensure_ascii=False),
                 now_ms,
                 now_ms,
@@ -295,6 +298,7 @@ class PersistentBeliefStore(IBeliefStore):
                 depends_on = ?, child_belief_ids = ?,
                 superseded_by = ?, status = ?,
                 is_composite = ?, timestamp = ?,
+                conversation_date = ?,
                 metadata_json = ?,
                 updated_at = ?
             WHERE id = ?
@@ -315,6 +319,7 @@ class PersistentBeliefStore(IBeliefStore):
                 belief.status,
                 1 if belief.is_composite else 0,
                 belief.timestamp,
+                belief.conversation_date,
                 json.dumps(belief.metadata, ensure_ascii=False),
                 now_ms,
                 belief.id,

@@ -23,6 +23,7 @@ class Belief:
     status: str = "active"
     is_composite: bool = False
     timestamp: int = 0
+    conversation_date: str = ""
     metadata: dict[str, Any] = field(default_factory=dict)
 
 

@@ -4,6 +4,7 @@ import asyncio
 import json
 import logging
 import uuid
+from datetime import datetime, timezone
 from typing import Any, AsyncIterator
 
 from src.core.interfaces import (
@@ -85,12 +86,15 @@ class Agent:
         if conversation_id is None:
             conversation_id = str(uuid.uuid4())
 
+        conversation_date = datetime.now(timezone.utc).date().isoformat()
+
         user_belief = Belief(
             content=message,
             source="user",
             id=str(uuid.uuid4()),
             timestamp=current_time_ms(),
             last_accessed=current_time_ms(),
+            conversation_date=conversation_date,
         )
         await self._belief_store.add(conversation_id, user_belief)
 
@@ -173,6 +177,7 @@ class Agent:
                         id=str(uuid.uuid4()),
                         timestamp=current_time_ms(),
                         last_accessed=current_time_ms(),
+                        conversation_date=conversation_date,
                     )
                     await self._belief_store.add(
                         conversation_id, assistant_belief
@@ -218,6 +223,7 @@ class Agent:
                     id=str(uuid.uuid4()),
                     timestamp=current_time_ms(),
                     last_accessed=current_time_ms(),
+                    conversation_date=conversation_date,
                 )
                 await self._belief_store.add(
                     conversation_id, assistant_belief
@@ -293,6 +299,7 @@ class Agent:
                     id=str(uuid.uuid4()),
                     timestamp=current_time_ms(),
                     last_accessed=current_time_ms(),
+                    conversation_date=conversation_date,
                     metadata={
                         "tool_name": tool_name,
                         "tool_call_id": tool_call_id,
@@ -311,6 +318,7 @@ class Agent:
                 id=str(uuid.uuid4()),
                 timestamp=current_time_ms(),
                 last_accessed=current_time_ms(),
+                conversation_date=conversation_date,
             )
             await self._belief_store.add(conversation_id, assistant_belief)
             yield full_response
