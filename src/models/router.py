@@ -210,7 +210,7 @@ class Router:
             else:
                 state.consecutive_429_count = 0
 
-            should_failover = (
+            should_failover: bool = bool(
                 state.primary_failures >= 1
                 and rule.fallback_provider
                 and rule.fallback_model

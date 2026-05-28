@@ -266,7 +266,7 @@ def create_app(
         db_status = "disconnected"
         try:
             store = _get_belief_store()
-            store._db  # access to check if initialized
+            store._conn  # access to check if initialized
             db_status = "connected"
         except Exception:
             pass
@@ -377,10 +377,10 @@ def create_app(
         )
         items = [
             ConversationItem(
-                id=item["id"],
-                message_count=item["message_count"],
-                last_message_at=item["last_message_at"],
-                created_at=item["created_at"],
+                id=str(item["id"]),
+                message_count=int(str(item["message_count"])),
+                last_message_at=int(str(item["last_message_at"])),
+                created_at=int(str(item["created_at"])),
             ).model_dump()
             for item in items_raw
         ]
@@ -406,10 +406,10 @@ def create_app(
         )
         items = [
             MessageItem(
-                id=item["id"],
-                role=item["role"],
-                content=item["content"],
-                created_at=item["created_at"],
+                id=str(item["id"]),
+                role=str(item["role"]),
+                content=str(item["content"]),
+                created_at=int(str(item["created_at"])),
             ).model_dump()
             for item in items_raw
         ]

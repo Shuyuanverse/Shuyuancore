@@ -48,7 +48,7 @@ class PersonaCompiler:
         persona_id: str,
         input_text: str,
         core_md: str = "",
-        language_samples: list[str] = None,
+        language_samples: list[str] | None = None,
     ) -> PersonaProfile:
         style_dim = self._style_encoder.encode(input_text)
         anchor = await self._anchor_manager.create_initial_anchor(persona_id, style_dim, input_text)

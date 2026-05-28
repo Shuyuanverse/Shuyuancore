@@ -3,6 +3,7 @@ from __future__ import annotations
 import asyncio
 import logging
 import uuid
+from typing import Any
 
 from src.agents.interfaces import ISubAgent
 from src.config import get_settings
@@ -28,7 +29,7 @@ class SubAgent(ISubAgent):
         belief_store: IBeliefStore,
         scope: str,
         timeout: int | None = None,
-        router: object | None = None,
+        router: Any | None = None,
     ) -> None:
         self._belief_store = belief_store
         self._scope = scope

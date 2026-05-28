@@ -122,6 +122,11 @@ class SkillsTool(ITool):
         start: float,
         audit: Any,
     ) -> ToolResult:
+        if self._store is None:
+            return ToolResult(
+                success=False,
+                error="技能存储（ISkillStore）未注入，无法执行操作",
+            )
         try:
             status: str = params.get("status", "active")
             skills: list[dict[str, Any]] = await self._store.list_skills(status=status)
@@ -163,6 +168,11 @@ class SkillsTool(ITool):
         start: float,
         audit: Any,
     ) -> ToolResult:
+        if self._store is None:
+            return ToolResult(
+                success=False,
+                error="技能存储（ISkillStore）未注入，无法执行操作",
+            )
         name: str = params["name"]
         try:
             skill: dict[str, Any] | None = await self._store.get_skill(name)
@@ -219,6 +229,11 @@ class SkillsTool(ITool):
         start: float,
         audit: Any,
     ) -> ToolResult:
+        if self._store is None:
+            return ToolResult(
+                success=False,
+                error="技能存储（ISkillStore）未注入，无法执行操作",
+            )
         name: str = params["name"]
         content: str = params["content"]
         conversation_id: str = params["conversation_id"]
@@ -282,6 +297,11 @@ class SkillsTool(ITool):
         start: float,
         audit: Any,
     ) -> ToolResult:
+        if self._store is None:
+            return ToolResult(
+                success=False,
+                error="技能存储（ISkillStore）未注入，无法执行操作",
+            )
         name: str = params["name"]
         content: str | None = params.get("content")
         try:
@@ -344,6 +364,11 @@ class SkillsTool(ITool):
         start: float,
         audit: Any,
     ) -> ToolResult:
+        if self._store is None:
+            return ToolResult(
+                success=False,
+                error="技能存储（ISkillStore）未注入，无法执行操作",
+            )
         name: str = params["name"]
         try:
             existing: dict[str, Any] | None = await self._store.get_skill(name)
@@ -402,6 +427,11 @@ class SkillsTool(ITool):
         start: float,
         audit: Any,
     ) -> ToolResult:
+        if self._store is None:
+            return ToolResult(
+                success=False,
+                error="技能存储（ISkillStore）未注入，无法执行操作",
+            )
         name: str = params["name"]
         extra_params: dict[str, Any] | None = params.get("params")
         try:

@@ -88,7 +88,7 @@ class DatabaseTool(ITool):
                     error="数据库处于只读模式，不允许写入操作",
                     duration_ms=duration_ms,
                 )
-            approval_mgr = get_approval_manager()
+            approval_mgr = await get_approval_manager()
             req = await approval_mgr.request(
                 tool_name="database",
                 params=params,

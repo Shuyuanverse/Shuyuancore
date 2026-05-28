@@ -230,8 +230,8 @@ class BrowserTool(ITool):
                     )
 
                 elif action == "screenshot":
-                    url: str = params["url"]
-                    await page.goto(url, timeout=timeout)
+                    target_url: str = params["url"]
+                    await page.goto(target_url, timeout=timeout)
                     await page.wait_for_load_state("networkidle")
                     screenshot_bytes = await page.screenshot(
                         full_page=True, type="png"
@@ -260,22 +260,22 @@ class BrowserTool(ITool):
                     )
 
                 elif action == "fill":
-                    selector: str = params["selector"]
+                    fill_selector: str = params["selector"]
                     value: str = params["value"]
-                    await page.fill(selector, value, timeout=timeout)
+                    await page.fill(fill_selector, value, timeout=timeout)
                     return ToolResult(
                         success=True,
                         data={
                             "action": "fill",
-                            "selector": selector,
+                            "selector": fill_selector,
                             "status": "filled",
                         },
                     )
 
                 elif action == "text_content":
-                    selector: str = params["selector"]
+                    element_selector: str = params["selector"]
                     element = await page.wait_for_selector(
-                        selector, timeout=timeout
+                        element_selector, timeout=timeout
                     )
                     if element is None:
                         return ToolResult(
@@ -286,7 +286,7 @@ class BrowserTool(ITool):
                     return ToolResult(
                         success=True,
                         data={
-                            "selector": selector,
+                            "selector": element_selector,
                             "text": (text or "").strip(),
                         },
                     )

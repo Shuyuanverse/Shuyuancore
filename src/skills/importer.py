@@ -47,7 +47,7 @@ async def export_skills(
 
         edges = await skill_graph.get_edges(node_name=name)
 
-        skill_entry = {
+        skill_entry: dict[str, Any] = {
             "node_data": skill,
             "edges": edges,
             "markdown": md_content,

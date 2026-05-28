@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import base64
+import binascii
 import hashlib
 import hmac
 import logging
@@ -168,7 +169,7 @@ class CryptoTool(ITool):
                 },
                 duration_ms=(time.time() - start) * 1000,
             )
-        except (ValueError, InvalidToken, base64.binascii.Error) as e:
+        except (ValueError, InvalidToken, binascii.Error) as e:
             return ToolResult(
                 success=False,
                 error=f"Decryption failed: {e}",

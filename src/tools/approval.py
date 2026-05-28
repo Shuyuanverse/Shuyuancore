@@ -10,7 +10,7 @@ async def request_approval(
     user_id: str = "default",
 ) -> ApprovalRequest:
     config = get_settings().tools
-    mgr = get_approval_manager()
+    mgr = await get_approval_manager()
     return await mgr.request(
         tool_name=tool_name,
         params=params,
@@ -21,9 +21,10 @@ async def request_approval(
 
 async def wait_for_approval(approval_id: str) -> bool:
     config = get_settings().tools
-    mgr = get_approval_manager()
+    mgr = await get_approval_manager()
     return await mgr.wait(approval_id, timeout=config.approval_timeout)
 
 
-def get_pending_approvals() -> list[ApprovalRequest]:
-    return get_approval_manager().list_pending()
+async def get_pending_approvals() -> list[ApprovalRequest]:
+    mgr = await get_approval_manager()
+    return await mgr.list_pending_by_user("default")

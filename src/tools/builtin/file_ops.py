@@ -146,7 +146,7 @@ class FileOpsTool(ITool):
 
         if self._is_dangerous(operation, resolved):
             config = get_settings().tools
-            approval_mgr = get_approval_manager()
+            approval_mgr = await get_approval_manager()
             req = await approval_mgr.request(
                 tool_name="file_ops",
                 params=params,

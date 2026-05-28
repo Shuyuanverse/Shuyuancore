@@ -276,9 +276,9 @@ class DouYinTool(ITool):
                 timeout=httpx.Timeout(timeout),
                 follow_redirects=True,
             ) as client:
-                params = {
+                params: dict[str, str] = {
                     "keyword": keyword,
-                    "count": min(limit, 20),
+                    "count": str(min(limit, 20)),
                 }
                 response = await client.get(
                     "https://www.douyin.com/aweme/v1/web/search/item/",
@@ -488,9 +488,9 @@ class DouYinTool(ITool):
                 timeout=httpx.Timeout(timeout),
                 follow_redirects=True,
             ) as client:
-                params = {
+                params: dict[str, str] = {
                     "keyword": keyword,
-                    "count": min(limit, 20),
+                    "count": str(min(limit, 20)),
                 }
                 response = await client.get(
                     "https://www.douyin.com/aweme/v1/web/search/user/",
@@ -608,9 +608,9 @@ class DouYinTool(ITool):
                 timeout=httpx.Timeout(timeout),
                 follow_redirects=True,
             ) as client:
-                params = {
+                params: dict[str, str] = {
                     "user_id": user_id,
-                    "count": min(limit, 20),
+                    "count": str(min(limit, 20)),
                 }
                 response = await client.get(
                     "https://www.douyin.com/aweme/v1/web/user/post/",

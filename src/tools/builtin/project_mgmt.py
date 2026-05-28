@@ -141,7 +141,7 @@ class ProjectMgmtTool(ITool):
 
         is_dangerous = action != "list_issues"
         if is_dangerous:
-            approval_mgr = get_approval_manager()
+            approval_mgr = await get_approval_manager()
             req = await approval_mgr.request(
                 tool_name="project_mgmt",
                 params=params,

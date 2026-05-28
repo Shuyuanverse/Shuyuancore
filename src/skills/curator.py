@@ -76,7 +76,7 @@ async def run_curation(
             WHERE sn.status = 'active'
             """,
         )
-        rows = await cursor.fetchall()
+        rows = list(await cursor.fetchall())
 
         stale_count = 0
         archive_count = 0

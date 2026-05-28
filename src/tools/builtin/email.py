@@ -124,6 +124,11 @@ class EmailTool(ITool):
         smtp_port = int(smtp_port_str)
         imap_port = int(imap_port_str)
 
+        assert smtp_host is not None
+        assert imap_host is not None
+        assert email_user is not None
+        assert email_password is not None
+
         if action == "send":
             return await self._send_email(
                 params, user_id, start, audit,
@@ -151,7 +156,7 @@ class EmailTool(ITool):
         email_user: str,
         email_password: str,
     ) -> ToolResult:
-        approval_mgr = get_approval_manager()
+        approval_mgr = await get_approval_manager()
         req = await approval_mgr.request(
             tool_name="email",
             params=params,
@@ -440,18 +445,18 @@ class EmailTool(ITool):
                     continue
                 if ctype == "text/plain" and not body_text:
                     payload = part.get_payload(decode=True)
-                    if payload:
+                    if isinstance(payload, bytes):
                         charset = part.get_content_charset() or "utf-8"
                         body_text = payload.decode(charset, errors="replace")
                 elif ctype == "text/html" and not body_html:
                     payload = part.get_payload(decode=True)
-                    if payload:
+                    if isinstance(payload, bytes):
                         charset = part.get_content_charset() or "utf-8"
                         body_html = payload.decode(charset, errors="replace")
         else:
             ctype = msg.get_content_type()
             payload = msg.get_payload(decode=True)
-            if payload:
+            if isinstance(payload, bytes):
                 charset = msg.get_content_charset() or "utf-8"
                 if ctype == "text/html":
                     body_html = payload.decode(charset, errors="replace")

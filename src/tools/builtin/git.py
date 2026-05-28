@@ -358,7 +358,7 @@ class GitTool(ITool):
         start: float,
         audit: Any,
     ) -> ToolResult:
-        approval_mgr = get_approval_manager()
+        approval_mgr = await get_approval_manager()
         req = await approval_mgr.request(
             tool_name="git",
             params=params,
@@ -446,7 +446,7 @@ class GitTool(ITool):
         start: float,
         audit: Any,
     ) -> ToolResult:
-        approval_mgr = get_approval_manager()
+        approval_mgr = await get_approval_manager()
         req = await approval_mgr.request(
             tool_name="git",
             params=params,

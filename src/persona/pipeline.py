@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
-from typing import Optional
+from typing import Any, Optional
 
 from src.persona.perception import PerceptionResult
 from src.persona.profile import PersonaProfile
@@ -33,12 +33,12 @@ async def orchestrate_background(
     persona_profile: PersonaProfile,
     perception: Optional[PerceptionResult],
     pctx: Optional[PipelineContext] = None,
-    evolution_engine: object = None,
-    drift_store: object = None,
+    evolution_engine: Any = None,
+    drift_store: Any = None,
 ) -> None:
     try:
         if perception and drift_store:
-            drift_entry = {
+            drift_entry: dict = {
                 "persona_id": persona_profile.persona_id,
                 "drift_score": getattr(perception, "patience_level", 1.0),
                 "alert_level": "background",

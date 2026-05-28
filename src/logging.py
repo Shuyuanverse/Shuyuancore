@@ -7,7 +7,7 @@ import re
 import sys
 from contextvars import ContextVar
 from pathlib import Path
-from typing import Any
+from typing import Any, MutableMapping
 
 import structlog
 
@@ -83,20 +83,20 @@ def _is_dev() -> bool:
 
 
 def _timestamper_processor(
-    logger: logging.Logger,
+    logger: Any,
     method_name: str,
-    event_dict: dict[str, Any],
-) -> dict[str, Any]:
+    event_dict: MutableMapping[str, Any],
+) -> MutableMapping[str, Any]:
     from datetime import datetime, timezone
     event_dict["timestamp"] = datetime.now(timezone.utc).isoformat()
     return event_dict
 
 
 def _add_correlation_id(
-    logger: logging.Logger,
+    logger: Any,
     method_name: str,
-    event_dict: dict[str, Any],
-) -> dict[str, Any]:
+    event_dict: MutableMapping[str, Any],
+) -> MutableMapping[str, Any]:
     cid = _correlation_id_ctx.get()
     if cid:
         event_dict["correlation_id"] = cid
@@ -104,10 +104,10 @@ def _add_correlation_id(
 
 
 def _drop_empty_frames(
-    logger: logging.Logger,
+    logger: Any,
     method_name: str,
-    event_dict: dict[str, Any],
-) -> dict[str, Any]:
+    event_dict: MutableMapping[str, Any],
+) -> MutableMapping[str, Any]:
     event_dict.pop("stack_info", None)
     event_dict.pop("exc_info", None)
     return event_dict

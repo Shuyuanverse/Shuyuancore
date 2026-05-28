@@ -73,6 +73,7 @@ class Agent:
         self._coordinator = coordinator
         self._dangerous_tools: set[str] = set()
         self._pending_resume_event: asyncio.Event | None = None
+        self._approval_approved: bool = True
 
     def set_dangerous_tools(self, tool_names: list[str]) -> None:
         self._dangerous_tools = set(tool_names)
@@ -251,6 +252,7 @@ class Agent:
                         and resume_event is not None
                     )
                     if require_approval:
+                        assert resume_event is not None
                         approval_id = f"stream_{uuid.uuid4().hex[:8]}"
                         self._pending_resume_event = resume_event
                         yield {

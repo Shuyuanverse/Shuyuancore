@@ -24,7 +24,7 @@ _ANCHOR_MEMORY_TYPE: str = "persona_anchor"
 class AnchorManager:
     def __init__(
         self,
-        embedding_provider: object | None = None,
+        embedding_provider: Any | None = None,
         belief_store: Any | None = None,
     ):
         self._embedding_provider = embedding_provider

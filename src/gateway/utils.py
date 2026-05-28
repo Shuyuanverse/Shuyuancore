@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import base64
+import binascii
 import hashlib
 import hmac
 import json
@@ -70,7 +71,7 @@ def decode_cursor(cursor: str) -> tuple[int, str] | None:
 
         entity_id = base64.urlsafe_b64decode(entity_id_b64.encode()).decode()
         return timestamp, entity_id
-    except (ValueError, base64.binascii.Error, UnicodeDecodeError):
+    except (ValueError, binascii.Error, UnicodeDecodeError):
         return None
 
 

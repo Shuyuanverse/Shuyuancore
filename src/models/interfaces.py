@@ -57,8 +57,7 @@ class IModelProvider(ABC):
         temperature: float | None = None,
         max_tokens: int | None = None,
     ) -> AsyncIterator[ChatStreamEvent]:
-        ...
-        yield  # pragma: no cover
+        yield ChatStreamEvent()  # pragma: no cover
 
     @abstractmethod
     async def embed(

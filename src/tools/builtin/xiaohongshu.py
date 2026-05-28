@@ -277,9 +277,9 @@ class XiaoHongShuTool(ITool):
                 timeout=httpx.Timeout(timeout),
                 follow_redirects=True,
             ) as client:
-                params = {
+                params: dict[str, str] = {
                     "keyword": keyword,
-                    "limit": min(limit, 20),
+                    "limit": str(min(limit, 20)),
                 }
                 response = await client.get(
                     "https://edith.xiaohongshu.com/api/sns/web/v1/search/notes",
@@ -481,9 +481,9 @@ class XiaoHongShuTool(ITool):
                 timeout=httpx.Timeout(timeout),
                 follow_redirects=True,
             ) as client:
-                params = {
+                params: dict[str, str] = {
                     "keyword": keyword,
-                    "limit": min(limit, 20),
+                    "limit": str(min(limit, 20)),
                 }
                 response = await client.get(
                     "https://edith.xiaohongshu.com/api/sns/web/v1/search/users",
@@ -593,9 +593,9 @@ class XiaoHongShuTool(ITool):
                 timeout=httpx.Timeout(timeout),
                 follow_redirects=True,
             ) as client:
-                params = {
+                params: dict[str, str] = {
                     "note_id": note_id,
-                    "limit": min(limit, 20),
+                    "limit": str(min(limit, 20)),
                 }
                 response = await client.get(
                     "https://edith.xiaohongshu.com/api/sns/web/v1/comment/page",

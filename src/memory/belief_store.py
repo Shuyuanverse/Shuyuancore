@@ -524,7 +524,7 @@ class PersistentBeliefStore(IBeliefStore):
             params = base_params + [effective_limit]
 
         cursor_obj = await conn.execute(query, params)
-        rows_raw = await cursor_obj.fetchall()
+        rows_raw = list(await cursor_obj.fetchall())
         has_more = len(rows_raw) > limit
         rows_raw = rows_raw[:limit]
 
@@ -604,7 +604,7 @@ class PersistentBeliefStore(IBeliefStore):
                 params = [conversation_id, effective_limit]
 
         cursor_obj = await conn.execute(query, params)
-        rows_raw = await cursor_obj.fetchall()
+        rows_raw = list(await cursor_obj.fetchall())
         has_more = len(rows_raw) > limit
         rows_raw = rows_raw[:limit]
 

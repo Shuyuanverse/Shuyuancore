@@ -281,14 +281,14 @@ class SpreadsheetTool(ITool):
             rows: list[dict[str, Any]] = []
             with open(str(path), mode="r", encoding=encoding, newline="") as f:
                 if headers:
-                    reader = csv.DictReader(f)
-                    for row in reader:
+                    dict_reader = csv.DictReader(f)
+                    for row in dict_reader:
                         rows.append(dict(row))
                 else:
-                    reader = csv.reader(f)
-                    for row in reader:
+                    raw_reader = csv.reader(f)
+                    for raw_row in raw_reader:
                         rows.append(
-                            {str(i): val for i, val in enumerate(row)}
+                            {str(i): val for i, val in enumerate(raw_row)}
                         )
             return rows
 
@@ -449,14 +449,14 @@ class SpreadsheetTool(ITool):
                 fieldnames = list(data[0].keys())
             with open(str(path), mode="w", encoding=encoding, newline="") as f:
                 if headers:
-                    writer = csv.DictWriter(f, fieldnames=fieldnames)
-                    writer.writeheader()
+                    dict_writer = csv.DictWriter(f, fieldnames=fieldnames)
+                    dict_writer.writeheader()
                     for row in data:
-                        writer.writerow(row)
+                        dict_writer.writerow(row)
                 else:
-                    writer = csv.writer(f)
+                    raw_writer = csv.writer(f)
                     for row in data:
-                        writer.writerow(list(row.values()))
+                        raw_writer.writerow(list(row.values()))
             return len(data)
 
         count = await asyncio.to_thread(_write)
@@ -505,6 +505,8 @@ class SpreadsheetTool(ITool):
         def _write() -> int:
             wb = openpyxl.Workbook()
             ws = wb.active
+            if ws is None:
+                return 0
             ws.title = sheet_name
             if not data:
                 wb.save(str(path))

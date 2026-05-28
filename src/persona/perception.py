@@ -112,7 +112,7 @@ def perceive(
     user_message: str,
     conversation_history: list[dict],
     persona_id: str,
-    style_profile: dict = None,
+    style_profile: dict | None = None,
 ) -> PerceptionResult:
     conversation_turn = len(conversation_history)
     repeat_count = _detect_repeats(user_message, conversation_history)

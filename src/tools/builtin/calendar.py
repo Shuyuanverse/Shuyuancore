@@ -269,7 +269,7 @@ class CalendarTool(ITool):
                 duration_ms=(time.time() - start) * 1000,
             )
 
-        approval_mgr = get_approval_manager()
+        approval_mgr = await get_approval_manager()
         req = await approval_mgr.request(
             tool_name="calendar",
             params=params,

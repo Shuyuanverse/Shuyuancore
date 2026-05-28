@@ -67,7 +67,7 @@ class ToolRegistry(IToolRegistry):
         approval_id = ""
 
         if needs_approval:
-            approval_mgr = get_approval_manager()
+            approval_mgr = await get_approval_manager()
             req = await approval_mgr.request(
                 tool_name=name,
                 params=params,
