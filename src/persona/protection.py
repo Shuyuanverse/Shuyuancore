@@ -72,7 +72,10 @@ class StyleProtectionPipeline:
         if perception is not None:
             result.adjusted_response = self._adjust_response(response_text, result, perception)
 
-        logger.info("[protection] drift=%.4f level=%s persona=%s", drift, result.alert_level, profile.persona_id)
+        logger.info(
+            "[protection] drift=%.4f level=%s persona=%s",
+            drift, result.alert_level, profile.persona_id,
+        )
         return result
 
     def _extract_style_vector(self, text: str) -> list[float]:
@@ -109,7 +112,9 @@ class StyleProtectionPipeline:
         prompt += f"当前漂移：{drift_score:.2f}（阈值：{self.config.drift_threshold}）"
         return prompt
 
-    def _adjust_response(self, text: str, result: ProtectionResult, perception: object) -> Optional[str]:
+    def _adjust_response(
+        self, text: str, result: ProtectionResult, perception: object,
+    ) -> Optional[str]:
         perception = getattr(perception, "user_emotion_hint", None)
         if perception == "negative_high" and result.drift_score >= 0.15:
             return text + "\n\n（我理解你的感受，让我重新调整一下表达方式）"

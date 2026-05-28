@@ -14,7 +14,8 @@ _RISK_SYSTEM_PROMPT = """你是一个风险分析师（风险更新器）。
 如果无明显风险，请说明"未发现明显风险"。
 
 请按以下格式输出（严格 JSON）：
-{"content": "你的风险分析文本", "confidence": 0.0-1.0之间的小数, "reasoning": "简要推理依据（≤100字）"}
+{"content": "你的风险分析文本", "confidence": "0.0-1.0之间的小数",
+"reasoning": "简要推理依据（≤100字）"}
 仅输出 JSON，不要包含任何其他内容。"""
 
 
@@ -47,7 +48,10 @@ class RiskUpdater(IUpdater):
         messages.append(
             {
                 "role": "user",
-                "content": f"用户的当前消息：{ctx.message}\n\n请从风险角度分析潜在的失败模式和隐患。",
+                "content": (
+                    f"用户的当前消息：{ctx.message}\n\n"
+                    f"请从风险角度分析潜在的失败模式和隐患。"
+                ),
             }
         )
 

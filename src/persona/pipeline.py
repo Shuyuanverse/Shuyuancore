@@ -19,7 +19,10 @@ class PipelineContext:
     async def record_drift(self, entry: dict) -> None:
         async with self._lock:
             self.drift_history.append(entry)
-            logger.info("[pipeline] 记录漂移: drift=%.4f level=%s", entry.get("drift_score", 0), entry.get("alert_level", "none"))
+            logger.info(
+                "[pipeline] 记录漂移: drift=%.4f level=%s",
+                entry.get("drift_score", 0), entry.get("alert_level", "none"),
+            )
 
     async def get_drift_history(self, limit: int = 50) -> list[dict]:
         async with self._lock:
@@ -69,7 +72,10 @@ async def orchestrate_background(
                     logger.info("[pipeline] 检测到 %d 个演化提议", len(proposals))
                     for prop in proposals:
                         reviewed = await evolution_engine.review_and_apply(prop)
-                        logger.info("[pipeline] 演化提议 %s: %s", reviewed.proposal_id, reviewed.status)
+                        logger.info(
+                            "[pipeline] 演化提议 %s: %s",
+                            reviewed.proposal_id, reviewed.status,
+                        )
             except Exception as exc:
                 logger.warning("[pipeline] 演化检测异常: %s", exc)
     except Exception as exc:

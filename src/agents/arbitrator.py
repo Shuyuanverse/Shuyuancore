@@ -137,7 +137,11 @@ def _weighted_fusion(
 
 
 def _format_single_result(result: UpdaterResult) -> str:
-    return f"[{_source_label(result.source)}视角] {result.content}\n（置信度 {result.confidence:.2f}）"
+    label = _source_label(result.source)
+    return (
+        f"[{label}视角] {result.content}\n"
+        f"（置信度 {result.confidence:.2f}）"
+    )
 
 
 def _format_structured_data(

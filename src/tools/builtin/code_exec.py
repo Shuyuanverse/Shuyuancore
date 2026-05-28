@@ -16,7 +16,10 @@ class CodeExecTool(ITool):
     def get_spec(self) -> ToolSpec:
         return ToolSpec(
             name="code_exec",
-            description="在沙箱环境中执行代码。支持 Python 和 JavaScript，强制在 Docker 沙箱中运行。",
+            description=(
+                "在沙箱环境中执行代码。支持 Python 和 JavaScript，"
+                "强制在 Docker 沙箱中运行。"
+            ),
             category="system",
             dangerous=True,
             require_sandbox=True,
@@ -59,7 +62,8 @@ class CodeExecTool(ITool):
             errors.append("code 参数不能为空")
         language = params.get("language", "python")
         if language not in SUPPORTED_LANGUAGES:
-            errors.append(f"不支持的语言: {language}，仅支持 {', '.join(sorted(SUPPORTED_LANGUAGES))}")
+            supported = ', '.join(sorted(SUPPORTED_LANGUAGES))
+            errors.append(f"不支持的语言: {language}，仅支持 {supported}")
         timeout = params.get("timeout", 30)
         if isinstance(timeout, int) and timeout < 1:
             errors.append("timeout 必须大于 0")

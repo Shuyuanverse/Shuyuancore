@@ -202,7 +202,10 @@ class PersonaStyleConfig(BaseModel):
     @classmethod
     def _lock_decision_anchor_dimensions(cls, v: int) -> int:
         if v != 256:
-            raise ValueError(f"style.decision_anchor_dimensions 为锁定参数，值必须为 256，当前为 {v}")
+            raise ValueError(
+                f"style.decision_anchor_dimensions 为锁定参数，"
+                f"值必须为 256，当前为 {v}"
+            )
         return v
 
 
@@ -210,7 +213,11 @@ class PersonaHardFactConfig(BaseModel):
     confidence: float = 0.99
     memory_type: str = "identity"
     layer: int = 1
-    categories: list[str] = Field(default_factory=lambda: ["identity", "knowledge_boundary", "relation", "bottom_line"])
+    categories: list[str] = Field(
+        default_factory=lambda: [
+            "identity", "knowledge_boundary", "relation", "bottom_line",
+        ]
+    )
 
 
 class PersonaCompilerConfig(BaseModel):
@@ -327,7 +334,10 @@ class ToolsConfig(BaseModel):
     default_timeout: int = 60
     approval_timeout: int = 300
     terminal_whitelist: list[str] = Field(
-        default_factory=lambda: ["ls", "pwd", "echo", "cat", "head", "tail", "grep", "which", "whoami", "date"]
+        default_factory=lambda: [
+            "ls", "pwd", "echo", "cat", "head", "tail",
+            "grep", "which", "whoami", "date",
+        ]
     )
     code_exec_timeout: int = 30
     code_exec_memory_limit: int = 256

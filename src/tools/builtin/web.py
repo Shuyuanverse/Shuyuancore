@@ -38,7 +38,10 @@ class WebTool(ITool):
                 ToolParameter(
                     name="action",
                     type="string",
-                    description="Action to perform: 'get' to fetch a URL, 'search' to search the web",
+                    description=(
+                        "Action to perform: 'get' to fetch a URL, "
+                        "'search' to search the web"
+                    ),
                     required=True,
                 ),
                 ToolParameter(

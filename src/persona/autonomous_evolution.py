@@ -64,7 +64,10 @@ class AutonomousEvolution:
                 proposed_value=trend_val,
                 delta=trend_val - current_val,
                 trigger_type="drift_trend",
-                reason=f"维度 {dim} 在最近对话中呈现 {trend_val:.2f} 的趋势（当前锚点: {current_val:.2f}）",
+                reason=(
+                    f"维度 {dim} 在最近对话中呈现 {trend_val:.2f} 的趋势"
+                    f"（当前锚点: {current_val:.2f}）"
+                ),
             )
             proposals.append(proposal)
 
@@ -81,15 +84,24 @@ class AutonomousEvolution:
 
         if proposal.consistency_score < REJECT_THRESHOLD:
             proposal.status = "rejected"
-            logger.info("[evolution] 拒绝演化提议: %s (consistency=%.2f)", proposal.dimension, proposal.consistency_score)
+            logger.info(
+                "[evolution] 拒绝演化提议: %s (consistency=%.2f)",
+                proposal.dimension, proposal.consistency_score,
+            )
         elif proposal.consistency_score <= AUTO_THRESHOLD:
             proposal.delta = proposal.delta * proposal.consistency_score
             proposal.proposed_value = proposal.current_value + proposal.delta
             proposal.status = "auto_adjusted"
-            logger.info("[evolution] 缩小幅度自动执行: %s (consistency=%.2f delta=%.4f)", proposal.dimension, proposal.consistency_score, proposal.delta)
+            logger.info(
+                "[evolution] 缩小幅度自动执行: %s (consistency=%.2f delta=%.4f)",
+                proposal.dimension, proposal.consistency_score, proposal.delta,
+            )
         else:
             proposal.status = "approved"
-            logger.info("[evolution] 演化提议通过: %s (consistency=%.2f)", proposal.dimension, proposal.consistency_score)
+            logger.info(
+                "[evolution] 演化提议通过: %s (consistency=%.2f)",
+                proposal.dimension, proposal.consistency_score,
+            )
 
         return proposal
 

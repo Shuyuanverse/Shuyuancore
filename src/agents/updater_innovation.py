@@ -14,7 +14,8 @@ _INNOVATION_SYSTEM_PROMPT = """你是一个创新探索者（创新更新器）�
 如果没有好思路，可以说明"常规方案已足够，暂无明显创新点"。
 
 请按以下格式输出（严格 JSON）：
-{"content": "你的创新思路文本", "confidence": 0.0-1.0之间的小数, "reasoning": "简要推理依据（≤100字）"}
+{"content": "你的创新思路文本", "confidence": "0.0-1.0之间的小数",
+"reasoning": "简要推理依据（≤100字）"}
 仅输出 JSON，不要包含任何其他内容。"""
 
 
@@ -47,7 +48,10 @@ class InnovationUpdater(IUpdater):
         messages.append(
             {
                 "role": "user",
-                "content": f"用户的当前消息：{ctx.message}\n\n请跳出框架，提供非显而易见的替代方案或创新思路。",
+                "content": (
+                    f"用户的当前消息：{ctx.message}\n\n"
+                    f"请跳出框架，提供非显而易见的替代方案或创新思路。"
+                ),
             }
         )
 
