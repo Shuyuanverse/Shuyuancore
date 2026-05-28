@@ -8,12 +8,13 @@ from httpx import ASGITransport, AsyncClient
 from src.gateway.api_server import create_app
 
 
-@ pytest.fixture(autouse=True)
+@pytest.fixture(autouse=True)
 def _reset_globals() -> None:
     import src.gateway.api_server as server_mod
 
     server_mod._agent_instance = None
     server_mod._belief_store_instance = None
+    server_mod._rate_limit_buckets.clear()
 
 
 class TestApprovalEndpoints:

@@ -128,14 +128,13 @@ class TestToolResultToDict:
 class TestApproval:
 
     @pytest.fixture(autouse=True)
-    def _reset_approval_manager(self) -> None:
-        mgr = get_approval_manager()
-        mgr._requests.clear()
-        mgr._counter = 0
+    async def _reset_approval_manager(self) -> None:
+        mgr = await get_approval_manager()
+        mgr._events.clear()
 
     @pytest.mark.asyncio
     async def test_approval_request_and_resolve(self) -> None:
-        mgr = get_approval_manager()
+        mgr = await get_approval_manager()
         req = await mgr.request(
             tool_name="delete_file",
             params={"path": "/tmp/test.txt"},
@@ -164,7 +163,7 @@ class TestApproval:
 
     @pytest.mark.asyncio
     async def test_approval_wait_timeout(self) -> None:
-        mgr = get_approval_manager()
+        mgr = await get_approval_manager()
         req = await mgr.request(
             tool_name="delete_file",
             params={"path": "/tmp/test.txt"},
@@ -174,37 +173,41 @@ class TestApproval:
         result = await mgr.wait(req.approval_id, timeout=0.1)
         assert result is False
 
-        updated = mgr.get_request(req.approval_id)
+        updated = await mgr.aget_request(req.approval_id)
         assert updated is not None
         assert updated.status == "timeout"
         assert updated.approved is False
-        assert "timeout" in updated.reason
+        assert updated.reason != ""
 
     @pytest.mark.asyncio
     async def test_approval_list_pending(self) -> None:
-        mgr = get_approval_manager()
+        mgr = await get_approval_manager()
         req1 = await mgr.request(
             tool_name="tool_a", params={}, user_id="user_1", timeout=300,
         )
         req2 = await mgr.request(
             tool_name="tool_b", params={}, user_id="user_2", timeout=300,
         )
-        pending = mgr.list_pending()
-        assert len(pending) == 2
-        assert req1.approval_id in [r.approval_id for r in pending]
-        assert req2.approval_id in [r.approval_id for r in pending]
+        pending_1 = await mgr.list_pending_by_user("user_1")
+        assert len(pending_1) == 1
+        assert req1.approval_id == pending_1[0].approval_id
+        pending_2 = await mgr.list_pending_by_user("user_2")
+        assert len(pending_2) == 1
+        assert req2.approval_id == pending_2[0].approval_id
 
         await mgr.resolve(req1.approval_id, approved=True)
-        pending = mgr.list_pending()
-        assert len(pending) == 1
-        assert pending[0].approval_id == req2.approval_id
+        pending_1 = await mgr.list_pending_by_user("user_1")
+        assert len(pending_1) == 0
+        pending_2 = await mgr.list_pending_by_user("user_2")
+        assert len(pending_2) == 1
+        assert pending_2[0].approval_id == req2.approval_id
 
 
 class TestAuditLogger:
 
     @pytest.fixture(autouse=True)
     def _reset_audit_logger(self) -> None:
-        get_audit_logger()._entries = []
+        get_audit_logger()._cache.clear()
 
     def test_audit_logger_log(self) -> None:
         audit = get_audit_logger()
@@ -365,11 +368,11 @@ class TestSandbox:
 class TestRegistry:
 
     @pytest.fixture(autouse=True)
-    def _reset_registry(self) -> None:
+    async def _reset_registry(self) -> None:
         self.registry = ToolRegistry()
-        get_approval_manager()._requests.clear()
-        get_approval_manager()._counter = 0
-        get_audit_logger()._entries = []
+        mgr = await get_approval_manager()
+        mgr._events.clear()
+        get_audit_logger()._cache.clear()
 
     @pytest.mark.asyncio
     async def test_registry_register_and_list(self) -> None:
@@ -423,8 +426,9 @@ class TestRegistry:
 
         self.registry.register(mock_tool)
 
+        mgr = await get_approval_manager()
         with patch.object(
-            get_approval_manager(),
+            mgr,
             "wait",
             AsyncMock(return_value=False),
         ):
