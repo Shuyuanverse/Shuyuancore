@@ -1,20 +1,18 @@
 from __future__ import annotations
+
 import re
-from typing import Optional
-from src.persona.profile import PersonaProfile, StyleDimensions
-from src.persona.anchor_manager import AnchorManager, AnchorVersion
-from src.persona.identity_prompt import IdentityPromptBuilder
+
+from src.persona.profile import StyleDimensions
 
 
 class StyleEncoder:
     def encode(self, text: str) -> StyleDimensions:
-        import re
 
         text_len = len(text)
         exclamation = text.count("！") + text.count("!")
         question = text.count("？") + text.count("?")
         period = text.count("。") + text.count(".") + text.count("\n")
-        comma = text.count("，") + text.count(",")
+        text.count("，") + text.count(",")
 
         formality = min(self._calc_formality(text, exclamation, period), 1.0)
         warmth = min(self._calc_warmth(text, exclamation), 1.0)

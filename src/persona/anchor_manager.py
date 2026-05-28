@@ -202,7 +202,6 @@ class AnchorManager:
                 pass
 
         try:
-            import numpy as np
             from dashscope import TextEmbedding
 
             resp = TextEmbedding.call(
@@ -217,7 +216,7 @@ class AnchorManager:
 
         from src.config import get_settings
 
-        settings = get_settings()
+        get_settings()
         try:
             raw_vec = call_dashscope_embedding(text)
             return self._reduce_dim(raw_vec, target_dim)
@@ -230,8 +229,6 @@ class AnchorManager:
         if len(vec) <= target_dim:
             return vec + [0.0] * (target_dim - len(vec))
         try:
-            import numpy as np
-
             reduced = _random_projection(vec, target_dim)
             return reduced
         except ImportError:
@@ -256,7 +253,6 @@ def _ms_time() -> int:
 
 
 def call_dashscope_embedding(text: str) -> list[float]:
-    import numpy as np
     from dashscope import TextEmbedding
 
     resp = TextEmbedding.call(

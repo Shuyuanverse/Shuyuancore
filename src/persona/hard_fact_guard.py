@@ -1,9 +1,10 @@
 from __future__ import annotations
-import json
+
 import logging
 from typing import Optional
 from uuid import uuid4
-from src.core.interfaces import IBeliefStore, Belief
+
+from src.core.interfaces import Belief, IBeliefStore
 
 logger = logging.getLogger(__name__)
 

@@ -1,9 +1,10 @@
 from __future__ import annotations
-from src.persona.profile import PersonaProfile, StyleDimensions
-from src.persona.style_encoder import StyleEncoder
+
 from src.persona.anchor_manager import AnchorManager
-from src.persona.identity_prompt import IdentityPromptBuilder
 from src.persona.hard_fact_guard import HardFactGuard
+from src.persona.identity_prompt import IdentityPromptBuilder
+from src.persona.profile import PersonaProfile
+from src.persona.style_encoder import StyleEncoder
 
 
 class PersonaCompiler:

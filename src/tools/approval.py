@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from src.security.approval import get_approval_manager, ApprovalRequest
 from src.config import get_settings
+from src.security.approval import ApprovalRequest, get_approval_manager
 
 
 async def request_approval(

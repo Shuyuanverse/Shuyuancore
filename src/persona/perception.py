@@ -1,7 +1,8 @@
 from __future__ import annotations
-from dataclasses import dataclass, field
-from typing import Optional
+
+from dataclasses import dataclass
 from difflib import SequenceMatcher
+from typing import Optional
 
 REPEAT_SIMILARITY_THRESHOLD = 0.7
 PATIENCE_DECAY_PER_REPEAT = 0.15

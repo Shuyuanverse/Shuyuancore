@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import json
 import re
 import uuid
 from collections import deque
@@ -9,7 +8,6 @@ from typing import Any
 import yaml
 
 from src.skills.models import SkillNode
-
 
 _L0_PATTERN = re.compile(r"^##\s+因果链\s*$", re.MULTILINE)
 _L1_PATTERN = re.compile(r"^##\s+完整因果链\s*$", re.MULTILINE)
@@ -33,10 +31,8 @@ def parse_markdown_to_node(md_content: str) -> dict[str, Any]:
     lines = md_content.split("\n")
     front_matter: dict[str, Any] = {}
     body_lines: list[str] = []
-    in_front = False
 
     if lines and lines[0].strip() == "---":
-        in_front = True
         end_idx = -1
         for i in range(1, len(lines)):
             if lines[i].strip() == "---":

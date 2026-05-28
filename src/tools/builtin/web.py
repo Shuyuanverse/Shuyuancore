@@ -5,9 +5,9 @@ import re
 import time
 import urllib.parse
 from typing import Any
+from urllib.robotparser import RobotFileParser
 
 import httpx
-from urllib.robotparser import RobotFileParser
 
 from src.config import get_settings
 from src.security.audit import get_audit_logger

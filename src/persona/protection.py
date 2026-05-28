@@ -1,8 +1,10 @@
 from __future__ import annotations
-import math
+
 import logging
-from dataclasses import dataclass, field
+import math
+from dataclasses import dataclass
 from typing import Optional
+
 from src.persona.profile import PersonaProfile
 
 logger = logging.getLogger(__name__)

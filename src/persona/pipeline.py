@@ -1,9 +1,11 @@
 from __future__ import annotations
+
 import asyncio
 import logging
 from typing import Optional
-from src.persona.profile import PersonaProfile
+
 from src.persona.perception import PerceptionResult
+from src.persona.profile import PersonaProfile
 
 logger = logging.getLogger(__name__)
 

@@ -7,7 +7,6 @@ import httpx
 
 from src.tools.interfaces import ITool, ToolParameter, ToolResult, ToolSpec
 
-
 GOOGLE_TRANSLATE_URL = (
     "https://translate.googleapis.com/translate_a/single"
     "?client=gtx&sl={source}&tl={target}&dt=t&q={text}"

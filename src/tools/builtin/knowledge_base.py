@@ -11,7 +11,6 @@ import httpx
 
 from src.tools.interfaces import ITool, ToolParameter, ToolResult, ToolSpec
 
-
 VALID_PROVIDERS = frozenset({"local", "notion", "yuque", "obsidian"})
 
 VALID_ACTIONS = frozenset({"list", "read", "write", "search"})
