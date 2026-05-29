@@ -7,7 +7,7 @@ import pytest
 
 from src.core.interfaces import Belief
 
-pytest.skip("AnchorManager was renamed to AnchorVersionManager - test needs API update", allow_module_level=True)
+pytest.skip("test uses old AnchorManager API (methods like _expand_7d_to_128d no longer exist)", allow_module_level=True)
 
 
 @dataclass

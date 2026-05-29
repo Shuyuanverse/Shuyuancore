@@ -548,3 +548,7 @@ class AnchorSimilarityService:
             "style_similarity": style_sim,
             "combined_similarity": combined_sim,
         }
+
+
+# 向后兼容别名 — 文档中引用为 AnchorManager，实际类名为 AnchorVersionManager
+AnchorManager = AnchorVersionManager

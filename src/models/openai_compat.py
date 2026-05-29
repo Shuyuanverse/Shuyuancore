@@ -273,7 +273,31 @@ class OllamaProvider(OpenAICompatProvider):
         texts: list[str],
         model: str | None = None,
     ) -> EmbeddingResult:
-        raise NotImplementedError("Ollama provider does not support embedding via this interface")
+        ollama_model = model or self._model
+        ollama_url = f"{self._base_url}/api/embed"
+
+        payload: dict[str, Any] = {
+            "model": ollama_model,
+            "input": texts,
+        }
+        headers: dict[str, str] = {"Content-Type": "application/json"}
+
+        import httpx
+
+        async with httpx.AsyncClient(
+            timeout=httpx.Timeout(self._client._timeout, connect=self._client._connect_timeout),
+        ) as client:
+            response = await client.post(ollama_url, headers=headers, json=payload)
+            response.raise_for_status()
+            data: dict[str, Any] = response.json()
+
+        vectors: list[list[float]] = data.get("embeddings", [])
+        dimensions = len(vectors[0]) if vectors else 0
+        return EmbeddingResult(
+            vectors=vectors,
+            model_used=data.get("model", ollama_model),
+            dimensions=dimensions,
+        )
 
     async def check_health(self) -> HealthStatus:
         import httpx

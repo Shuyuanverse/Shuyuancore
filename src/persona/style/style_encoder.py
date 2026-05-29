@@ -71,15 +71,10 @@ class StyleEncoder:
         "creative_expression": "创意表达",
     }
 
-    def encode(self, result: StyleExtractionResult) -> StyleProfile:
-        """从风格提取结果编码为风格画像。
+    def encode(self, result: StyleExtractionResult | str) -> StyleProfile:
+        if isinstance(result, str):
+            result = self._extract_from_text(result)
 
-        Args:
-            result: 风格提取结果
-
-        Returns:
-            StyleProfile: 7 维风格画像
-        """
         dimensions = self._compute_dimensions(result)
         overall_score = self._calculate_overall_score(dimensions)
         style_type = self._classify_style_type(dimensions)
@@ -91,6 +86,77 @@ class StyleEncoder:
             style_type=style_type,
             confidence=confidence,
             raw_result=result,
+        )
+
+    def _extract_from_text(self, text: str) -> StyleExtractionResult:
+        import jieba
+
+        num_sentences = max(text.count("。") + text.count("！") + text.count("？"), 1)
+        words = list(jieba.cut(text))
+        num_words = len(words)
+        unique_words = len(set(words))
+        ttr = unique_words / num_words if num_words else 0
+
+        catchphrases: dict[str, float] = {}
+        for phrase, freq in __import__("collections").Counter(words).most_common(10):
+            catchphrases[phrase] = freq / num_words if num_words else 0
+
+        sentences = [s.strip() for s in text.replace("！", "。").replace("？", "。").split("。") if s.strip()]
+        sentence_patterns: dict[str, float] = {
+            "declarative": text.count("。") / num_sentences,
+            "interrogative": text.count("？") / num_sentences,
+            "exclamatory": text.count("！") / num_sentences,
+            "short": (
+                sum(1 for s in sentences if len(s) < 10) / len(sentences)
+                if sentences
+                else 0
+            ),
+            "long": (
+                sum(1 for s in sentences if 20 <= len(s) < 40) / len(sentences)
+                if sentences
+                else 0
+            ),
+            "medium": (
+                sum(1 for s in sentences if 10 <= len(s) < 20) / len(sentences)
+                if sentences
+                else 0
+            ),
+            "very_long": 0.0,
+        }
+
+        punct_habits: dict[str, float] = {
+            "。": text.count("。") / len(text) if text else 0,
+            "，": text.count("，") / len(text) if text else 0,
+            "！": text.count("！") / len(text) if text else 0,
+            "？": text.count("？") / len(text) if text else 0,
+            "～": text.count("～") / len(text) if text else 0,
+        }
+
+        vocab_metrics: dict[str, float] = {
+            "ttr": ttr,
+            "hapax_ratio": (
+                len([w for w in words if words.count(w) == 1]) / num_words
+            )
+            if num_words
+            else 0,
+            "avg_word_length": sum(len(w) for w in words) / num_words if num_words else 0,
+            "punctuation_complexity": 0.1,
+        }
+
+        syntactic_features: dict[str, float] = {
+            "subordinate_ratio": 0.3,
+        }
+
+        return StyleExtractionResult(
+            catchphrases=catchphrases,
+            sentence_patterns=sentence_patterns,
+            punctuation_habits=punct_habits,
+            vocabulary_metrics=vocab_metrics,
+            syntactic_features=syntactic_features,
+            raw_features={},
+            num_sentences=num_sentences,
+            num_words=num_words,
+            total_chars=len(text),
         )
 
     def _compute_dimensions(self, result: StyleExtractionResult) -> Dict[str, StyleDimension]:

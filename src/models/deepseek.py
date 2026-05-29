@@ -129,7 +129,23 @@ class DeepSeekProvider(IModelProvider):
         texts: list[str],
         model: str | None = None,
     ) -> EmbeddingResult:
-        raise NotImplementedError("DeepSeek does not support embedding")
+        payload: dict[str, Any] = {
+            "model": model or "deepseek-embedding",
+            "input": texts,
+        }
+        response = await self._client.post("/embeddings", payload)
+        data: dict[str, Any] = response.json()
+
+        vectors: list[list[float]] = []
+        for item in data.get("data", []):
+            vectors.append(item["embedding"])
+
+        dimensions = len(vectors[0]) if vectors else 0
+        return EmbeddingResult(
+            vectors=vectors,
+            model_used=data.get("model", model or "deepseek-embedding"),
+            dimensions=dimensions,
+        )
 
     async def check_health(self) -> HealthStatus:
         start = time.monotonic()

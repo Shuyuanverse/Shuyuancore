@@ -50,50 +50,65 @@ class StyleProtectionPipeline:
         drift = self._cosine_distance(response_vec, profile.style_anchor_vector)
         result.drift_score = drift
 
+        pid = profile.persona_id
+
         if drift < self.config.review_drift_threshold:
+            _DRIFT_COUNTER[pid] = 0
             return result
 
         if drift < self.config.drift_threshold:
+            _DRIFT_COUNTER[pid] = 0
             result.alert_level = "slight"
-            logger.info("[protection] 轻微漂移: %.4f (persona=%s)", drift, profile.persona_id)
+            logger.info("[protection] 轻微漂移: %.4f (persona=%s)", drift, pid)
             return result
 
-        result.alert_level = "moderate"
+        count = _DRIFT_COUNTER.get(pid, 0) + 1
+        _DRIFT_COUNTER[pid] = count
+
         result.passed = False
         result.calibration_prompt = self._build_calibration_prompt(drift, profile)
 
-        pid = profile.persona_id
-        count = _DRIFT_COUNTER.get(pid, 0) + 1
-        _DRIFT_COUNTER[pid] = count
         if count >= _SEVERE_ALERT_THRESHOLD:
             result.alert_level = "severe"
-            logger.warning("[protection] 严重漂移告警: %d 次连续漂移 (persona=%s)", count, pid)
+            result.calibration_prompt = (
+                "【强制风格校准】已连续 %d 次检测到严重风格漂移（当前漂移: %.2f）。"
+                "请严格遵守以下风格特征回复，不允许偏离：\n%s"
+            ) % (count, drift, profile.style_dimensions.to_prompt_text())
+            logger.warning(
+                "[protection] 强制校准触发: %d 次连续漂移 (persona=%s, drift=%.4f)",
+                count, pid, drift,
+            )
+            _DRIFT_COUNTER[pid] = 0
+        else:
+            result.alert_level = "moderate"
 
         if perception is not None:
             result.adjusted_response = self._adjust_response(response_text, result, perception)
 
         logger.info(
-            "[protection] drift=%.4f level=%s persona=%s",
+            "[protection] drift=%.4f level=%s persona=%s counter=%d",
             drift,
             result.alert_level,
-            profile.persona_id,
+            pid,
+            count,
         )
         return result
 
     def _extract_style_vector(self, text: str) -> list[float]:
-        from src.persona.style_encoder import StyleEncoder
+        from src.persona.style.style_encoder import StyleEncoder, StyleDimension
 
         encoder = StyleEncoder()
-        dims = encoder.encode(text)
+        profile = encoder.encode(text)
         raw = [
-            dims.formality,
-            dims.warmth,
-            dims.directness,
-            dims.playfulness,
-            dims.detail_orientation,
-            dims.emotional_expression,
-            dims.pace,
+            profile.dimensions.get("colloquial", StyleDimension(name="colloquial", value=0.5)).value,
+            profile.dimensions.get("formal", StyleDimension(name="formal", value=0.5)).value,
+            profile.dimensions.get("emotional", StyleDimension(name="emotional", value=0.5)).value,
+            profile.dimensions.get("interactive", StyleDimension(name="interactive", value=0.5)).value,
+            profile.dimensions.get("logical", StyleDimension(name="logical", value=0.5)).value,
+            profile.dimensions.get("concise", StyleDimension(name="concise", value=0.5)).value,
+            profile.dimensions.get("expressive", StyleDimension(name="expressive", value=0.5)).value,
         ]
+
         import numpy as np
 
         seed = int(sum(raw) * 1e6) % (2**31)
