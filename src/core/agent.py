@@ -99,12 +99,18 @@ class Agent:
             db_path="data/state.db",
             belief_store=self._belief_store,
             review_agent=self._review_agent,
+            llm=model_provider,
         )
         self._fusion_check_task: Optional[asyncio.Task] = None
 
-        # 启动后台定期扫描任务
+        # 启动后台定期扫描任务（仅当已有运行中的事件循环时）
         if self._settings.evolution.enable_auto_evolution:
-            self._fusion_check_task = asyncio.create_task(self._periodic_evolution_scan())
+            try:
+                loop = asyncio.get_running_loop()
+            except RuntimeError:
+                loop = None
+            if loop is not None:
+                self._fusion_check_task = loop.create_task(self._periodic_evolution_scan())
 
     def set_dangerous_tools(self, tool_names: list[str]) -> None:
         self._dangerous_tools = set(tool_names)
@@ -574,7 +580,7 @@ class Agent:
 
         # 检查每对模块的协作次数
         for i, module_a in enumerate(active_modules):
-            for module_b in active_modules[i + 1 :]:
+            for module_b in active_modules[i+1:]:
                 try:
                     collab_count = await self._module_manager.get_collaboration_count(
                         module_a["id"],
@@ -596,12 +602,7 @@ class Agent:
                             module_a["id"],
                             module_b["id"],
                         )
-                        logger.info(
-                            "Fused modules: %s + %s -> %s",
-                            module_a["name"],
-                            module_b["name"],
-                            fused_id,
-                        )
+                        logger.info("Fused modules: %s + %s -> %s", module_a["name"], module_b["name"], fused_id)
 
                 except ValueError as e:
                     logger.warning("Failed to fuse modules: %s", e)

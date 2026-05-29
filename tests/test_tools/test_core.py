@@ -5,6 +5,7 @@ from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
+import pytest_asyncio
 
 from src.security.approval import get_approval_manager
 from src.security.audit import get_audit_logger
@@ -128,12 +129,11 @@ class TestToolResultToDict:
 class TestApproval:
 
     @pytest.fixture(autouse=True)
-    async def _reset_approval_manager(self) -> None:
-        from src.security.approval import _managers
+    def _isolated_approval_db(self, tmp_path, monkeypatch) -> None:
+        import src.security.approval as approval_mod
 
-        for mgr in list(_managers.values()):
-            await mgr.cleanup(max_age=0)
-        _managers.clear()
+        monkeypatch.setattr(approval_mod, "_DB_PATH", str(tmp_path / "approvals.db"))
+        approval_mod._managers.clear()
 
     @pytest.mark.asyncio
     async def test_approval_request_and_resolve(self) -> None:
@@ -371,10 +371,12 @@ class TestSandbox:
 class TestRegistry:
 
     @pytest.fixture(autouse=True)
-    async def _reset_registry(self) -> None:
+    def _reset_registry(self, tmp_path, monkeypatch) -> None:
+        import src.security.approval as approval_mod
+
+        monkeypatch.setattr(approval_mod, "_DB_PATH", str(tmp_path / "registry_approvals.db"))
+        approval_mod._managers.clear()
         self.registry = ToolRegistry()
-        mgr = await get_approval_manager()
-        mgr._events.clear()
         get_audit_logger()._cache.clear()
 
     @pytest.mark.asyncio

@@ -327,13 +327,14 @@ _managers: dict[str, ApprovalManager] = {}
 _manager_lock = asyncio.Lock()
 
 
-async def get_approval_manager(db_path: str = _DB_PATH) -> ApprovalManager:
+async def get_approval_manager(db_path: str | None = None) -> ApprovalManager:
+    path = _DB_PATH if db_path is None else db_path
     async with _manager_lock:
-        if db_path not in _managers:
-            mgr = ApprovalManager(db_path=db_path)
+        if path not in _managers:
+            mgr = ApprovalManager(db_path=path)
             await mgr.initialize()
-            _managers[db_path] = mgr
-        return _managers[db_path]
+            _managers[path] = mgr
+        return _managers[path]
 
 
 def get_approval_manager_sync(db_path: str = _DB_PATH) -> ApprovalManager:
