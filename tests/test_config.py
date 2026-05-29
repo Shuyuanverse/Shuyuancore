@@ -175,13 +175,13 @@ class TestPersonaConfig:
 class TestEvolutionConfig:
     def test_default_values(self) -> None:
         config = EvolutionConfig()
-        assert config.max_active_modules == 5
-        assert config.trigger_days == 7
-        assert config.trigger_count == 40
+        assert config.birth_threshold == 40
+        assert config.birth_window_days == 7
+        assert config.fusion_threshold == 3
 
-    def test_max_active_modules_locked(self) -> None:
+    def test_birth_threshold_locked(self) -> None:
         with pytest.raises(ValidationError):
-            EvolutionConfig(max_active_modules=10)
+            EvolutionConfig(birth_threshold=50)
 
 
 class TestEmbeddingConfig:

@@ -1,11 +1,3 @@
-# Copyright 2026 ShuyuanCore contributors
-# SPDX-License-Identifier: Apache-2.0
-
-"""LLM Provider 工厂函数。
-
-提供全局函数获取配置好的模型提供者实例。
-"""
-
 from __future__ import annotations
 
 import logging
@@ -36,39 +28,55 @@ def get_model_provider() -> IModelProvider:
         return _provider_cache
 
     cfg = get_settings()
+    providers_cfg = cfg.models.providers
 
-    # 根据配置选择提供者
-    # 默认使用 DashScope
-    try:
-        from src.models.dashscope import DashScopeProvider
+    if not providers_cfg:
+        raise RuntimeError("No model providers configured")
 
-        provider: IModelProvider = DashScopeProvider(
-            api_key=cfg.dashscope.api_key,
-            base_url=cfg.dashscope.base_url,
-        )
+    for provider_name, provider_cfg in providers_cfg.items():
+        if not provider_cfg.api_key and provider_name not in ("ollama",):
+            continue
+        if not provider_cfg.model and not provider_cfg.api_key:
+            continue
 
-        logger.info("Initialized DashScope provider")
-        _provider_cache = provider
-        return provider
+        if provider_name == "dashscope":
+            from src.models.dashscope import DashScopeProvider
 
-    except ImportError:
-        logger.warning("DashScope not available, trying DeepSeek")
-
-        try:
+            provider: IModelProvider = DashScopeProvider(
+                api_key=provider_cfg.api_key,
+                base_url=provider_cfg.base_url,
+                model=provider_cfg.model,
+                embedding_model=provider_cfg.embedding_model,
+            )
+        elif provider_name == "deepseek":
             from src.models.deepseek import DeepSeekProvider
 
             provider = DeepSeekProvider(
-                api_key=cfg.deepseek.api_key,
-                base_url=cfg.deepseek.base_url,
+                api_key=provider_cfg.api_key,
+                base_url=provider_cfg.base_url,
+                model=provider_cfg.model,
+            )
+        elif provider_name == "ollama":
+            from src.models.openai_compat import OllamaProvider
+
+            provider = OllamaProvider(
+                base_url=provider_cfg.base_url,
+                model=provider_cfg.model,
+            )
+        else:
+            from src.models.openai_compat import OpenAICompatProvider
+
+            provider = OpenAICompatProvider(
+                api_key=provider_cfg.api_key,
+                base_url=provider_cfg.base_url,
+                model=provider_cfg.model,
             )
 
-            logger.info("Initialized DeepSeek provider")
-            _provider_cache = provider
-            return provider
+        logger.info("Initialized %s provider", provider_name)
+        _provider_cache = provider
+        return provider
 
-        except ImportError:
-            logger.error("No LLM provider available")
-            raise RuntimeError("No LLM provider available")
+    raise RuntimeError("No usable model provider found")
 
 
 def reset_provider_cache() -> None:

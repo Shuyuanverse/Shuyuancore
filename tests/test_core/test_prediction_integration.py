@@ -51,6 +51,14 @@ class MockBeliefStore(IBeliefStore):
     async def propagate_confidence(self, belief_id: str, delta: float, visited: set[str] | None = None) -> None:
         pass
 
+    async def get_similar_task_count(
+        self,
+        query: str,
+        days: int = 7,
+        similarity_threshold: float = 0.8,
+    ) -> int:
+        return 0
+
     async def overthrow(self, old_id: str, new_id: str, reason: str) -> None:
         pass
 
@@ -61,13 +69,14 @@ async def agent():
     model_provider = MagicMock(spec=IModelProvider)
     belief_store = MockBeliefStore()
     reader = MagicMock(spec=IReader)
-    
-    agent = Agent(
-        model_provider=model_provider,
-        belief_store=belief_store,
-        reader=reader,
-    )
-    
+
+    with patch("src.evolution.module_manager.get_model_provider", return_value=model_provider):
+        agent = Agent(
+            model_provider=model_provider,
+            belief_store=belief_store,
+            reader=reader,
+        )
+
     # 覆盖为测试配置
     agent._settings = Settings(
         prediction=PredictionConfig(
@@ -75,9 +84,9 @@ async def agent():
             idle_timeout_seconds=1,
             confidence_threshold=0.7,
             max_idle_checks_per_conversation=3,
-        )
+        ),
     )
-    
+
     return agent
 
 

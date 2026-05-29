@@ -3,10 +3,16 @@ from __future__ import annotations
 import json
 import os
 import tempfile
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import aiosqlite
 import pytest
-from unittest.mock import AsyncMock, MagicMock
+
+
+@pytest.fixture(autouse=True)
+def _patch_model_provider():
+    with patch("src.evolution.module_manager.get_model_provider"):
+        yield
 
 
 class MockBelief:
