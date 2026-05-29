@@ -231,14 +231,4 @@ ShuyuanCore/
 
 本项目采用 [Apache License 2.0](LICENSE) 开源许可证。
 
----
-
-## 与 ShuyuanVerse 的关系
-
-- **ShuyuanVerse**：数字分身产品，专注人格编译和风格保持，已在 ECS 部署运行
-- **ShuyuanCore**：通用 Agent 框架，支持六层记忆、因果技能图、多智能体协作等
-- 两者定位不同：ShuyuanVerse 是垂直产品，ShuyuanCore 是通用框架；ShuyuanCore 从零新建，不复用 ShuyuanVerse 代码
-
----
-
 *ShuyuanCore — 让 AI 从"工具"进化为"智能伙伴"。*
