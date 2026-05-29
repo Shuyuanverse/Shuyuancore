@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from typing import Any, AsyncIterator
+from unittest.mock import patch
 
 import pytest
 
@@ -59,16 +60,22 @@ class MockStreamProvider(IModelProvider):
 
 class TestAgent:
 
+    @pytest.fixture(autouse=True)
+    def _patch_provider(self) -> None:
+        with patch("src.evolution.module_manager.get_model_provider"):
+            yield
+
     def _make_agent(
         self, provider: IModelProvider
     ) -> Agent:
         store = BeliefStore()
         reader = Reader(store)
-        return Agent(
-            model_provider=provider,
-            belief_store=store,
-            reader=reader,
-        )
+        with patch("src.evolution.module_manager.get_model_provider"):
+            return Agent(
+                model_provider=provider,
+                belief_store=store,
+                reader=reader,
+            )
 
     @pytest.mark.asyncio
     async def test_chat_stream_basic(self) -> None:

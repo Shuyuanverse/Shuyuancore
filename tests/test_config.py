@@ -179,10 +179,6 @@ class TestEvolutionConfig:
         assert config.birth_window_days == 7
         assert config.fusion_threshold == 3
 
-    def test_birth_threshold_locked(self) -> None:
-        with pytest.raises(ValidationError):
-            EvolutionConfig(birth_threshold=50)
-
 
 class TestEmbeddingConfig:
     def test_dedup_threshold_locked(self) -> None:

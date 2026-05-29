@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from typing import Any, AsyncIterator
+from unittest.mock import patch
 
 import pytest
 
@@ -118,6 +119,11 @@ class AlwaysToolProvider(IModelProvider):
 
 
 class TestToolIntegration:
+
+    @pytest.fixture(autouse=True)
+    def _patch_provider(self) -> None:
+        with patch("src.evolution.module_manager.get_model_provider"):
+            yield
 
     @pytest.mark.asyncio
     async def test_tool_call_via_done_event(self) -> None:
