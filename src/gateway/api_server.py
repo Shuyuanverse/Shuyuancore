@@ -7,6 +7,9 @@ import uuid
 from collections.abc import AsyncIterator
 from typing import Any
 
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, StreamingResponse
@@ -189,10 +192,8 @@ def create_app(
     if belief_store is not None:
         set_belief_store(belief_store)
 
-    app = FastAPI(title="ShuyuanCore", version="1.0.0")
-
-    @app.on_event("startup")
-    async def _notify_systemd():
+    @asynccontextmanager
+    async def _lifespan(_app: FastAPI) -> AsyncIterator[None]:
         try:
             from systemd import daemon as sd_daemon  # type: ignore[import-untyped]
 
@@ -202,6 +203,9 @@ def create_app(
             logger.debug("systemd-python not available, skipping sd_notify")
         except Exception:
             logger.exception("systemd notification failed")
+        yield
+
+    app = FastAPI(title="ShuyuanCore", version="1.0.0", lifespan=_lifespan)
 
     settings = get_settings()
     if settings.security.cursor_secret:

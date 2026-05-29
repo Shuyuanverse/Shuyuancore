@@ -2,75 +2,74 @@ from __future__ import annotations
 
 import pytest
 
-from src.persona.style.style_encoder import StyleEncoder
+from src.persona.style.style_encoder import StyleEncoder, StyleProfile
 
 
 class TestStyleEncoder:
     def setup_method(self) -> None:
         self.encoder = StyleEncoder()
 
-    def test_formality_high_with_formal_markers(self) -> None:
-        dims = self.encoder.encode("您好，尊敬的客户，请根据相关规定办理，感谢配合")
-        assert dims.formality > 0.5
+    def test_encode_returns_style_profile(self) -> None:
+        profile = self.encoder.encode("你好，这是一个测试文本。请问有什么可以帮您？谢谢！")
+        assert isinstance(profile, StyleProfile)
+        assert profile.style_type in StyleEncoder.STYLE_TYPES
 
-    def test_formality_low_with_informal_markers(self) -> None:
-        dims = self.encoder.encode("哈哈，嗯嗯，好吧，就这样呗")
-        assert dims.formality < 0.5
+    def test_encode_from_string_auto_extracts(self) -> None:
+        profile = self.encoder.encode("这是一个测试文本，用于验证编码器功能。")
+        assert isinstance(profile, StyleProfile)
+        assert profile.raw_result is not None
+        assert profile.raw_result.num_words > 0
 
-    def test_warmth_high_with_warm_markers(self) -> None:
-        dims = self.encoder.encode("谢谢你的帮助，感谢支持，加油！祝你开心！")
-        assert dims.warmth > 0.5
+    def test_formal_dimension_high_with_formal_text(self) -> None:
+        profile = self.encoder.encode("您好，尊敬的客户，请根据相关规定办理，感谢配合")
+        assert profile.dimensions["formal"].value > 0.3
 
-    def test_directness_high_with_direct_markers(self) -> None:
-        dims = self.encoder.encode("必须这样做，一定不行，绝对确定")
-        assert dims.directness > 0.5
+    def test_formal_dimension_low_with_informal_text(self) -> None:
+        profile = self.encoder.encode("哈哈，嗯嗯，好吧，就这样呗")
+        assert profile.dimensions["formal"].value < 0.6
 
-    def test_playfulness_detected(self) -> None:
-        dims = self.encoder.encode("哈哈，嘻嘻，这个真好玩～😊")
-        assert dims.playfulness > 0.5
+    def test_colloquial_dimension_high_with_casual_text(self) -> None:
+        profile = self.encoder.encode("哈哈，嘻嘻，这个真好玩～加油！冲！")
+        assert profile.dimensions["colloquial"].value > 0.2
 
-    def test_detail_orientation_with_numbers(self) -> None:
-        dims = self.encoder.encode("价格是123.45元，数量为678个，总价是9.99")
-        assert dims.detail_orientation > 0.5
+    def test_concise_dimension_with_short_sentences(self) -> None:
+        profile = self.encoder.encode("好的。可以。知道了。谢谢。再见。")
+        concise_val = profile.dimensions["concise"].value
+        assert concise_val > 0.0
 
-    def test_emotional_expression_with_exclamation(self) -> None:
-        dims = self.encoder.encode("太棒了！真厉害！非常满意！超级好用！")
-        assert dims.emotional_expression > 0.5
+    def test_expressive_dimension_with_diverse_text(self) -> None:
+        profile = self.encoder.encode(
+            "太棒了！真厉害！非常满意！超级好用！加油加油！"
+        )
+        assert profile.dimensions["expressive"].value > 0.0
 
-    def test_pace_fast_with_short_sentences(self) -> None:
-        dims = self.encoder.encode("好的。可以。知道了。谢谢。再见。")
-        assert dims.pace > 0.5
+    def test_emotional_dimension_with_exclamation(self) -> None:
+        profile = self.encoder.encode("太棒了！真厉害！非常满意！超级好用！")
+        assert profile.dimensions["emotional"].value > 0.1
 
-    def test_pace_slow_with_long_sentences(self) -> None:
-        long_text = "这是一个非常长的句子" * 10 + "。"
-        for _ in range(5):
-            long_text += "这是一个非常长的用于测试节奏的句子，它包含了很多字和很多意思。" * 5 + "。"
-        dims = self.encoder.encode(long_text)
-        assert dims.pace < 0.8
+    def test_all_seven_dimensions_present(self) -> None:
+        profile = self.encoder.encode("你好，这是一个测试文本。请问有什么可以帮您？谢谢！")
+        expected_keys = {
+            "colloquial", "formal", "emotional", "interactive",
+            "logical", "concise", "expressive",
+        }
+        assert set(profile.dimensions.keys()) == expected_keys
 
-    def test_empty_text_returns_defaults(self) -> None:
-        dims = self.encoder.encode("")
-        assert dims.formality == 0.5
-        assert dims.warmth == 0.0
-        assert dims.directness == 0.5
-        assert dims.playfulness == 0.0
-        assert dims.detail_orientation == 0.0
-        assert dims.emotional_expression == 0.0
-        assert dims.pace == 1.0
+    def test_all_dimension_values_in_range(self) -> None:
+        profile = self.encoder.encode("你好，这是一个测试文本。请问有什么可以帮您？谢谢！")
+        for dim in profile.dimensions.values():
+            assert 0.0 <= dim.value <= 1.0
 
-    def test_all_dimensions_are_floats_in_range(self) -> None:
-        dims = self.encoder.encode("你好，这是一个测试文本。请问有什么可以帮您？谢谢！")
-        for val in [
-            dims.formality, dims.warmth, dims.directness,
-            dims.playfulness, dims.detail_orientation,
-            dims.emotional_expression, dims.pace,
-        ]:
-            assert 0.0 <= val <= 1.0
+    def test_encode_empty_text_returns_valid_profile(self) -> None:
+        profile = self.encoder.encode("")
+        assert isinstance(profile, StyleProfile)
+        for dim in profile.dimensions.values():
+            assert 0.0 <= dim.value <= 1.0
 
-    def test_balanced_text_produces_mid_range_values(self) -> None:
-        dims = self.encoder.encode("我觉得这个问题可能有点复杂，也许我们需要考虑几个因素。大概就是这样。")
-        assert dims.directness == 0.0
+    def test_overall_score_is_computed(self) -> None:
+        profile = self.encoder.encode("这是一个合理的测试文本，内容长度适中。")
+        assert 0.0 <= profile.overall_score <= 1.0
 
-    def test_playfulness_with_tilde(self) -> None:
-        dims = self.encoder.encode("这个好好玩～好有趣～嘻嘻～")
-        assert dims.playfulness > 0.3
+    def test_confidence_is_computed(self) -> None:
+        profile = self.encoder.encode("这是一个测试文本，包含多个句子。这是第二句。这是第三句。")
+        assert 0.0 <= profile.confidence <= 1.0

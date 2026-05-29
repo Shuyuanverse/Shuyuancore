@@ -26,7 +26,7 @@ CATEGORY|内容
 
 
 class HardFactGuard:
-    def __init__(self, belief_store: IBeliefStore):
+    def __init__(self, belief_store: IBeliefStore | None = None):
         self._belief_store = belief_store
 
     async def extract_from_core_md(self, core_md: str, persona_id: str) -> list[str]:
@@ -84,6 +84,8 @@ class HardFactGuard:
         return belief_ids
 
     async def _check_duplicate(self, content: str) -> Optional[str]:
+        if self._belief_store is None:
+            return None
         results = await self._belief_store.search_similar(query=content, top_k=5)
         for r in results:
             if isinstance(r, Belief) and r.content == content and r.confidence > 0.9:

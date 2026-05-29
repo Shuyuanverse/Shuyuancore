@@ -99,6 +99,10 @@ class TestSlightDrift:
 
 
 class TestModerateDrift:
+    def setup_method(self) -> None:
+        from src.persona.protection import _DRIFT_COUNTER
+        _DRIFT_COUNTER.clear()
+
     def test_moderate_drift_above_drift_threshold(self) -> None:
         pipeline = ControlledPipeline(
             ProtectionConfig(review_drift_threshold=0.15, drift_threshold=0.25),
@@ -140,6 +144,10 @@ class TestModerateDrift:
 
 
 class TestSevereDrift:
+    def setup_method(self) -> None:
+        from src.persona.protection import _DRIFT_COUNTER
+        _DRIFT_COUNTER.clear()
+
     def test_severe_drift_after_three_consecutive(self) -> None:
         from src.persona.protection import _DRIFT_COUNTER
         _DRIFT_COUNTER.clear()
@@ -151,10 +159,10 @@ class TestSevereDrift:
         profile = _make_profile("test_severe")
         profile.style_anchor_vector = _make_alternating_anchor()
 
-        for _ in range(3):
-            pipeline.check_and_adjust("response", profile)
-
+        pipeline.check_and_adjust("response", profile)
+        pipeline.check_and_adjust("response", profile)
         result = pipeline.check_and_adjust("response", profile)
+
         assert result.alert_level == "severe"
 
     def test_severe_drift_reset_on_new_persona(self) -> None:
@@ -170,8 +178,8 @@ class TestSevereDrift:
         profile_b = _make_profile("persona_b")
         profile_b.style_anchor_vector = _make_alternating_anchor()
 
-        for _ in range(3):
-            pipeline.check_and_adjust("response", profile_a)
+        pipeline.check_and_adjust("response", profile_a)
+        pipeline.check_and_adjust("response", profile_a)
 
         result_b = pipeline.check_and_adjust("response", profile_b)
         assert result_b.alert_level == "moderate"

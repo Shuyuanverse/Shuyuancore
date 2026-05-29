@@ -11,8 +11,11 @@
 from __future__ import annotations
 
 import logging
+import time
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
+
+import numpy as np
 
 from src.persona.style.text_style import TextStyleAnalyzer
 from src.persona.style.style_encoder import StyleEncoder, StyleProfile
@@ -197,15 +200,21 @@ class PersonaCompiler:
 
             style_extraction = await self._text_analyzer.extract(combined_text)
             metadata.style_analysis_result = {
-                "sentence_count": len(style_extraction.sentence_features),
-                "avg_sentence_length": style_extraction.length_stats.get("mean", 0),
-                "ttr": style_extraction.lexical_diversity.get("ttr", 0),
-                "hapax_ratio": style_extraction.lexical_diversity.get("hapax_ratio", 0),
+                "sentence_count": len(style_extraction.sentence_patterns),
+                "avg_sentence_length": (
+                    style_extraction.total_chars / style_extraction.num_sentences
+                    if style_extraction.num_sentences
+                    else 0
+                ),
+                "ttr": style_extraction.vocabulary_metrics.get("ttr", 0),
+                "hapax_ratio": style_extraction.vocabulary_metrics.get("hapax_ratio", 0),
             }
             logger.info(
                 "[compiler] Step 1 完成：文本分析完成，句子数=%d, 平均长度=%.2f",
-                len(style_extraction.sentence_features),
-                style_extraction.length_stats.get("mean", 0),
+                len(style_extraction.sentence_patterns),
+                style_extraction.total_chars / style_extraction.num_sentences
+                if style_extraction.num_sentences
+                else 0,
             )
 
             # Step 2: 7 维风格画像编码
@@ -380,15 +389,21 @@ class PersonaCompiler:
 
             style_extraction = await self._text_analyzer.extract(input_text)
             metadata.style_analysis_result = {
-                "sentence_count": len(style_extraction.sentence_features),
-                "avg_sentence_length": style_extraction.length_stats.get("mean", 0),
-                "ttr": style_extraction.lexical_diversity.get("ttr", 0),
-                "hapax_ratio": style_extraction.lexical_diversity.get("hapax_ratio", 0),
+                "sentence_count": len(style_extraction.sentence_patterns),
+                "avg_sentence_length": (
+                    style_extraction.total_chars / style_extraction.num_sentences
+                    if style_extraction.num_sentences
+                    else 0
+                ),
+                "ttr": style_extraction.vocabulary_metrics.get("ttr", 0),
+                "hapax_ratio": style_extraction.vocabulary_metrics.get("hapax_ratio", 0),
             }
             logger.info(
                 "[compiler] Step 1 完成：文本分析完成，句子数=%d, 平均长度=%.2f",
-                len(style_extraction.sentence_features),
-                style_extraction.length_stats.get("mean", 0),
+                len(style_extraction.sentence_patterns),
+                style_extraction.total_chars / style_extraction.num_sentences
+                if style_extraction.num_sentences
+                else 0,
             )
 
             # Step 2: 7 维风格画像编码
@@ -472,9 +487,13 @@ class PersonaCompiler:
             values_profile = None
             if self.config.enable_value_translation:
                 values_profile = await self._semantic_translator.translate(
-                    core_md=core_md,
-                    style_profile=style_profile,
-                    persona_id=persona_id,
+                    style_vector=np.array(style_anchor.vector),
+                    decision_vector=np.array(decision_anchor.vector),
+                    persona_data={
+                        "persona_id": persona_id,
+                        "core_md": core_md,
+                    },
+                    language_samples=language_samples,
                 )
                 metadata.value_profile_generated = True
                 logger.info(

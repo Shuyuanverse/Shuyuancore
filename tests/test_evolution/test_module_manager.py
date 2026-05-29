@@ -16,6 +16,7 @@ import pytest_asyncio
 
 from src.config import EvolutionConfig
 from src.evolution.module_manager import ModuleManager
+from src.models.interfaces import ChatResult
 
 
 def _create_test_db():
@@ -80,7 +81,7 @@ async def mock_review_agent():
 async def mock_llm():
     """创建模拟 LLM Provider。"""
     llm = AsyncMock()
-    llm.chat = AsyncMock(return_value="Generated module prompt for testing.")
+    llm.chat = AsyncMock(return_value=ChatResult(content="Generated module prompt for testing."))
     return llm
 
 

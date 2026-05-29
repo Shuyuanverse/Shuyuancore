@@ -39,9 +39,20 @@ class TestDeepSeekProvider:
         assert result.model_used == "deepseek-chat"
 
     @pytest.mark.asyncio
-    async def test_embed_not_supported(self, provider: DeepSeekProvider) -> None:
-        with pytest.raises(NotImplementedError):
-            await provider.embed(texts=["hello"])
+    async def test_embed_success(self, provider: DeepSeekProvider) -> None:
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = {
+            "data": [{"embedding": [0.1, 0.2, 0.3]}],
+            "model": "deepseek-embedding",
+        }
+
+        with patch.object(provider._client, "post", return_value=mock_response):
+            result = await provider.embed(texts=["hello"])
+        assert len(result.vectors) == 1
+        assert result.vectors[0] == [0.1, 0.2, 0.3]
+        assert result.dimensions == 3
+        assert result.model_used == "deepseek-embedding"
 
     @pytest.mark.asyncio
     async def test_check_health_ok(self, provider: DeepSeekProvider) -> None:

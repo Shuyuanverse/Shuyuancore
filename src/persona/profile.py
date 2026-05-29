@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Any, Optional
 
 if TYPE_CHECKING:
     from .style.style_encoder import StyleProfile
@@ -81,3 +81,4 @@ class PersonaProfile:
     version: int = 1
     created_at: str = ""
     updated_at: str = ""
+    metadata: dict[str, Any] = field(default_factory=dict)

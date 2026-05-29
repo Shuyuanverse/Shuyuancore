@@ -114,9 +114,24 @@ class TestOllamaProvider:
         assert result.model_used == "llama3"
 
     @pytest.mark.asyncio
-    async def test_embed_not_supported(self, ollama: OllamaProvider) -> None:
-        with pytest.raises(NotImplementedError):
-            await ollama.embed(texts=["hello"])
+    async def test_embed_success(self, ollama: OllamaProvider) -> None:
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = {
+            "embeddings": [[0.1, 0.2, 0.3], [0.4, 0.5, 0.6]],
+            "model": "llama3",
+        }
+
+        with patch("httpx.AsyncClient") as mock_client_cls:
+            mock_client = AsyncMock()
+            mock_client_cls.return_value.__aenter__.return_value = mock_client
+            mock_client.post.return_value = mock_response
+
+            result = await ollama.embed(texts=["hello", "world"])
+        assert len(result.vectors) == 2
+        assert result.vectors[0] == [0.1, 0.2, 0.3]
+        assert result.vectors[1] == [0.4, 0.5, 0.6]
+        assert result.dimensions == 3
 
     @pytest.mark.asyncio
     async def test_check_health_ok(self, ollama: OllamaProvider) -> None:

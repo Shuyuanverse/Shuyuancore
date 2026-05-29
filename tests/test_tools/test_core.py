@@ -129,8 +129,11 @@ class TestApproval:
 
     @pytest.fixture(autouse=True)
     async def _reset_approval_manager(self) -> None:
-        mgr = await get_approval_manager()
-        mgr._events.clear()
+        from src.security.approval import _managers
+
+        for mgr in list(_managers.values()):
+            await mgr.cleanup(max_age=0)
+        _managers.clear()
 
     @pytest.mark.asyncio
     async def test_approval_request_and_resolve(self) -> None:
