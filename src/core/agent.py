@@ -580,7 +580,7 @@ class Agent:
 
         # 检查每对模块的协作次数
         for i, module_a in enumerate(active_modules):
-            for module_b in active_modules[i+1:]:
+            for module_b in active_modules[i + 1 :]:
                 try:
                     collab_count = await self._module_manager.get_collaboration_count(
                         module_a["id"],
@@ -602,7 +602,12 @@ class Agent:
                             module_a["id"],
                             module_b["id"],
                         )
-                        logger.info("Fused modules: %s + %s -> %s", module_a["name"], module_b["name"], fused_id)
+                        logger.info(
+                            "Fused modules: %s + %s -> %s",
+                            module_a["name"],
+                            module_b["name"],
+                            fused_id,
+                        )
 
                 except ValueError as e:
                     logger.warning("Failed to fuse modules: %s", e)
