@@ -48,7 +48,7 @@ from .agents import (
     # Coordinator
     CoordinatorConfig,
     DialogueCoordinator,
-    DialogueResult,
+    CoordinatedResult,
     WorkflowContext,
     CoordinatedResult,
     create_coordinator,
@@ -130,7 +130,7 @@ __all__ = [
     "VectorSpaceCorrector",
     "CoordinatorConfig",
     "DialogueCoordinator",
-    "DialogueResult",
+    "CoordinatedResult",
     "WorkflowContext",
     "CoordinatedResult",
     "create_coordinator",

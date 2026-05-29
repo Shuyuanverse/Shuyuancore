@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from src.persona.style_encoder import StyleEncoder
+from src.persona.style.style_encoder import StyleEncoder
 
 
 class TestStyleEncoder:

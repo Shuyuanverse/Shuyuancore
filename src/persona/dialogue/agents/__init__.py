@@ -47,9 +47,10 @@ from .arbitrate_agent import (
     VectorSpaceCorrector,
 )
 from .dialogue_coordinator import (
-    DialogueConfig,
+    CoordinatorConfig,
+    CoordinatedResult,
     DialogueCoordinator,
-    DialogueResult,
+    WorkflowContext,
     create_coordinator,
 )
 
@@ -83,8 +84,8 @@ __all__ = [
     "CorrectionStrategy",
     "VectorSpaceCorrector",
     # Coordinator
-    "DialogueConfig",
+    "CoordinatorConfig",
     "DialogueCoordinator",
-    "DialogueResult",
+    "CoordinatedResult",
     "create_coordinator",
 ]
