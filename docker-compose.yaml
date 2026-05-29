@@ -2,19 +2,71 @@ version: '3.8'
 
 services:
   shuyuancore:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: runtime
+    image: shuyuancore:latest
+    container_name: shuyuancore
     ports:
-      - "8005:8005"
+      - "${HOST_PORT:-8005}:8005"
     environment:
-      - DASHSCOPE_API_KEY=${DASHSCOPE_API_KEY}
-      - DEEPSEEK_API_KEY=${DEEPSEEK_API_KEY}
+      # API Keys (required)
+      - DASHSCOPE_API_KEY=${DASHSCOPE_API_KEY:-}
+      - DEEPSEEK_API_KEY=${DEEPSEEK_API_KEY:-}
+      # Configuration
+      - SHUYUANCORE_CONFIG=/app/config/default.yaml
+      - PYTHONUNBUFFERED=1
+      # Optional: Enable proactive prompting
+      - ENABLE_PROACTIVE=${ENABLE_PROACTIVE:-false}
     volumes:
+      # Persistent data
       - ./data:/app/data
-      - ./config:/app/config
+      # Optional: Custom configuration
+      - ./config:/app/config:ro
     restart: always
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8005/health"]
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 30s
+      start_period: 60s
+    networks:
+      - shuyuancore-network
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 2G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+
+  # Optional: CLI service (run on demand)
+  cli:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: runtime
+    image: shuyuancore:latest
+    container_name: shuyuancore-cli
+    entrypoint: ["/bin/sh", "-c"]
+    command: ["python -m src.gateway.cli_repl"]
+    environment:
+      - DASHSCOPE_API_KEY=${DASHSCOPE_API_KEY:-}
+      - DEEPSEEK_API_KEY=${DEEPSEEK_API_KEY:-}
+      - SHUYUANCORE_CONFIG=/app/config/default.yaml
+    volumes:
+      - ./data:/app/data
+      - ./config:/app/config:ro
+    networks:
+      - shuyuancore-network
+    profiles:
+      - cli
+
+networks:
+  shuyuancore-network:
+    driver: bridge
+
+volumes:
+  shuyuancore-data:
