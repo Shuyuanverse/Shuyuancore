@@ -1,20 +1,21 @@
 # Copyright 2026 ShuyuanCore contributors
 # SPDX-License-Identifier: Apache-2.0
-"""人格编译与风格保护模块。"""
+"""风格编码系统。
+
+完整的四层管线：文本分析→7 维画像→60 维向量→128 维锚点
+"""
 from __future__ import annotations
 
-from .profile import PersonaProfile, StyleDimensions
-from .style import (
+from .base import (
     BaseStyleExtractor,
     StyleConfig,
     StyleExtractionResult,
     StyleFeatureType,
-    TextStyleAnalyzer,
-    StyleDimension,
-    StyleEncoder,
-    StyleProfile,
-    StyleVector,
-    StyleVectorGenerator,
+)
+from .text_style import TextStyleAnalyzer
+from .style_encoder import StyleDimension, StyleEncoder, StyleProfile
+from .style_vector import StyleVector, StyleVectorGenerator
+from .style_anchor import (
     StyleAnchor,
     StyleAnchorEncoder,
     StyleAnchorManager,
@@ -23,8 +24,6 @@ from .style import (
 )
 
 __all__ = [
-    "PersonaProfile",
-    "StyleDimensions",
     "BaseStyleExtractor",
     "StyleConfig",
     "StyleExtractionResult",
