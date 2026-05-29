@@ -42,6 +42,14 @@ class NoOpBeliefStore(IBeliefStore):
     ) -> list[tuple[Belief, float]]:
         return []
 
+    async def get_similar_task_count(
+        self,
+        query: str,
+        days: int = 7,
+        similarity_threshold: float = 0.8,
+    ) -> int:
+        return 0
+
     async def propagate_confidence(
         self, belief_id: str, delta: float, visited: set[str] | None = None
     ) -> None:

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import logging
+import time
 import uuid
 
 import aiosqlite
@@ -456,6 +457,96 @@ class PersistentBeliefStore(IBeliefStore):
 
         results.sort(key=lambda x: x[1], reverse=True)
         return results[:top_k]
+
+    async def get_similar_task_count(
+        self,
+        query: str,
+        days: int = 7,
+        similarity_threshold: float = 0.8,
+    ) -> int:
+        """获取最近 N 天内与查询相似的任务数量。
+
+        Args:
+            query: 查询文本
+            days: 天数窗口
+            similarity_threshold: 相似度阈值（向量相似度）
+
+        Returns:
+            int: 相似任务数量
+        """
+        sanitized = query.strip()
+        if not sanitized:
+            return 0
+
+        conn = await self._get_conn()
+        cutoff_ms = int((time.time() - days * 24 * 60 * 60) * 1000)
+
+        # 首先尝试向量搜索
+        if self._vector_store and self._embedding_service:
+            try:
+                query_vector = await self._embedding_service.embed(sanitized)
+                if query_vector is not None:
+                    # 获取所有相似度高于阈值的向量
+                    vector_results = await self._vector_store.search(
+                        query_vector,
+                        top_k=100,  # 最多检查 100 个
+                    )
+
+                    count = 0
+                    for belief_id, score in vector_results:
+                        if score >= similarity_threshold:
+                            # 检查时间戳
+                            cursor = await conn.execute(
+                                "SELECT timestamp, memory_type FROM beliefs WHERE id = ?",
+                                (belief_id,),
+                            )
+                            row = await cursor.fetchone()
+                            if row and row["timestamp"] >= cutoff_ms and row["memory_type"] == "task":
+                                count += 1
+
+                    if count > 0:
+                        return count
+            except Exception:
+                logger.warning(
+                    "vector_count_failed, falling back to text search",
+                    exc_info=True,
+                )
+
+        # 回退到文本搜索（使用 FTS5）
+        fts_query = _tokenize_fts_query(sanitized)
+        try:
+            cursor = await conn.execute(
+                """
+                SELECT COUNT(DISTINCT b.id) as cnt
+                FROM beliefs_fts fts
+                JOIN beliefs b ON fts.rowid = b.rowid
+                WHERE fts MATCH ?
+                  AND b.status = 'active'
+                  AND b.memory_type = 'task'
+                  AND b.timestamp >= ?
+                """,
+                (fts_query, cutoff_ms),
+            )
+            row = await cursor.fetchone()
+            if row:
+                return row["cnt"] or 0
+        except Exception:
+            logger.exception("fts_count_failed")
+
+        # 最简单的 LIKE 回退
+        cursor = await conn.execute(
+            """
+            SELECT COUNT(DISTINCT id) as cnt
+            FROM beliefs
+            WHERE content LIKE ?
+              AND status = 'active'
+              AND memory_type = 'task'
+              AND timestamp >= ?
+            """,
+            (f"%{sanitized}%", cutoff_ms),
+        )
+        row = await cursor.fetchone()
+        return row["cnt"] or 0 if row else 0
 
     async def propagate_confidence(
         self, belief_id: str, delta: float, visited: set[str] | None = None

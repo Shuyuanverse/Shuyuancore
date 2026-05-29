@@ -15,11 +15,14 @@ import logging
 import sqlite3
 import time
 import uuid
-from typing import Any, Dict, List, Optional
+from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
-from src.agents.reviewer import ReviewAgent
-from src.config import EvolutionConfig, get_settings
-from src.core.interfaces import IBeliefStore
+if TYPE_CHECKING:
+    from src.persona.dialogue.agents import ReviewAgent
+    from src.config import EvolutionConfig
+    from src.core.interfaces import IBeliefStore
+
+from src.config import get_settings
 from src.models.provider import get_model_provider
 
 logger = logging.getLogger(__name__)
@@ -38,9 +41,9 @@ class ModuleManager:
     def __init__(
         self,
         db_path: str,
-        belief_store: IBeliefStore,
-        review_agent: ReviewAgent,
-        config: Optional[EvolutionConfig] = None,
+        belief_store: "IBeliefStore",
+        review_agent: "ReviewAgent",
+        config: Optional["EvolutionConfig"] = None,
     ) -> None:
         """初始化模块管理器。
 
@@ -143,8 +146,14 @@ class ModuleManager:
         user = f"执行轨迹：\n{trajectory}"
 
         # 调用 LLM 生成
-        response = await self.llm.chat(system, user, temperature=0.7)
-        return response.strip()
+        response = await self.llm.chat(
+            history=[
+                {"role": "system", "content": system},
+                {"role": "user", "content": user},
+            ],
+            temperature=0.7,
+        )
+        return response.content.strip()
 
     async def fuse_modules(self, module_a_id: str, module_b_id: str) -> str:
         """融：合并两个模块为复合模块。
@@ -184,8 +193,14 @@ class ModuleManager:
         )
         user = f"模块 A（{a_name}）：\n{a_prompt}\n\n模块 B（{b_name}）：\n{b_prompt}"
 
-        merged_prompt = await self.llm.chat(system, user, temperature=0.5)
-        merged_prompt = merged_prompt.strip()
+        merged_prompt_response = await self.llm.chat(
+            history=[
+                {"role": "system", "content": system},
+                {"role": "user", "content": user},
+            ],
+            temperature=0.5,
+        )
+        merged_prompt = merged_prompt_response.content.strip()
 
         # 3. 质量门控
         quality = await self.review_agent.review_prompt(merged_prompt)

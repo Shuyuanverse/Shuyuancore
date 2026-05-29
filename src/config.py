@@ -306,21 +306,6 @@ class PersonaConfig(BaseModel):
     identity: PersonaIdentityConfig = Field(default_factory=PersonaIdentityConfig)
 
 
-class EvolutionConfig(BaseModel):
-    trigger_days: int = 7
-    trigger_count: int = 40
-    max_active_modules: int = 5
-    fuse_threshold: int = 3
-    archive_inactive_days: int = 14
-
-    @field_validator("max_active_modules")
-    @classmethod
-    def _lock_max_active_modules(cls, v: int) -> int:
-        if v != 5:
-            raise ValueError(f"max_active_modules 为锁定参数，值必须为 5，当前为 {v}")
-        return v
-
-
 class PredictionConfig(BaseModel):
     enable_proactive: bool = False          # 主动发起总开关
     idle_timeout_seconds: int = 30          # 空闲超时（秒）

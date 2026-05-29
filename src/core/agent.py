@@ -27,6 +27,7 @@ from src.core.noop_implementations import (
     NoOpPersonaGuard,
     NoOpSkillEngine,
 )
+from src.evolution.module_manager import ModuleManager
 from src.memory.decay import current_time_ms
 from src.memory.extractor import (
     JiebaEntityExtractor,
@@ -44,6 +45,7 @@ from src.memory.writer import (
 from src.models.interfaces import (
     IModelProvider,
 )
+from src.persona.dialogue.agents import ReviewAgent
 
 _MAX_TOOL_CALLS_PER_TURN = 5
 
@@ -79,7 +81,7 @@ class Agent:
         self._dangerous_tools: set[str] = set()
         self._pending_resume_event: asyncio.Event | None = None
         self._approval_approved: bool = True
-        
+
         # 预测式建模集成
         self._settings = get_settings()
         self.user_model = RelationalMemory(db_path="data/state.db")
@@ -90,6 +92,19 @@ class Agent:
         self._is_cli: bool = True
         self._sse_send: Optional[Callable] = None
         self._proactive_queue: asyncio.Queue = asyncio.Queue()
+
+        # 自演化架构集成
+        self._review_agent = ReviewAgent()
+        self._module_manager = ModuleManager(
+            db_path="data/state.db",
+            belief_store=self._belief_store,
+            review_agent=self._review_agent,
+        )
+        self._fusion_check_task: Optional[asyncio.Task] = None
+
+        # 启动后台定期扫描任务
+        if self._settings.evolution.enable_auto_evolution:
+            self._fusion_check_task = asyncio.create_task(self._periodic_evolution_scan())
 
     def set_dangerous_tools(self, tool_names: list[str]) -> None:
         self._dangerous_tools = set(tool_names)
@@ -102,12 +117,12 @@ class Agent:
     ) -> AsyncIterator[str | dict[str, Any]]:
         if conversation_id is None:
             conversation_id = str(uuid.uuid4())
-        
+
         # 更新活动时间和重置计数
         self._last_activity_time = time.time()
         self._proactive_count = 0
         self._current_conversation_id = conversation_id
-        
+
         # 取消旧监控任务并启动新的
         if self._idle_monitor_task and not self._idle_monitor_task.done():
             self._idle_monitor_task.cancel()
@@ -115,10 +130,10 @@ class Agent:
                 await self._idle_monitor_task
             except asyncio.CancelledError:
                 pass
-        
+
         if self._settings.prediction.enable_proactive:
             self._idle_monitor_task = asyncio.create_task(self._idle_monitor())
-        
+
         conversation_date = datetime.now(timezone.utc).date().isoformat()
 
         user_belief = Belief(
@@ -312,6 +327,19 @@ class Agent:
                     }
                 )
 
+                # 记录模块协作（如果当前有活跃模块）
+                # 简化实现：假设工具调用本身就是模块协作
+                # 实际场景中可以从上下文获取当前模块 ID
+                try:
+                    # 这里记录一个虚拟的协作，实际使用时需要从上下文中获取模块 ID
+                    # await self._module_manager.record_collaboration(
+                    #     from_module=current_module_id,
+                    #     to_module=tool_name,
+                    # )
+                    pass
+                except Exception:
+                    logger.debug("Failed to record module collaboration")
+
                 tool_belief = Belief(
                     content=result,
                     source="tool",
@@ -445,41 +473,171 @@ class Agent:
             except Exception:
                 logger.exception("skill extraction failed conv=%s", conversation_id)
 
+        # 自演化触发检查（生）
+        if self._settings.evolution.enable_auto_evolution:
+            try:
+                await self._check_module_birth(conversation_id, message, response)
+            except Exception:
+                logger.exception("module birth check failed conv=%s", conversation_id)
+
+    async def _check_module_birth(
+        self,
+        conversation_id: str,
+        message: str,
+        response: str,
+    ) -> None:
+        """检查是否满足模块创建条件（同类任务≥40 次）。
+
+        Args:
+            conversation_id: 对话 ID
+            message: 用户消息
+            response: Agent 响应
+        """
+        cfg = self._settings.evolution
+
+        # 统计最近 7 天同类任务数量
+        similar_count = await self._belief_store.get_similar_task_count(
+            message,
+            days=cfg.birth_window_days,
+        )
+
+        if similar_count >= cfg.birth_threshold:
+            logger.info(
+                "Module birth triggered: %d similar tasks in %d days (threshold=%d)",
+                similar_count,
+                cfg.birth_window_days,
+                cfg.birth_threshold,
+            )
+
+            # 构建执行轨迹
+            trajectory = f"User: {message}\nAssistant: {response}"
+
+            # 提取任务类型（简化实现：使用消息前 20 个字符）
+            task_type = message[:20].replace(" ", "_").replace("。", "").replace(",", "")
+
+            try:
+                module_id = await self._module_manager.create_module(
+                    name=f"auto_{task_type}_{int(time.time())}",
+                    task_type=task_type,
+                    execution_trajectory=trajectory,
+                )
+                logger.info("Created module: %s from %d similar tasks", module_id, similar_count)
+            except ValueError as e:
+                logger.warning("Failed to create module: %s", e)
+
+    async def _periodic_evolution_scan(self) -> None:
+        """后台定期扫描任务：检查模块融合和归档条件。
+
+        每 24 小时执行一次：
+        1. 检查协作次数≥3 的模块对，触发融合（融）
+        2. 检查超过 14 天未活跃的模块，执行归档（灭）
+        """
+        logger.info("Starting periodic evolution scan task")
+
+        while True:
+            try:
+                # 等待 24 小时
+                await asyncio.sleep(24 * 60 * 60)
+
+                # 1. 归档不活跃模块（灭）
+                try:
+                    archived_count = await self._module_manager.archive_inactive_modules()
+                    if archived_count > 0:
+                        logger.info("Archived %d inactive modules", archived_count)
+                except Exception as e:
+                    logger.exception("Failed to archive inactive modules: %s", e)
+
+                # 2. 检查模块融合条件（融）
+                try:
+                    await self._check_module_fusion()
+                except Exception as e:
+                    logger.exception("Failed to check module fusion: %s", e)
+
+            except asyncio.CancelledError:
+                logger.info("Periodic evolution scan task cancelled")
+                break
+            except Exception as e:
+                logger.exception("Periodic evolution scan error: %s", e)
+
+    async def _check_module_fusion(self) -> None:
+        """检查并执行模块融合。
+
+        遍历所有活跃模块对，检查协作次数是否≥3。
+        """
+        cfg = self._settings.evolution
+
+        # 获取所有活跃模块
+        active_modules = await self._module_manager.get_active_modules()
+
+        if len(active_modules) < 2:
+            return
+
+        # 检查每对模块的协作次数
+        for i, module_a in enumerate(active_modules):
+            for module_b in active_modules[i+1:]:
+                try:
+                    collab_count = await self._module_manager.get_collaboration_count(
+                        module_a["id"],
+                        module_b["id"],
+                        days=cfg.fusion_window_days,
+                    )
+
+                    if collab_count >= cfg.fusion_threshold:
+                        logger.info(
+                            "Fusion triggered: %s and %s collaborated %d times in %d days",
+                            module_a["name"],
+                            module_b["name"],
+                            collab_count,
+                            cfg.fusion_window_days,
+                        )
+
+                        # 执行融合
+                        fused_id = await self._module_manager.fuse_modules(
+                            module_a["id"],
+                            module_b["id"],
+                        )
+                        logger.info("Fused modules: %s + %s -> %s", module_a["name"], module_b["name"], fused_id)
+
+                except ValueError as e:
+                    logger.warning("Failed to fuse modules: %s", e)
+                except Exception:
+                    logger.exception("Module fusion check failed")
+
     async def _idle_monitor(self) -> None:
         """后台空闲监控任务：检测用户长时间不输入，主动发起预测提醒。"""
         cfg = self._settings.prediction
         if not cfg.enable_proactive:
             return
-        
+
         while True:
             try:
                 await asyncio.sleep(cfg.idle_timeout_seconds)
-                
+
                 # 如果已经达到最大提醒次数，停止监控
                 if self._proactive_count >= cfg.max_idle_checks_per_conversation:
                     return
-                
+
                 # 检查空闲时间
                 now = time.time()
                 if now - self._last_activity_time < cfg.idle_timeout_seconds:
                     continue
-                
+
                 # 尝试预测
                 pred = await self.user_model.predict_next(self._current_conversation_id or "")
                 if not pred:
                     continue
-                
+
                 confidence = pred.get("confidence", 0)
                 if confidence < cfg.confidence_threshold:
                     continue
-                
+
                 # 将提醒放入队列（供 API 模式消费）
                 await self._proactive_queue.put(pred)
-                
+
                 # 发送提醒（CLI 模式直接打印，API 模式通过回调）
                 await self._send_proactive_prompt(pred)
                 self._proactive_count += 1
-                
+
             except asyncio.CancelledError:
                 logger.debug("Idle monitor task cancelled")
                 return
@@ -489,14 +647,14 @@ class Agent:
 
     async def _send_proactive_prompt(self, prediction: dict[str, Any]) -> None:
         """发送主动提醒。
-        
+
         Args:
             prediction: 预测结果，包含 predicted_action, confidence, suggested_response
         """
         message = prediction.get("suggested_response") or prediction.get("predicted_action")
         if not message:
             return
-        
+
         if self._is_cli:
             # CLI 模式，直接打印
             print(f"\n[💡 主动提醒] {message}\n")

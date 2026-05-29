@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from typing import Any, List, Tuple
+from typing import Any
 
 
 @dataclass
@@ -64,6 +64,14 @@ class IBeliefStore(ABC):
         top_k: int = 10,
         min_confidence: float = 0.1,
     ) -> list[tuple[Belief, float]]: ...
+
+    @abstractmethod
+    async def get_similar_task_count(
+        self,
+        query: str,
+        days: int = 7,
+        similarity_threshold: float = 0.8,
+    ) -> int: ...
 
     @abstractmethod
     async def propagate_confidence(

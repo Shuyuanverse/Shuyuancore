@@ -15,11 +15,10 @@ import logging
 import re
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional
 
-from .base_agent import AgentConfig, BaseAgent
 from .agent_protocol import AgentMessage, MessageType
-from .decision_agent import DecisionOutput
+from .base_agent import AgentConfig, BaseAgent
 
 logger = logging.getLogger(__name__)
 
@@ -478,3 +477,50 @@ class ReviewAgent(BaseAgent):
                 max_score = result.conflict_score
 
         return max_level
+
+    async def review_prompt(self, prompt: str) -> float:
+        """审查 prompt 质量并返回质量分数。
+
+        Args:
+            prompt: 待审查的 prompt 文本
+
+        Returns:
+            float: 质量分数 (0.0-1.0)
+        """
+        from src.models.provider import get_model_provider
+
+        logger.info("Reviewing prompt quality (length=%d)", len(prompt))
+
+        system = """你是一个提示词质量评估器。请评估以下 prompt 的质量，从 0.0 到 1.0 打分。
+
+评估维度：
+1. 清晰性：prompt 是否清晰明确，无歧义
+2. 完整性：是否包含必要的上下文和指令
+3. 可执行性：是否能指导模型生成有效输出
+4. 结构化：是否有良好的组织结构
+
+只需输出一个 0.0-1.0 之间的数字，不要包含任何其他内容。"""
+
+        user = f"请评估以下 prompt 的质量：\n\n{prompt}"
+
+        try:
+            llm = get_model_provider()
+            response = await llm.chat(system, user, temperature=0.1)
+
+            # 解析分数
+            score_text = response.strip()
+            # 提取数字
+            match = re.search(r"(\d+\.?\d*)", score_text)
+            if match:
+                score = float(match.group(1))
+                # 确保在 0-1 范围内
+                score = max(0.0, min(1.0, score))
+                logger.debug("Prompt quality score: %.2f", score)
+                return score
+            else:
+                logger.warning("Failed to parse quality score, defaulting to 0.5")
+                return 0.5
+        except Exception as e:
+            logger.exception("Failed to review prompt: %s", e)
+            # 出错时返回默认分数
+            return 0.5
