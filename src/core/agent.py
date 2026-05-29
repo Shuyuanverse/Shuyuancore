@@ -6,10 +6,12 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
+import time
 import uuid
 from datetime import datetime, timezone
-from typing import Any, AsyncIterator
+from typing import Any, AsyncIterator, Callable, Optional
 
+from src.config import get_settings
 from src.core.interfaces import (
     Belief,
     IBeliefStore,
@@ -31,6 +33,7 @@ from src.memory.extractor import (
     SnowNlpEmotionAnalyzer,
 )
 from src.memory.interfaces import IEmotionAnalyzer, IEntityExtractor
+from src.memory.relational import RelationalMemory
 from src.memory.wake import wake_readiness, wake_score
 from src.memory.writer import (
     AiInferenceWriter,
@@ -76,6 +79,17 @@ class Agent:
         self._dangerous_tools: set[str] = set()
         self._pending_resume_event: asyncio.Event | None = None
         self._approval_approved: bool = True
+        
+        # 预测式建模集成
+        self._settings = get_settings()
+        self.user_model = RelationalMemory(db_path="data/state.db")
+        self._last_activity_time: float = time.time()
+        self._idle_monitor_task: Optional[asyncio.Task] = None
+        self._proactive_count: int = 0
+        self._current_conversation_id: Optional[str] = None
+        self._is_cli: bool = True
+        self._sse_send: Optional[Callable] = None
+        self._proactive_queue: asyncio.Queue = asyncio.Queue()
 
     def set_dangerous_tools(self, tool_names: list[str]) -> None:
         self._dangerous_tools = set(tool_names)
@@ -88,7 +102,23 @@ class Agent:
     ) -> AsyncIterator[str | dict[str, Any]]:
         if conversation_id is None:
             conversation_id = str(uuid.uuid4())
-
+        
+        # 更新活动时间和重置计数
+        self._last_activity_time = time.time()
+        self._proactive_count = 0
+        self._current_conversation_id = conversation_id
+        
+        # 取消旧监控任务并启动新的
+        if self._idle_monitor_task and not self._idle_monitor_task.done():
+            self._idle_monitor_task.cancel()
+            try:
+                await self._idle_monitor_task
+            except asyncio.CancelledError:
+                pass
+        
+        if self._settings.prediction.enable_proactive:
+            self._idle_monitor_task = asyncio.create_task(self._idle_monitor())
+        
         conversation_date = datetime.now(timezone.utc).date().isoformat()
 
         user_belief = Belief(
@@ -414,3 +444,73 @@ class Agent:
                 )
             except Exception:
                 logger.exception("skill extraction failed conv=%s", conversation_id)
+
+    async def _idle_monitor(self) -> None:
+        """后台空闲监控任务：检测用户长时间不输入，主动发起预测提醒。"""
+        cfg = self._settings.prediction
+        if not cfg.enable_proactive:
+            return
+        
+        while True:
+            try:
+                await asyncio.sleep(cfg.idle_timeout_seconds)
+                
+                # 如果已经达到最大提醒次数，停止监控
+                if self._proactive_count >= cfg.max_idle_checks_per_conversation:
+                    return
+                
+                # 检查空闲时间
+                now = time.time()
+                if now - self._last_activity_time < cfg.idle_timeout_seconds:
+                    continue
+                
+                # 尝试预测
+                pred = await self.user_model.predict_next(self._current_conversation_id or "")
+                if not pred:
+                    continue
+                
+                confidence = pred.get("confidence", 0)
+                if confidence < cfg.confidence_threshold:
+                    continue
+                
+                # 将提醒放入队列（供 API 模式消费）
+                await self._proactive_queue.put(pred)
+                
+                # 发送提醒（CLI 模式直接打印，API 模式通过回调）
+                await self._send_proactive_prompt(pred)
+                self._proactive_count += 1
+                
+            except asyncio.CancelledError:
+                logger.debug("Idle monitor task cancelled")
+                return
+            except Exception as e:
+                logger.warning("Idle monitor error: %s", e)
+                continue
+
+    async def _send_proactive_prompt(self, prediction: dict[str, Any]) -> None:
+        """发送主动提醒。
+        
+        Args:
+            prediction: 预测结果，包含 predicted_action, confidence, suggested_response
+        """
+        message = prediction.get("suggested_response") or prediction.get("predicted_action")
+        if not message:
+            return
+        
+        if self._is_cli:
+            # CLI 模式，直接打印
+            print(f"\n[💡 主动提醒] {message}\n")
+        else:
+            # API 模式，通过 SSE 发送事件
+            if self._sse_send:
+                try:
+                    await self._sse_send(
+                        "prompt",
+                        {
+                            "message": message,
+                            "confidence": prediction.get("confidence"),
+                            "predicted_action": prediction.get("predicted_action"),
+                        },
+                    )
+                except Exception as e:
+                    logger.warning("SSE send failed: %s", e)
