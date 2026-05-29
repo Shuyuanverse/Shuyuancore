@@ -8,6 +8,7 @@
 - DecisionOutput：决策输出
 - DecisionAgent：决策 Agent
 """
+
 from __future__ import annotations
 
 import logging
@@ -24,7 +25,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class DecisionConfig:
     """决策配置
-    
+
     Attributes:
         temperature: 温度参数
         max_tokens: 最大 token 数
@@ -32,7 +33,7 @@ class DecisionConfig:
         enable_memory: 是否启用记忆
         style_constraint_strength: 风格约束强度
     """
-    
+
     temperature: float = 0.7
     max_tokens: int = 500
     enable_rag: bool = True
@@ -43,7 +44,7 @@ class DecisionConfig:
 @dataclass
 class DecisionContext:
     """决策上下文
-    
+
     Attributes:
         user_message: 用户消息
         persona_id: 人格 ID
@@ -53,7 +54,7 @@ class DecisionContext:
         perception_result: 感知结果
         inner_reaction: 内心反应
     """
-    
+
     user_message: str
     persona_id: str
     style_dimensions: Dict[str, Any]
@@ -66,7 +67,7 @@ class DecisionContext:
 @dataclass
 class DecisionOutput:
     """决策输出
-    
+
     Attributes:
         response: 回复文本
         confidence: 置信度
@@ -74,13 +75,13 @@ class DecisionOutput:
         used_catchphrases: 使用的口头禅
         metadata: 元数据
     """
-    
+
     response: str
     confidence: float
     style_alignment: float
     used_catchphrases: List[str] = field(default_factory=list)
     metadata: Dict[str, Any] = field(default_factory=dict)
-    
+
     def to_dict(self) -> Dict[str, Any]:
         """转换为字典"""
         return {
@@ -94,7 +95,7 @@ class DecisionOutput:
 
 class DecisionAgent(BaseAgent):
     """决策 Agent — 生成初始回复
-    
+
     处理流程：
     1. 构建完整 prompt：
        - system_prompt：人格设定 + 风格约束 + 内心反应
@@ -104,14 +105,14 @@ class DecisionAgent(BaseAgent):
     3. 评估风格对齐度
     4. 返回 DecisionOutput
     """
-    
+
     def __init__(
         self,
         config: Optional[DecisionConfig] = None,
         agent_config: Optional[AgentConfig] = None,
     ):
         """初始化决策 Agent
-        
+
         Args:
             config: 决策配置
             agent_config: Agent 配置
@@ -121,43 +122,43 @@ class DecisionAgent(BaseAgent):
                 agent_id="decision_agent_001",
                 agent_type="decision",
             )
-        
+
         super().__init__(agent_config)
-        
+
         self.config = config or DecisionConfig()
         logger.info("[decision] 决策 Agent 初始化完成，配置：%s", self.config)
-    
+
     async def process(self, message: AgentMessage) -> AgentMessage:
         """处理消息
-        
+
         Args:
             message: 输入消息
-        
+
         Returns:
             AgentMessage: 输出消息
         """
         try:
             # 解析输入
             context = self._parse_message(message)
-            
+
             # Step 1: 构建完整 prompt
             system_prompt = self._build_system_prompt(context)
-            
+
             # Step 2: 调用 LLM 生成回复（简化实现，返回占位文本）
             response_text = await self._call_llm(
                 system_prompt=system_prompt,
                 user_message=context.user_message,
             )
-            
+
             # Step 3: 评估风格对齐度
             style_alignment = self._evaluate_style_alignment(
                 response_text,
                 context.style_dimensions,
             )
-            
+
             # Step 4: 提取口头禅
             catchphrases = self._extract_catchphrases(response_text)
-            
+
             # 构建输出
             output = DecisionOutput(
                 response=response_text,
@@ -165,11 +166,11 @@ class DecisionAgent(BaseAgent):
                 style_alignment=style_alignment,
                 used_catchphrases=catchphrases,
                 metadata={
-                    "context": context.to_dict() if hasattr(context, 'to_dict') else {},
+                    "context": context.to_dict() if hasattr(context, "to_dict") else {},
                     "config": self.config.__dict__,
                 },
             )
-            
+
             # 构建响应消息
             response_message = AgentMessage(
                 message_type=MessageType.RESPONSE,
@@ -179,33 +180,33 @@ class DecisionAgent(BaseAgent):
                 priority=message.priority,
                 parent_id=message.message_id,
             )
-            
+
             logger.info(
                 "[decision] 处理完成：response_length=%d, style_alignment=%.2f",
                 len(response_text),
                 style_alignment,
             )
-            
+
             return response_message
-            
+
         except Exception as e:
             logger.exception("[decision] 处理失败：%s", e)
             raise
-    
+
     def _parse_message(self, message: AgentMessage) -> DecisionContext:
         """解析消息为决策上下文
-        
+
         Args:
             message: 输入消息
-        
+
         Returns:
             DecisionContext: 决策上下文
         """
         content = message.content
-        
+
         if isinstance(content, DecisionContext):
             return content
-        
+
         # 从字典创建
         return DecisionContext(
             user_message=content.get("user_message", ""),
@@ -216,13 +217,13 @@ class DecisionAgent(BaseAgent):
             perception_result=content.get("perception_result"),
             inner_reaction=content.get("inner_reaction"),
         )
-    
+
     def _build_system_prompt(self, context: DecisionContext) -> str:
         """构建系统提示词
-        
+
         Args:
             context: 决策上下文
-        
+
         Returns:
             str: 系统提示词
         """
@@ -233,100 +234,100 @@ class DecisionAgent(BaseAgent):
             "",
             "风格约束：",
         ]
-        
+
         # 添加风格维度
         for key, value in context.style_dimensions.items():
             lines.append(f"- {key}: {value}")
-        
+
         # 添加内心反应
         if context.inner_reaction:
             lines.append("")
             lines.append("内心状态：")
             lines.append(context.inner_reaction)
-        
+
         # 添加 RAG 结果
         if self.config.enable_rag:
             lines.append("")
             lines.append("RAG 检索结果：（暂无）")
-        
+
         # 添加记忆召回
         if self.config.enable_memory:
             lines.append("")
             lines.append("记忆召回：（暂无）")
-        
+
         # 添加风格约束强度
         lines.append("")
         lines.append(f"风格约束强度：{self.config.style_constraint_strength}")
-        
+
         return "\n".join(lines)
-    
+
     async def _call_llm(
         self,
         system_prompt: str,
         user_message: str,
     ) -> str:
         """调用 LLM 生成回复
-        
+
         Args:
             system_prompt: 系统提示词
             user_message: 用户消息
-        
+
         Returns:
             str: LLM 回复
-        
+
         简化实现：返回占位文本
         实际实现应调用 LLM API
         """
         # TODO: 实现真实的 LLM 调用
         # 目前返回占位文本
         return f"【决策 Agent 回复】收到：{user_message[:50]}..."
-    
+
     def _evaluate_style_alignment(
         self,
         response: str,
         style_dimensions: Dict[str, Any],
     ) -> float:
         """评估风格对齐度
-        
+
         Args:
             response: 回复文本
             style_dimensions: 风格维度
-        
+
         Returns:
             float: 对齐度 0-1
-        
+
         简化实现：返回固定值
         实际实现应基于风格维度计算
         """
         # TODO: 实现真实的风格对齐度评估
         return 0.85
-    
+
     def _extract_catchphrases(self, response: str) -> List[str]:
         """提取口头禅
-        
+
         Args:
             response: 回复文本
-        
+
         Returns:
             List[str]: 口头禅列表
         """
         # 简化实现：返回空列表
         return []
-    
+
     def generate_response(
         self,
         context: DecisionContext,
     ) -> DecisionOutput:
         """生成回复（同步接口）
-        
+
         Args:
             context: 决策上下文
-        
+
         Returns:
             DecisionOutput: 决策输出
         """
         import asyncio
-        
+
         # 构建消息
         message = AgentMessage(
             message_type=MessageType.REQUEST,
@@ -334,7 +335,7 @@ class DecisionAgent(BaseAgent):
             receiver=self.config.agent_id,
             content=context,
         )
-        
+
         # 同步调用异步方法
         try:
             loop = asyncio.get_event_loop()

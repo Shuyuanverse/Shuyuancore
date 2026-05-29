@@ -8,6 +8,7 @@
 - ReviewAgentContextExtension：语境理解扩展
 - ReviewAgent：审视 Agent
 """
+
 from __future__ import annotations
 
 import logging
@@ -25,7 +26,7 @@ logger = logging.getLogger(__name__)
 
 class ConflictLevel(Enum):
     """冲突级别"""
-    
+
     NONE = "none"  # 无冲突
     TOLERABLE = "tolerable"  # 可容忍
     NEED_INTERVENTION = "need_intervention"  # 需要干预
@@ -35,19 +36,19 @@ class ConflictLevel(Enum):
 @dataclass
 class ConflictDetectionResult:
     """冲突检测结果
-    
+
     Attributes:
         conflict_score: 冲突分数 0-1
         conflict_level: 冲突级别
         conflict_type: 冲突类型（lexical/syntactic/semantic/tonal）
         details: 详细信息
     """
-    
+
     conflict_score: float = 0.0
     conflict_level: ConflictLevel = ConflictLevel.NONE
     conflict_type: str = ""
     details: Dict[str, Any] = field(default_factory=dict)
-    
+
     def to_dict(self) -> Dict[str, Any]:
         """转换为字典"""
         return {
@@ -60,21 +61,21 @@ class ConflictDetectionResult:
 
 class ReviewAgentContextExtension:
     """语境理解扩展
-    
+
     基于感知结果（氛围 + 情绪 + 意图）扩展审视上下文
     判定逻辑：
     - 氛围=紧急 + 冲突=TOLERABLE → pass（紧急情况下容忍轻微偏差）
     - 情绪=friendly + 冲突=TOLERABLE → pass（友好对话中容忍偏差）
     - 氛围=紧张 + 冲突=NEED_INTERVENTION → block（紧张时严格把关）
     - 意图=defend_identity + 冲突=NEED_INTERVENTION → review（身份相关需重新审视）
-    
+
     输出：context_aware_judge: "pass" / "block" / "review"
     """
-    
+
     def __init__(self):
         """初始化语境理解扩展"""
         logger.info("[review_context] 语境理解扩展初始化完成")
-    
+
     def extend(
         self,
         conflict_result: ConflictDetectionResult,
@@ -83,20 +84,20 @@ class ReviewAgentContextExtension:
         intent: Optional[str] = None,
     ) -> str:
         """扩展审视上下文
-        
+
         Args:
             conflict_result: 冲突检测结果
             atmosphere: 氛围
             emotion: 情绪
             intent: 意图
-        
+
         Returns:
             str: 语境感知判决（pass/block/review）
         """
         # 默认判决
         if conflict_result.conflict_level == ConflictLevel.NONE:
             return "pass"
-        
+
         # 氛围=紧急 + 冲突=TOLERABLE → pass
         if (
             atmosphere in ["urgent", "tense"]
@@ -108,19 +109,16 @@ class ReviewAgentContextExtension:
                 conflict_result.conflict_level.value,
             )
             return "pass"
-        
+
         # 情绪=friendly + 冲突=TOLERABLE → pass
-        if (
-            emotion == "friendly"
-            and conflict_result.conflict_level == ConflictLevel.TOLERABLE
-        ):
+        if emotion == "friendly" and conflict_result.conflict_level == ConflictLevel.TOLERABLE:
             logger.info(
                 "[review_context] 友好对话容忍偏差：emotion=%s, conflict=%s",
                 emotion,
                 conflict_result.conflict_level.value,
             )
             return "pass"
-        
+
         # 氛围=紧张 + 冲突=NEED_INTERVENTION → block
         if (
             atmosphere in ["tense", "urgent"]
@@ -132,7 +130,7 @@ class ReviewAgentContextExtension:
                 conflict_result.conflict_level.value,
             )
             return "block"
-        
+
         # 意图=defend_identity + 冲突=NEED_INTERVENTION → review
         if (
             intent == "defend_identity"
@@ -144,7 +142,7 @@ class ReviewAgentContextExtension:
                 conflict_result.conflict_level.value,
             )
             return "review"
-        
+
         # 默认处理
         if conflict_result.conflict_level == ConflictLevel.SEVERE:
             return "block"
@@ -156,26 +154,26 @@ class ReviewAgentContextExtension:
 
 class ReviewAgent(BaseAgent):
     """审视 Agent — 4 维度冲突检测
-    
+
     4 个冲突检测维度：
     1. lexical — 词汇冲突：是否使用了不应使用的词（违禁词、不当用语）
     2. syntactic — 句法冲突：句式是否偏离锚定风格
     3. semantic — 语义冲突：含义是否与硬事实矛盾
     4. tonal — 语调冲突：语调是否与当前氛围/情绪不匹配
-    
+
     流程：
     1. 4 维度冲突检测 → 4 个 ConflictDetectionResult
     2. 综合判定 conflict_level
     3. ReviewAgentContextExtension 语境理解扩展 → context_aware_judge
     4. 返回审视结果
     """
-    
+
     def __init__(
         self,
         agent_config: Optional[AgentConfig] = None,
     ):
         """初始化审视 Agent
-        
+
         Args:
             agent_config: Agent 配置
         """
@@ -184,25 +182,30 @@ class ReviewAgent(BaseAgent):
                 agent_id="review_agent_001",
                 agent_type="review",
             )
-        
+
         super().__init__(agent_config)
-        
+
         self._context_extension = ReviewAgentContextExtension()
-        
+
         # 违禁词列表
         self._forbidden_words = [
-            "绝对", "肯定", "保证", "毫无疑问",
-            "我保证", "我确定", "一定",
+            "绝对",
+            "肯定",
+            "保证",
+            "毫无疑问",
+            "我保证",
+            "我确定",
+            "一定",
         ]
-        
+
         logger.info("[review] 审视 Agent 初始化完成")
-    
+
     async def process(self, message: AgentMessage) -> AgentMessage:
         """处理消息
-        
+
         Args:
             message: 输入消息
-        
+
         Returns:
             AgentMessage: 输出消息
         """
@@ -211,26 +214,28 @@ class ReviewAgent(BaseAgent):
             content = message.content
             response_text = content.get("response", "")
             context_data = content.get("context", {})
-            
+
             # Step 1: 4 维度冲突检测
             lexical_result = self._detect_lexical_conflict(response_text)
             syntactic_result = self._detect_syntactic_conflict(response_text, context_data)
             semantic_result = self._detect_semantic_conflict(response_text, context_data)
             tonal_result = self._detect_tonal_conflict(response_text, context_data)
-            
+
             # Step 2: 综合判定
-            overall_level = self._determine_overall_level([
-                lexical_result,
-                syntactic_result,
-                semantic_result,
-                tonal_result,
-            ])
-            
+            overall_level = self._determine_overall_level(
+                [
+                    lexical_result,
+                    syntactic_result,
+                    semantic_result,
+                    tonal_result,
+                ]
+            )
+
             # Step 3: 语境理解扩展
             atmosphere = context_data.get("atmosphere", "daily")
             emotion = context_data.get("emotion", "neutral")
             intent = context_data.get("intent")
-            
+
             context_aware_judge = self._context_extension.extend(
                 conflict_result=ConflictDetectionResult(
                     conflict_score=overall_level.value,
@@ -240,7 +245,7 @@ class ReviewAgent(BaseAgent):
                 emotion=emotion,
                 intent=intent,
             )
-            
+
             # 构建输出
             output = {
                 "lexical_conflict": lexical_result.to_dict(),
@@ -251,7 +256,7 @@ class ReviewAgent(BaseAgent):
                 "context_aware_judge": context_aware_judge,
                 "review_passed": context_aware_judge == "pass",
             }
-            
+
             # 构建响应消息
             response_message = AgentMessage(
                 message_type=MessageType.RESPONSE,
@@ -261,37 +266,37 @@ class ReviewAgent(BaseAgent):
                 priority=message.priority,
                 parent_id=message.message_id,
             )
-            
+
             logger.info(
                 "[review] 审视完成：overall=%s, judge=%s",
                 overall_level.value,
                 context_aware_judge,
             )
-            
+
             return response_message
-            
+
         except Exception as e:
             logger.exception("[review] 处理失败：%s", e)
             raise
-    
+
     def _detect_lexical_conflict(self, response: str) -> ConflictDetectionResult:
         """检测词汇冲突
-        
+
         Args:
             response: 回复文本
-        
+
         Returns:
             ConflictDetectionResult: 冲突检测结果
         """
         # 检测违禁词
         forbidden_count = sum(1 for word in self._forbidden_words if word in response)
-        
+
         # 计算冲突分数
         if len(response) == 0:
             conflict_score = 0.0
         else:
             conflict_score = min(1.0, forbidden_count / 5)
-        
+
         # 确定冲突级别
         if conflict_score == 0:
             level = ConflictLevel.NONE
@@ -301,7 +306,7 @@ class ReviewAgent(BaseAgent):
             level = ConflictLevel.NEED_INTERVENTION
         else:
             level = ConflictLevel.SEVERE
-        
+
         return ConflictDetectionResult(
             conflict_score=conflict_score,
             conflict_level=level,
@@ -311,32 +316,32 @@ class ReviewAgent(BaseAgent):
                 "forbidden_words": [w for w in self._forbidden_words if w in response],
             },
         )
-    
+
     def _detect_syntactic_conflict(
         self,
         response: str,
         context_data: Dict[str, Any],
     ) -> ConflictDetectionResult:
         """检测句法冲突
-        
+
         Args:
             response: 回复文本
             context_data: 上下文数据
-        
+
         Returns:
             ConflictDetectionResult: 冲突检测结果
         """
         # 简化实现：检测句子长度变化
         style_dimensions = context_data.get("style_dimensions", {})
         expected_concise = style_dimensions.get("concise", 0.5)
-        
+
         # 计算平均句子长度
         sentences = response.split("。")
         if len(sentences) == 0:
             avg_length = 0
         else:
             avg_length = sum(len(s) for s in sentences) / len(sentences)
-        
+
         # 简洁风格期望短句
         if expected_concise > 0.7 and avg_length > 50:
             conflict_score = 0.6
@@ -347,7 +352,7 @@ class ReviewAgent(BaseAgent):
         else:
             conflict_score = 0.1
             level = ConflictLevel.NONE
-        
+
         return ConflictDetectionResult(
             conflict_score=conflict_score,
             conflict_level=level,
@@ -357,32 +362,32 @@ class ReviewAgent(BaseAgent):
                 "expected_concise": expected_concise,
             },
         )
-    
+
     def _detect_semantic_conflict(
         self,
         response: str,
         context_data: Dict[str, Any],
     ) -> ConflictDetectionResult:
         """检测语义冲突
-        
+
         Args:
             response: 回复文本
             context_data: 上下文数据
-        
+
         Returns:
             ConflictDetectionResult: 冲突检测结果
         """
         # 检测是否与硬事实矛盾
         hard_facts = context_data.get("hard_facts", [])
-        
+
         conflict_score = 0.0
         for fact in hard_facts:
             # 简化实现：检测否定词
             if "不" in response and fact in response:
                 conflict_score += 0.3
-        
+
         conflict_score = min(1.0, conflict_score)
-        
+
         if conflict_score == 0:
             level = ConflictLevel.NONE
         elif conflict_score < 0.3:
@@ -391,7 +396,7 @@ class ReviewAgent(BaseAgent):
             level = ConflictLevel.NEED_INTERVENTION
         else:
             level = ConflictLevel.SEVERE
-        
+
         return ConflictDetectionResult(
             conflict_score=conflict_score,
             conflict_level=level,
@@ -400,28 +405,28 @@ class ReviewAgent(BaseAgent):
                 "hard_facts_checked": len(hard_facts),
             },
         )
-    
+
     def _detect_tonal_conflict(
         self,
         response: str,
         context_data: Dict[str, Any],
     ) -> ConflictDetectionResult:
         """检测语调冲突
-        
+
         Args:
             response: 回复文本
             context_data: 上下文数据
-        
+
         Returns:
             ConflictDetectionResult: 冲突检测结果
         """
         # 检测语调是否与氛围/情绪匹配
         atmosphere = context_data.get("atmosphere", "daily")
         emotion = context_data.get("emotion", "neutral")
-        
+
         # 简化实现：检测感叹号使用
         exclamation_count = response.count("!") + response.count("！")
-        
+
         # 紧张/紧急氛围下，过多感叹号可能合适
         if atmosphere in ["tense", "urgent"]:
             conflict_score = 0.0
@@ -430,9 +435,9 @@ class ReviewAgent(BaseAgent):
             conflict_score = 0.4
         else:
             conflict_score = 0.1
-        
+
         level = ConflictLevel.NONE if conflict_score < 0.2 else ConflictLevel.TOLERABLE
-        
+
         return ConflictDetectionResult(
             conflict_score=conflict_score,
             conflict_level=level,
@@ -443,16 +448,16 @@ class ReviewAgent(BaseAgent):
                 "emotion": emotion,
             },
         )
-    
+
     def _determine_overall_level(
         self,
         results: List[ConflictDetectionResult],
     ) -> ConflictLevel:
         """综合判定冲突级别
-        
+
         Args:
             results: 冲突检测结果列表
-        
+
         Returns:
             ConflictLevel: 综合冲突级别
         """
@@ -463,13 +468,13 @@ class ReviewAgent(BaseAgent):
             ConflictLevel.NEED_INTERVENTION: 2,
             ConflictLevel.SEVERE: 3,
         }
-        
+
         max_level = ConflictLevel.NONE
         max_score = 0
-        
+
         for result in results:
             if level_order[result.conflict_level] > level_order[max_level]:
                 max_level = result.conflict_level
                 max_score = result.conflict_score
-        
+
         return max_level

@@ -305,9 +305,7 @@ class RelationalMemory:
                 status = goal_data.get("status", "active")
                 metadata = goal_data.get("metadata", {})
 
-                existing = await conn.execute(
-                    "SELECT id FROM user_goals WHERE id = ?", (goal_id,)
-                )
+                existing = await conn.execute("SELECT id FROM user_goals WHERE id = ?", (goal_id,))
                 exists = await existing.fetchone()
 
                 if exists:
@@ -327,7 +325,16 @@ class RelationalMemory:
                             (id, user_id, content, priority, status, created_at, updated_at, metadata_json)
                         VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                         """,
-                        (goal_id, user_id, content, priority, status, now_ms, now_ms, json.dumps(metadata)),
+                        (
+                            goal_id,
+                            user_id,
+                            content,
+                            priority,
+                            status,
+                            now_ms,
+                            now_ms,
+                            json.dumps(metadata),
+                        ),
                     )
 
         if preferences:
@@ -438,7 +445,9 @@ class RelationalMemory:
         trust_weight = (model.state.trust_level - 0.5) * 0.2
         frustration_penalty = model.state.frustration_level * 0.2
 
-        overall_score = 0.5 + emotional_weight + engagement_weight + trust_weight - frustration_penalty
+        overall_score = (
+            0.5 + emotional_weight + engagement_weight + trust_weight - frustration_penalty
+        )
         overall_score = max(0.0, min(1.0, overall_score))
 
         if overall_score > 0.7:
@@ -623,7 +632,7 @@ class RelationalMemory:
     async def get_goals(self, user_id: str, status: str | None = None) -> list[UserGoal]:
         conn = await self._get_conn()
 
-        status_filter = f"AND status = ?" if status else ""
+        status_filter = "AND status = ?" if status else ""
         params = [user_id, status] if status else [user_id]
 
         cursor = await conn.execute(
@@ -690,10 +699,12 @@ class RelationalMemory:
 
         await conn.commit()
 
-    async def get_preferences(self, user_id: str, category: str | None = None) -> list[UserPreference]:
+    async def get_preferences(
+        self, user_id: str, category: str | None = None
+    ) -> list[UserPreference]:
         conn = await self._get_conn()
 
-        category_filter = f"AND category = ?" if category else ""
+        category_filter = "AND category = ?" if category else ""
         params = [user_id, category] if category else [user_id]
 
         cursor = await conn.execute(

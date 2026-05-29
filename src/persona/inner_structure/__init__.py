@@ -6,6 +6,7 @@
 - SelfReviewLayer：自审视层（4 维度评估）
 - InnerStructurePipeline：内心结构管线（审视→调整建议）
 """
+
 from __future__ import annotations
 
 from .self_review import (

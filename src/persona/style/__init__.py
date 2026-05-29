@@ -4,6 +4,7 @@
 
 完整的四层管线：文本分析→7 维画像→60 维向量→128 维锚点
 """
+
 from __future__ import annotations
 
 from .base import (

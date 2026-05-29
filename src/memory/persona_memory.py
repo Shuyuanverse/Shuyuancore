@@ -197,7 +197,7 @@ class PersonaMemory:
         await conn.execute(
             f"""
             UPDATE persona_anchors
-            SET {', '.join(update_fields)}
+            SET {", ".join(update_fields)}
             WHERE user_id = ? AND anchor_type = ?
             """,
             params,
@@ -306,7 +306,9 @@ class PersonaMemory:
 
         if len(scores) >= 2:
             recent_avg = sum(scores[-5:]) / min(5, len(scores))
-            older_avg = sum(scores[:-5]) / max(1, len(scores) - 5) if len(scores) > 5 else recent_avg
+            older_avg = (
+                sum(scores[:-5]) / max(1, len(scores) - 5) if len(scores) > 5 else recent_avg
+            )
 
             if recent_avg > older_avg + 0.05:
                 trend = "increasing"
@@ -400,7 +402,9 @@ class PersonaMemory:
         return False
 
     def _row_to_anchor(self, row: aiosqlite.Row) -> PersonaAnchor:
-        drift_history_data = json.loads(row["drift_history_json"]) if row["drift_history_json"] else []
+        drift_history_data = (
+            json.loads(row["drift_history_json"]) if row["drift_history_json"] else []
+        )
         drift_history = [
             DriftHistoryEntry(
                 timestamp=entry["timestamp"],

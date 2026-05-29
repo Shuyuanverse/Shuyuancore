@@ -4,6 +4,7 @@
 
 定义人格的 25 个价值观维度及其默认值、范围约束。
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field
@@ -13,6 +14,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 class ValueRange(Enum):
     """价值观取值范围"""
+
     ZERO_TO_ONE = "zero_to_one"  # 0-1
     NEG_ONE_TO_ONE = "neg_one_to_one"  # -1 到 1
     PERCENT = "percent"  # 0-100
@@ -21,7 +23,7 @@ class ValueRange(Enum):
 @dataclass
 class ValueDimension:
     """价值观维度定义。
-    
+
     Attributes:
         name: 维度名称
         description: 描述
@@ -30,6 +32,7 @@ class ValueDimension:
         max_value: 最大值
         range_type: 范围类型
     """
+
     name: str
     description: str
     default_value: float = 0.5
@@ -40,10 +43,10 @@ class ValueDimension:
 
 class ValueDimensionsRegistry:
     """25 维价值观注册表。
-    
+
     提供维度定义、默认值、范围约束。
     """
-    
+
     # 25 维价值观定义
     DIMENSIONS = [
         ValueDimension(
@@ -172,62 +175,62 @@ class ValueDimensionsRegistry:
             default_value=0.5,
         ),
     ]
-    
+
     def __init__(self) -> None:
         """初始化注册表。"""
         self._custom_dimensions: Dict[str, ValueDimension] = {}
-    
+
     def get_dimension(self, name: str) -> Optional[ValueDimension]:
         """获取维度定义。
-        
+
         Args:
             name: 维度名称
-            
+
         Returns:
             Optional[ValueDimension]: 维度定义，不存在则返回 None
         """
         for dim in self.DIMENSIONS:
             if dim.name == name:
                 return dim
-        
+
         return self._custom_dimensions.get(name)
-    
+
     def get_all_dimensions(self) -> List[ValueDimension]:
         """获取所有维度定义。
-        
+
         Returns:
             List[ValueDimension]: 维度定义列表
         """
         return self.DIMENSIONS + list(self._custom_dimensions.values())
-    
+
     def get_default_values(self) -> Dict[str, float]:
         """获取所有维度的默认值。
-        
+
         Returns:
             Dict[str, float]: {维度名：默认值} 字典
         """
         return {dim.name: dim.default_value for dim in self.DIMENSIONS}
-    
+
     def validate_value(self, dimension_name: str, value: float) -> Tuple[bool, str]:
         """验证价值观取值是否合法。
-        
+
         Args:
             dimension_name: 维度名称
             value: 取值
-            
+
         Returns:
             Tuple[bool, str]: (是否合法，错误消息)
         """
         dim = self.get_dimension(dimension_name)
-        
+
         if dim is None:
             return False, f"Unknown dimension: {dimension_name}"
-        
+
         if value < dim.min_value or value > dim.max_value:
             return False, f"Value {value} out of range [{dim.min_value}, {dim.max_value}]"
-        
+
         return True, ""
-    
+
     def add_custom_dimension(
         self,
         name: str,
@@ -237,23 +240,23 @@ class ValueDimensionsRegistry:
         max_value: float = 1.0,
     ) -> bool:
         """添加自定义维度。
-        
+
         Args:
             name: 维度名称
             description: 描述
             default_value: 默认值
             min_value: 最小值
             max_value: 最大值
-            
+
         Returns:
             bool: 是否添加成功
         """
         if name in [d.name for d in self.DIMENSIONS]:
             return False
-        
+
         if name in self._custom_dimensions:
             return False
-        
+
         self._custom_dimensions[name] = ValueDimension(
             name=name,
             description=description,
@@ -261,12 +264,12 @@ class ValueDimensionsRegistry:
             min_value=min_value,
             max_value=max_value,
         )
-        
+
         return True
-    
+
     def to_dict(self) -> Dict[str, Any]:
         """转换为字典。
-        
+
         Returns:
             Dict[str, Any]: 字典表示
         """

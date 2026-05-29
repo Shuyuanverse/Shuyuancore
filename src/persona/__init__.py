@@ -1,6 +1,7 @@
 # Copyright 2026 ShuyuanCore contributors
 # SPDX-License-Identifier: Apache-2.0
 """人格编译与风格保护模块。"""
+
 from __future__ import annotations
 
 from .profile import PersonaProfile, StyleDimensions

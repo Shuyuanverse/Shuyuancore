@@ -4,6 +4,7 @@
 
 本模块定义了风格编码系统的核心数据结构和接口。
 """
+
 from __future__ import annotations
 
 import enum
@@ -14,6 +15,7 @@ from typing import Any, Dict, List, Optional
 
 class StyleFeatureType(str, enum.Enum):
     """11 种特征类型枚举"""
+
     VOCABULARY_RICHNESS = "vocabulary_richness"
     CATCHPHRASE = "catchphrase"
     WORD_FREQUENCY = "word_frequency"
@@ -31,7 +33,7 @@ class StyleFeatureType(str, enum.Enum):
 @dataclass
 class StyleConfig:
     """风格配置类。
-    
+
     Attributes:
         catchphrase_threshold: 口头禅频率阈值，默认 0.3
         min_catchphrase_length: 口头禅最小长度，默认 2
@@ -47,6 +49,7 @@ class StyleConfig:
         sklearn_available: sklearn 库是否可用，运行时检测
         jieba_available: jieba 库是否可用，运行时检测
     """
+
     catchphrase_threshold: float = 0.3
     min_catchphrase_length: int = 2
     max_catchphrase_length: int = 8
@@ -60,23 +63,26 @@ class StyleConfig:
     transformers_available: bool = False
     sklearn_available: bool = False
     jieba_available: bool = False
-    
+
     def __post_init__(self) -> None:
         """运行时依赖检测"""
         try:
             import jieba  # noqa: F401
+
             object.__setattr__(self, "jieba_available", True)
         except ImportError:
             pass
-        
+
         try:
             import sklearn  # noqa: F401
+
             object.__setattr__(self, "sklearn_available", True)
         except ImportError:
             pass
-        
+
         try:
             import transformers  # noqa: F401
+
             object.__setattr__(self, "transformers_available", True)
         except ImportError:
             pass
@@ -85,7 +91,7 @@ class StyleConfig:
 @dataclass
 class StyleExtractionResult:
     """风格提取结果。
-    
+
     Attributes:
         catchphrases: 口头禅→频率字典
         sentence_patterns: 句式模式→频率字典
@@ -97,6 +103,7 @@ class StyleExtractionResult:
         num_words: 词语数量
         total_chars: 总字符数
     """
+
     catchphrases: Dict[str, float] = field(default_factory=dict)
     sentence_patterns: Dict[str, float] = field(default_factory=dict)
     punctuation_habits: Dict[str, float] = field(default_factory=dict)
@@ -110,25 +117,25 @@ class StyleExtractionResult:
 
 class BaseStyleExtractor(ABC):
     """风格提取器基类。"""
-    
+
     @abstractmethod
     def extract(self, text: str) -> StyleExtractionResult:
         """从文本中提取风格特征。
-        
+
         Args:
             text: 输入文本
-            
+
         Returns:
             StyleExtractionResult: 风格提取结果
         """
         pass
-    
+
     def extract_async(self, text: str) -> StyleExtractionResult:
         """异步版本（默认同步实现）。
-        
+
         Args:
             text: 输入文本
-            
+
         Returns:
             StyleExtractionResult: 风格提取结果
         """

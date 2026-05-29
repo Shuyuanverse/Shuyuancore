@@ -10,6 +10,7 @@
 - arbitrate_agent：仲裁 Agent
 - dialogue_coordinator：对话协调器
 """
+
 from __future__ import annotations
 
 from .agent_protocol import (

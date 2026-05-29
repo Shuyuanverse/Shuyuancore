@@ -9,6 +9,7 @@
 - MessageBuilder：消息构建器（链式 API）
 - Protocol：通信协议常量
 """
+
 from __future__ import annotations
 
 import time
@@ -20,7 +21,7 @@ from uuid import uuid4
 
 class MessageType(Enum):
     """消息类型"""
-    
+
     REQUEST = "request"  # 请求
     RESPONSE = "response"  # 响应
     REVIEW = "review"  # 审视
@@ -31,7 +32,7 @@ class MessageType(Enum):
 
 class Priority(Enum):
     """优先级"""
-    
+
     LOW = 1  # 低
     NORMAL = 2  # 普通
     HIGH = 3  # 高
@@ -41,7 +42,7 @@ class Priority(Enum):
 @dataclass
 class AgentMessage:
     """Agent 间通信消息
-    
+
     Attributes:
         message_type: 消息类型
         sender: 发送者
@@ -53,7 +54,7 @@ class AgentMessage:
         message_id: 消息 ID
         parent_id: 父消息 ID（回复链追踪）
     """
-    
+
     message_type: MessageType
     sender: str
     receiver: str
@@ -63,7 +64,7 @@ class AgentMessage:
     timestamp: float = field(default_factory=time.time)
     message_id: str = field(default_factory=lambda: str(uuid4()))
     parent_id: Optional[str] = None  # 回复链追踪
-    
+
     def to_dict(self) -> Dict[str, Any]:
         """转换为字典"""
         return {
@@ -77,7 +78,7 @@ class AgentMessage:
             "message_id": self.message_id,
             "parent_id": self.parent_id,
         }
-    
+
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> AgentMessage:
         """从字典创建"""
@@ -96,7 +97,7 @@ class AgentMessage:
 
 class MessageBuilder:
     """消息构建器 — 链式 API
-    
+
     使用示例：
     ```python
     msg = (MessageBuilder
@@ -106,7 +107,7 @@ class MessageBuilder:
            .build())
     ```
     """
-    
+
     def __init__(self):
         """初始化消息构建器"""
         self._message_type: Optional[MessageType] = None
@@ -115,7 +116,7 @@ class MessageBuilder:
         self._content: Any = None
         self._priority: Priority = Priority.NORMAL
         self._metadata: Dict[str, Any] = {}
-    
+
     @classmethod
     def request(
         cls,
@@ -124,12 +125,12 @@ class MessageBuilder:
         content: Any,
     ) -> "MessageBuilder":
         """构建请求消息
-        
+
         Args:
             sender: 发送者
             receiver: 接收者
             content: 消息内容
-        
+
         Returns:
             MessageBuilder: 消息构建器
         """
@@ -139,7 +140,7 @@ class MessageBuilder:
         builder._receiver = receiver
         builder._content = content
         return builder
-    
+
     @classmethod
     def response(
         cls,
@@ -148,12 +149,12 @@ class MessageBuilder:
         content: Any,
     ) -> "MessageBuilder":
         """构建响应消息
-        
+
         Args:
             sender: 发送者
             receiver: 接收者
             content: 消息内容
-        
+
         Returns:
             MessageBuilder: 消息构建器
         """
@@ -163,46 +164,46 @@ class MessageBuilder:
         builder._receiver = receiver
         builder._content = content
         return builder
-    
+
     def with_priority(self, priority: Priority) -> "MessageBuilder":
         """设置优先级
-        
+
         Args:
             priority: 优先级
-        
+
         Returns:
             MessageBuilder: 消息构建器
         """
         self._priority = priority
         return self
-    
+
     def with_metadata(self, metadata: Dict[str, Any]) -> "MessageBuilder":
         """设置元数据
-        
+
         Args:
             metadata: 元数据
-        
+
         Returns:
             MessageBuilder: 消息构建器
         """
         self._metadata = metadata
         return self
-    
+
     def with_parent_id(self, parent_id: str) -> "MessageBuilder":
         """设置父消息 ID
-        
+
         Args:
             parent_id: 父消息 ID
-        
+
         Returns:
             MessageBuilder: 消息构建器
         """
         self._metadata["parent_id"] = parent_id
         return self
-    
+
     def build(self) -> AgentMessage:
         """构建消息
-        
+
         Returns:
             AgentMessage: 消息对象
         """
@@ -214,7 +215,7 @@ class MessageBuilder:
             raise ValueError("接收者未设置")
         if self._content is None:
             raise ValueError("消息内容未设置")
-        
+
         return AgentMessage(
             message_type=self._message_type,
             sender=self._sender,
@@ -227,16 +228,16 @@ class MessageBuilder:
 
 class Protocol:
     """通信协议常量"""
-    
+
     # Agent 名称
     DECISION_AGENT = "decision"
     REVIEW_AGENT = "review"
     ARBITRATE_AGENT = "arbitrate"
     COORDINATOR = "coordinator"
-    
+
     # 超时和重试
     MAX_RETRIES = 3
     TIMEOUT_SECONDS = 30
-    
+
     # 消息版本
     MESSAGE_VERSION = "1.0"

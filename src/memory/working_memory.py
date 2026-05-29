@@ -282,9 +282,7 @@ class WorkingMemory:
                 created_at=todo_row["created_at"],
                 updated_at=todo_row["updated_at"],
                 completed_at=todo_row["completed_at"],
-                metadata=json.loads(todo_row["metadata_json"])
-                if todo_row["metadata_json"]
-                else {},
+                metadata=json.loads(todo_row["metadata_json"]) if todo_row["metadata_json"] else {},
             )
             for todo_row in todo_rows
         ]

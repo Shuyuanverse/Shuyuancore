@@ -8,6 +8,7 @@
 - InnerReactionPipeline：内心反应管线编排
 - PersonaSynergyBus：人格感知总线
 """
+
 from __future__ import annotations
 
 from .perception import (
