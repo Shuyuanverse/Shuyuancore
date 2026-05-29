@@ -329,6 +329,15 @@ class PredictionConfig(BaseModel):
     feedback_loop: bool = True
 
 
+class EvolutionConfig(BaseModel):
+    birth_threshold: int = 40               # 同类任务触发次数
+    birth_window_days: int = 7              # 出生窗口（天）
+    fusion_threshold: int = 3               # 协作次数
+    fusion_window_days: int = 3             # 融合窗口（天）
+    death_inactive_days: int = 14           # 归档天数
+    enable_auto_evolution: bool = True      # 自动演化开关
+
+
 class SecurityConfig(BaseModel):
     require_approval: bool = True
     sandbox: str = "docker"

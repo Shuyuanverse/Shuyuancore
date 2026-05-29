@@ -144,6 +144,14 @@ prediction:
   max_idle_checks_per_conversation: 3
   feedback_loop: true
 
+evolution:
+  birth_threshold: 40
+  birth_window_days: 7
+  fusion_threshold: 3
+  fusion_window_days: 3
+  death_inactive_days: 14
+  enable_auto_evolution: true
+
 security:
   allowed_origins:
     - "http://localhost:3000"
