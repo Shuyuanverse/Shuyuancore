@@ -36,9 +36,7 @@ def encode_cursor(timestamp: int, entity_id: str, expires_in: int = 3600) -> str
     expires_at = int(_time.time()) + expires_in
     safe_id = base64.urlsafe_b64encode(entity_id.encode()).decode()
     data = f"{timestamp}_{safe_id}_{expires_at}"
-    sig = hmac.new(
-        secret.encode(), data.encode(), hashlib.sha256
-    ).hexdigest()[:16]
+    sig = hmac.new(secret.encode(), data.encode(), hashlib.sha256).hexdigest()[:16]
     combined = f"{data}_{sig}"
     return base64.urlsafe_b64encode(combined.encode()).decode()
 
@@ -53,9 +51,7 @@ def decode_cursor(cursor: str) -> tuple[int, str] | None:
             return None
         data, sig = parts
 
-        expected = hmac.new(
-            secret.encode(), data.encode(), hashlib.sha256
-        ).hexdigest()[:16]
+        expected = hmac.new(secret.encode(), data.encode(), hashlib.sha256).hexdigest()[:16]
         if not hmac.compare_digest(expected, sig):
             return None
 

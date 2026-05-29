@@ -21,7 +21,9 @@ class ToolRegistry(IToolRegistry):
         self._tools[spec.name] = tool
         logger.info(
             "工具注册: %s（类别: %s, 危险: %s）",
-            spec.name, spec.category, spec.dangerous,
+            spec.name,
+            spec.category,
+            spec.dangerous,
         )
 
     def get_tool(self, name: str) -> ITool | None:
@@ -30,11 +32,7 @@ class ToolRegistry(IToolRegistry):
     def list_tools(self, category: str | None = None) -> list[ToolSpec]:
         if category is None:
             return [t.get_spec() for t in self._tools.values()]
-        return [
-            t.get_spec()
-            for t in self._tools.values()
-            if t.get_spec().category == category
-        ]
+        return [t.get_spec() for t in self._tools.values() if t.get_spec().category == category]
 
     def get_tool_names(self) -> list[str]:
         return list(self._tools.keys())
@@ -75,9 +73,7 @@ class ToolRegistry(IToolRegistry):
                 timeout=config.approval_timeout,
             )
             approval_id = req.approval_id
-            approved = await approval_mgr.wait(
-                approval_id, timeout=config.approval_timeout
-            )
+            approved = await approval_mgr.wait(approval_id, timeout=config.approval_timeout)
             if not approved:
                 get_audit_logger().log(
                     user_id=user_id,

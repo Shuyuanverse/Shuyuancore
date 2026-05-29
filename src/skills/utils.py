@@ -105,9 +105,7 @@ def node_to_markdown(node: SkillNode) -> str:
         "status": node.status,
         "is_pinned": node.is_pinned,
     }
-    front_str = yaml.dump(
-        front, allow_unicode=True, default_flow_style=False, sort_keys=False
-    )
+    front_str = yaml.dump(front, allow_unicode=True, default_flow_style=False, sort_keys=False)
     sections = ""
     if node.causality_level0:
         sections += f"\n## 因果链\n\n{node.causality_level0}\n"

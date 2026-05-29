@@ -8,6 +8,7 @@ logger = logging.getLogger(__name__)
 
 try:
     import jieba.posseg as pseg
+
     HAS_JIEBA = True
 except ImportError:
     HAS_JIEBA = False
@@ -15,6 +16,7 @@ except ImportError:
 
 try:
     from snownlp import SnowNLP
+
     HAS_SNOWNLP = True
 except ImportError:
     HAS_SNOWNLP = False
@@ -27,10 +29,10 @@ _PATTERN_MARKERS: set[str] = {"x", "m", "eng"}
 
 
 class JiebaEntityExtractor(IEntityExtractor):
-
     def __init__(self, user_dict_path: str | None = None) -> None:
         if user_dict_path and HAS_JIEBA:
             import jieba
+
             jieba.load_userdict(user_dict_path)
 
     def extract(self, text: str) -> list[str]:
@@ -59,7 +61,6 @@ class JiebaEntityExtractor(IEntityExtractor):
 
 
 class SnowNlpEmotionAnalyzer(IEmotionAnalyzer):
-
     def analyze(self, text: str) -> float:
         if not HAS_SNOWNLP or not text.strip():
             return 0.5
@@ -73,7 +74,6 @@ class SnowNlpEmotionAnalyzer(IEmotionAnalyzer):
 
 
 class CompositeExtractor(IEntityExtractor):
-
     def __init__(self, extractors: list[IEntityExtractor]) -> None:
         self._extractors = extractors
 

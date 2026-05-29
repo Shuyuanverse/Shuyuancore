@@ -19,7 +19,6 @@ _EVIDENCE_SYSTEM_PROMPT = """你是一个基于事实的决策者（证据更新
 
 
 class EvidenceUpdater(IUpdater):
-
     def __init__(self, model_provider: IModelProvider) -> None:
         self._model_provider = model_provider
 
@@ -33,9 +32,7 @@ class EvidenceUpdater(IUpdater):
 
         if ctx.belief_store:
             recent = await ctx.belief_store.get(ctx.conversation_id, limit=20)
-            belief_context = "\n".join(
-                f"[置信度 {b.confidence:.2f}] {b.content}" for b in recent
-            )
+            belief_context = "\n".join(f"[置信度 {b.confidence:.2f}] {b.content}" for b in recent)
             if belief_context:
                 messages.append(
                     {

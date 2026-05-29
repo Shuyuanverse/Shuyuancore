@@ -80,9 +80,7 @@ class FileConvertTool(ITool):
         action = params.get("action", "")
         valid_actions = {"pdf_to_text", "ocr_image"}
         if action not in valid_actions:
-            errors.append(
-                f"action must be one of: {', '.join(sorted(valid_actions))}"
-            )
+            errors.append(f"action must be one of: {', '.join(sorted(valid_actions))}")
             return errors
 
         input_path = params.get("input_path")
@@ -119,13 +117,9 @@ class FileConvertTool(ITool):
 
         try:
             if action == "pdf_to_text":
-                return await self._extract_pdf_text(
-                    input_path, output_path, timeout_val, start
-                )
+                return await self._extract_pdf_text(input_path, output_path, timeout_val, start)
             else:
-                return await self._ocr_image(
-                    input_path, output_path, language, timeout_val, start
-                )
+                return await self._ocr_image(input_path, output_path, language, timeout_val, start)
         except Exception as e:
             return ToolResult(
                 success=False,
@@ -181,8 +175,7 @@ class FileConvertTool(ITool):
                     return ToolResult(
                         success=False,
                         error=(
-                            f"pdftotext failed (exit {result.returncode}): "
-                            f"{result.stderr.strip()}"
+                            f"pdftotext failed (exit {result.returncode}): {result.stderr.strip()}"
                         ),
                         duration_ms=(time.time() - start) * 1000,
                     )
@@ -256,9 +249,7 @@ class FileConvertTool(ITool):
 
         try:
             image = Image.open(input_path)
-            text: str = pytesseract.image_to_string(
-                image, lang=language, timeout=timeout_val
-            )
+            text: str = pytesseract.image_to_string(image, lang=language, timeout=timeout_val)
         except Exception as e:
             return ToolResult(
                 success=False,

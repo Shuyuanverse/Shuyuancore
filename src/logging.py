@@ -1,3 +1,6 @@
+# Copyright 2026 ShuyuanCore contributors
+# SPDX-License-Identifier: Apache-2.0
+
 from __future__ import annotations
 
 import logging
@@ -13,6 +16,7 @@ import structlog
 
 try:
     import colorlog
+
     HAS_COLORLOG = True
 except ImportError:
     HAS_COLORLOG = False
@@ -51,7 +55,6 @@ def _parse_size(size_str: str) -> int:
 
 
 class CorrelationIdFilter(logging.Filter):
-
     def filter(self, record: logging.LogRecord) -> bool:
         cid = _correlation_id_ctx.get()
         record.correlation_id = cid or "-"
@@ -59,7 +62,6 @@ class CorrelationIdFilter(logging.Filter):
 
 
 class SensitiveDataFilter(logging.Filter):
-
     def filter(self, record: logging.LogRecord) -> bool:
         msg = record.getMessage()
         for pattern, replacement in _SENSITIVE_PATTERNS:
@@ -88,6 +90,7 @@ def _timestamper_processor(
     event_dict: MutableMapping[str, Any],
 ) -> MutableMapping[str, Any]:
     from datetime import datetime, timezone
+
     event_dict["timestamp"] = datetime.now(timezone.utc).isoformat()
     return event_dict
 
@@ -139,11 +142,7 @@ def setup_logging(
         if cfg and hasattr(cfg, "log_rotation")
         else 10 * 1024 * 1024
     )
-    backup_count = (
-        cfg.log_rotation.backup_count
-        if cfg and hasattr(cfg, "log_rotation")
-        else 5
-    )
+    backup_count = cfg.log_rotation.backup_count if cfg and hasattr(cfg, "log_rotation") else 5
 
     log_dir_path = Path(log_path)
     log_dir_path.mkdir(parents=True, exist_ok=True)

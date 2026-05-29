@@ -20,7 +20,6 @@ _MEMORY_DIR = Path("data/memories")
 
 
 class CoreMemory:
-
     def __init__(self, config: MemoryConfig | None = None) -> None:
         self._config: MemoryConfig = config or get_settings().memory
 

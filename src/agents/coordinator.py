@@ -29,7 +29,6 @@ logger = logging.getLogger(__name__)
 
 
 class Coordinator:
-
     def __init__(
         self,
         model_provider: IModelProvider,
@@ -117,9 +116,7 @@ class Coordinator:
 
         return draft
 
-    async def _safe_update(
-        self, ctx: UpdateContext, updater: IUpdater, name: str
-    ) -> UpdaterResult:
+    async def _safe_update(self, ctx: UpdateContext, updater: IUpdater, name: str) -> UpdaterResult:
         try:
             return await updater.update(ctx)
         except Exception:

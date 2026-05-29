@@ -19,7 +19,6 @@ _MEMORY_TYPE_ROLE_MAP: dict[str, str] = {
 
 
 class BeliefReader(IReader):
-
     def __init__(self, belief_store: IBeliefStore) -> None:
         self._belief_store = belief_store
 

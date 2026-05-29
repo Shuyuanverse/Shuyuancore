@@ -1,3 +1,6 @@
+# Copyright 2026 ShuyuanCore contributors
+# SPDX-License-Identifier: Apache-2.0
+
 from __future__ import annotations
 
 import os
@@ -14,6 +17,7 @@ _ENV_VAR_PATTERN = re.compile(r"\$\{(\w+)\}")
 
 def _resolve_env_vars(value: Any) -> Any:
     if isinstance(value, str):
+
         def _replacer(m: re.Match[str]) -> str:
             return os.environ.get(m.group(1), "")
 
@@ -137,13 +141,25 @@ class SkillsConfig(BaseModel):
     value_score_threshold: float = 0.7
     correction_keywords: list[str] = Field(
         default_factory=lambda: [
-            "不对", "错了", "不是", "改一下",
-            "重新", "错了错了", "我意思是", "你理解错了",
+            "不对",
+            "错了",
+            "不是",
+            "改一下",
+            "重新",
+            "错了错了",
+            "我意思是",
+            "你理解错了",
         ]
     )
     refinement_keywords: list[str] = Field(
         default_factory=lambda: [
-            "再加", "补充", "注意", "别忘了", "也要", "同时", "顺便",
+            "再加",
+            "补充",
+            "注意",
+            "别忘了",
+            "也要",
+            "同时",
+            "顺便",
         ]
     )
     llm_review_enabled: bool = False
@@ -203,8 +219,7 @@ class PersonaStyleConfig(BaseModel):
     def _lock_decision_anchor_dimensions(cls, v: int) -> int:
         if v != 256:
             raise ValueError(
-                f"style.decision_anchor_dimensions 为锁定参数，"
-                f"值必须为 256，当前为 {v}"
+                f"style.decision_anchor_dimensions 为锁定参数，值必须为 256，当前为 {v}"
             )
         return v
 
@@ -215,7 +230,10 @@ class PersonaHardFactConfig(BaseModel):
     layer: int = 1
     categories: list[str] = Field(
         default_factory=lambda: [
-            "identity", "knowledge_boundary", "relation", "bottom_line",
+            "identity",
+            "knowledge_boundary",
+            "relation",
+            "bottom_line",
         ]
     )
 
@@ -335,8 +353,16 @@ class ToolsConfig(BaseModel):
     approval_timeout: int = 300
     terminal_whitelist: list[str] = Field(
         default_factory=lambda: [
-            "ls", "pwd", "echo", "cat", "head", "tail",
-            "grep", "which", "whoami", "date",
+            "ls",
+            "pwd",
+            "echo",
+            "cat",
+            "head",
+            "tail",
+            "grep",
+            "which",
+            "whoami",
+            "date",
         ]
     )
     code_exec_timeout: int = 30
@@ -348,9 +374,7 @@ class ToolsConfig(BaseModel):
 
 
 class AgentsConfig(BaseModel):
-    updaters_enabled: list[str] = Field(
-        default_factory=lambda: ["evidence", "risk", "innovation"]
-    )
+    updaters_enabled: list[str] = Field(default_factory=lambda: ["evidence", "risk", "innovation"])
     perturbation_threshold_low: float = 0.3
     perturbation_threshold_high: float = 0.7
     sub_agent_max_concurrent: int = 5

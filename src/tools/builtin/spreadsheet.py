@@ -8,6 +8,7 @@ from src.tools.interfaces import ITool, ToolParameter, ToolResult, ToolSpec
 
 try:
     import openpyxl
+
     HAS_OPENPYXL = True
 except ImportError:
     HAS_OPENPYXL = False
@@ -104,9 +105,7 @@ class SpreadsheetTool(ITool):
         errors: list[str] = []
         action = params.get("action", "")
         if action not in ("read", "write"):
-            errors.append(
-                f"Invalid action: {action}. Must be 'read' or 'write'."
-            )
+            errors.append(f"Invalid action: {action}. Must be 'read' or 'write'.")
 
         path_str = params.get("path", "")
         if not path_str:
@@ -115,16 +114,13 @@ class SpreadsheetTool(ITool):
             ext = Path(path_str).suffix.lower()
             if ext not in (".csv", ".xlsx"):
                 errors.append(
-                    f"Unsupported file extension: {ext}. "
-                    "Only .csv and .xlsx are supported."
+                    f"Unsupported file extension: {ext}. Only .csv and .xlsx are supported."
                 )
 
         if action == "write":
             data = params.get("data")
             if not data:
-                errors.append(
-                    "data parameter is required and must not be empty for write action"
-                )
+                errors.append("data parameter is required and must not be empty for write action")
             elif not isinstance(data, list):
                 errors.append("data parameter must be a list of dicts")
 
@@ -287,9 +283,7 @@ class SpreadsheetTool(ITool):
                 else:
                     raw_reader = csv.reader(f)
                     for raw_row in raw_reader:
-                        rows.append(
-                            {str(i): val for i, val in enumerate(raw_row)}
-                        )
+                        rows.append({str(i): val for i, val in enumerate(raw_row)})
             return rows
 
         data = await asyncio.to_thread(_read)
@@ -338,9 +332,7 @@ class SpreadsheetTool(ITool):
             if sheet_name not in wb.sheetnames:
                 available = ", ".join(wb.sheetnames)
                 wb.close()
-                raise ValueError(
-                    f"Sheet '{sheet_name}' not found. Available sheets: {available}"
-                )
+                raise ValueError(f"Sheet '{sheet_name}' not found. Available sheets: {available}")
             ws = wb[sheet_name]
             rows: list[dict[str, Any]] = []
             all_rows = list(ws.iter_rows(values_only=True))
@@ -357,9 +349,7 @@ class SpreadsheetTool(ITool):
                     rows.append(row_dict)
             else:
                 for row_values in all_rows:
-                    rows.append(
-                        {str(i): val for i, val in enumerate(row_values)}
-                    )
+                    rows.append({str(i): val for i, val in enumerate(row_values)})
             wb.close()
             return rows
 

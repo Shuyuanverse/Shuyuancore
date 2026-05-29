@@ -51,9 +51,7 @@ class TranslateTool(ITool):
                 ToolParameter(
                     name="target_lang",
                     type="string",
-                    description=(
-                        "Target language code (e.g. 'zh', 'en', 'ja')"
-                    ),
+                    description=("Target language code (e.g. 'zh', 'en', 'ja')"),
                     required=False,
                     default="zh",
                 ),
@@ -100,16 +98,13 @@ class TranslateTool(ITool):
 
         provider = params.get("provider", "google")
         if provider not in ("google", "deepl"):
-            errors.append(
-                f"Invalid provider: {provider}. Must be 'google' or 'deepl'."
-            )
+            errors.append(f"Invalid provider: {provider}. Must be 'google' or 'deepl'.")
 
         if provider == "deepl":
             api_key = os.environ.get("DEEPL_API_KEY")
             if not api_key:
                 errors.append(
-                    "DEEPL_API_KEY environment variable is required "
-                    "when using the deepl provider"
+                    "DEEPL_API_KEY environment variable is required when using the deepl provider"
                 )
 
         return errors
@@ -168,9 +163,7 @@ class TranslateTool(ITool):
         import urllib.parse
 
         encoded_text = urllib.parse.quote(text, safe="")
-        url = GOOGLE_TRANSLATE_URL.format(
-            source=source, target=target, text=encoded_text
-        )
+        url = GOOGLE_TRANSLATE_URL.format(source=source, target=target, text=encoded_text)
 
         async with httpx.AsyncClient(timeout=timeout) as client:
             response = await client.get(url)
@@ -234,9 +227,7 @@ class TranslateTool(ITool):
         }
 
         async with httpx.AsyncClient(timeout=timeout) as client:
-            response = await client.post(
-                DEEPL_API_URL, json=payload, headers=headers
-            )
+            response = await client.post(DEEPL_API_URL, json=payload, headers=headers)
             response.raise_for_status()
             result = response.json()
 

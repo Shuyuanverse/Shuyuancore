@@ -90,5 +90,3 @@ class StyleEncoder:
         if avg_len > 30:
             return 0.2
         return 1.0 - (avg_len - 10) / 25
-
-

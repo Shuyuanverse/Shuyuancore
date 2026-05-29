@@ -17,7 +17,6 @@ _DEFAULT_MODEL = "gpt-4o"
 
 
 class OpenAICompatProvider(IModelProvider):
-
     def __init__(
         self,
         api_key: str = "",
@@ -103,9 +102,7 @@ class OpenAICompatProvider(IModelProvider):
         async with httpx.AsyncClient(
             timeout=httpx.Timeout(self._client._timeout, connect=self._client._connect_timeout),
         ) as client:
-            async with client.stream(
-                "POST", url, headers=headers, json=payload
-            ) as response:
+            async with client.stream("POST", url, headers=headers, json=payload) as response:
                 response.raise_for_status()
                 async for line in response.aiter_lines():
                     if not line.startswith("data: "):
@@ -173,7 +170,6 @@ class OpenAICompatProvider(IModelProvider):
 
 
 class OllamaProvider(OpenAICompatProvider):
-
     def __init__(
         self,
         base_url: str = "http://localhost:11434",
@@ -253,9 +249,7 @@ class OllamaProvider(OpenAICompatProvider):
         async with httpx.AsyncClient(
             timeout=httpx.Timeout(self._client._timeout, connect=self._client._connect_timeout),
         ) as client:
-            async with client.stream(
-                "POST", ollama_url, headers=headers, json=payload
-            ) as response:
+            async with client.stream("POST", ollama_url, headers=headers, json=payload) as response:
                 response.raise_for_status()
                 async for line in response.aiter_lines():
                     if not line.strip():

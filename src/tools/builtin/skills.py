@@ -9,7 +9,6 @@ from src.tools.interfaces import ITool, ToolParameter, ToolResult, ToolSpec
 
 
 class SkillsTool(ITool):
-
     def __init__(self, store: ISkillStore | None = None) -> None:
         self._store = store
 

@@ -1,6 +1,5 @@
 __pycache__/
 *.pyc
-*.pyo
 .eggs/
 *.egg-info/
 dist/
@@ -9,12 +8,10 @@ build/
 .mypy_cache/
 .ruff_cache/
 reports/
-data/state.db
-data/logs/
-data/chroma/
-data/backups/
-data/memories/
-data/skills/
+data/
 .env
 .vscode/
 .idea/
+benchmarks/
+.git/
+.coverage

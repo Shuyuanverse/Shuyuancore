@@ -31,30 +31,20 @@ class UpdaterResult:
 
 
 class IUpdater(ABC):
-
     @abstractmethod
-    async def update(self, ctx: UpdateContext) -> UpdaterResult:
-        ...
+    async def update(self, ctx: UpdateContext) -> UpdaterResult: ...
 
 
 class IReviewer(ABC):
-
     @abstractmethod
-    async def review(self, ctx: UpdateContext, draft: str) -> dict[str, Any]:
-        ...
+    async def review(self, ctx: UpdateContext, draft: str) -> dict[str, Any]: ...
 
 
 class IArbitrator(ABC):
-
     @abstractmethod
-    async def arbitrate(
-        self, ctx: UpdateContext, updater_results: list[UpdaterResult]
-    ) -> str:
-        ...
+    async def arbitrate(self, ctx: UpdateContext, updater_results: list[UpdaterResult]) -> str: ...
 
 
 class ISubAgent(ABC):
-
     @abstractmethod
-    async def run(self, task: str, scope: str, context: dict[str, Any]) -> str:
-        ...
+    async def run(self, task: str, scope: str, context: dict[str, Any]) -> str: ...

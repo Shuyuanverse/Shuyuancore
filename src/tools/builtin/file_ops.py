@@ -10,18 +10,27 @@ from src.config import get_settings
 from src.security.approval import get_approval_manager
 from src.tools.interfaces import ITool, ToolParameter, ToolResult, ToolSpec
 
-VALID_OPERATIONS = frozenset({
-    "read", "write", "edit", "search", "delete", "list",
-})
+VALID_OPERATIONS = frozenset(
+    {
+        "read",
+        "write",
+        "edit",
+        "search",
+        "delete",
+        "list",
+    }
+)
 
-BLOCKED_PATTERNS = frozenset({
-    ".env",
-    "config/default.yaml",
-    "*.pem",
-    "*.key",
-    "id_rsa",
-    "id_ed25519",
-})
+BLOCKED_PATTERNS = frozenset(
+    {
+        ".env",
+        "config/default.yaml",
+        "*.pem",
+        "*.key",
+        "id_rsa",
+        "id_ed25519",
+    }
+)
 
 
 class FileOpsTool(ITool):
@@ -94,8 +103,7 @@ class FileOpsTool(ITool):
         operation = params.get("operation", "")
         if operation not in VALID_OPERATIONS:
             errors.append(
-                f"Invalid operation: {operation}. "
-                f"Must be one of: {', '.join(VALID_OPERATIONS)}"
+                f"Invalid operation: {operation}. Must be one of: {', '.join(VALID_OPERATIONS)}"
             )
 
         path_str = params.get("path", "")
@@ -104,15 +112,11 @@ class FileOpsTool(ITool):
         else:
             resolved = self._resolve_path(path_str)
             if self._is_path_blocked(resolved):
-                errors.append(
-                    f"Access denied: path matches a blocked pattern: {resolved}"
-                )
+                errors.append(f"Access denied: path matches a blocked pattern: {resolved}")
 
         if operation == "edit":
             if "old_str" not in params or "new_str" not in params:
-                errors.append(
-                    "edit operation requires 'old_str' and 'new_str' parameters"
-                )
+                errors.append("edit operation requires 'old_str' and 'new_str' parameters")
 
         if operation == "search":
             if not params.get("pattern"):
@@ -153,9 +157,7 @@ class FileOpsTool(ITool):
                 user_id=user_id,
                 timeout=config.approval_timeout,
             )
-            approved = await approval_mgr.wait(
-                req.approval_id, timeout=config.approval_timeout
-            )
+            approved = await approval_mgr.wait(req.approval_id, timeout=config.approval_timeout)
             if not approved:
                 return ToolResult(
                     success=False,
@@ -169,9 +171,7 @@ class FileOpsTool(ITool):
         if operation == "read":
             return await self._read(resolved, encoding)
         elif operation == "write":
-            return await self._write(
-                resolved, params.get("content", ""), encoding
-            )
+            return await self._write(resolved, params.get("content", ""), encoding)
         elif operation == "edit":
             return await self._edit(
                 resolved,
@@ -283,9 +283,7 @@ class FileOpsTool(ITool):
                 error=f"Path is not a file: {path}",
             )
         try:
-            content = await asyncio.to_thread(
-                path.read_text, encoding=encoding
-            )
+            content = await asyncio.to_thread(path.read_text, encoding=encoding)
             return ToolResult(success=True, data=content)
         except Exception as e:
             return ToolResult(
@@ -293,9 +291,7 @@ class FileOpsTool(ITool):
                 error=f"Failed to read file: {e}",
             )
 
-    async def _write(
-        self, path: Path, content: str, encoding: str
-    ) -> ToolResult:
+    async def _write(self, path: Path, content: str, encoding: str) -> ToolResult:
         """Write content to a file, creating parent directories if needed.
 
         Args:
@@ -311,9 +307,7 @@ class FileOpsTool(ITool):
             parent = path.parent
             if not parent.exists():
                 await asyncio.to_thread(parent.mkdir, parents=True, exist_ok=True)
-            await asyncio.to_thread(
-                path.write_text, content, encoding=encoding
-            )
+            await asyncio.to_thread(path.write_text, content, encoding=encoding)
             return ToolResult(
                 success=True,
                 data=f"Written {len(content)} bytes to {path}",
@@ -324,9 +318,7 @@ class FileOpsTool(ITool):
                 error=f"Failed to write file: {e}",
             )
 
-    async def _edit(
-        self, path: Path, old_str: str, new_str: str, encoding: str
-    ) -> ToolResult:
+    async def _edit(self, path: Path, old_str: str, new_str: str, encoding: str) -> ToolResult:
         """Search and replace text in a file.
 
         Reads the file, replaces all occurrences of old_str with
@@ -353,9 +345,7 @@ class FileOpsTool(ITool):
                 error=f"Path is not a file: {path}",
             )
         try:
-            content = await asyncio.to_thread(
-                path.read_text, encoding=encoding
-            )
+            content = await asyncio.to_thread(path.read_text, encoding=encoding)
             count = content.count(old_str)
             if count == 0:
                 return ToolResult(
@@ -363,9 +353,7 @@ class FileOpsTool(ITool):
                     error=f"Pattern not found in {path}",
                 )
             new_content = content.replace(old_str, new_str)
-            await asyncio.to_thread(
-                path.write_text, new_content, encoding=encoding
-            )
+            await asyncio.to_thread(path.write_text, new_content, encoding=encoding)
             return ToolResult(
                 success=True,
                 data=f"Replaced {count} occurrence(s) in {path}",
@@ -406,16 +394,12 @@ class FileOpsTool(ITool):
                 if not file_path.is_file():
                     continue
                 try:
-                    content = await asyncio.to_thread(
-                        file_path.read_text, errors="replace"
-                    )
+                    content = await asyncio.to_thread(file_path.read_text, errors="replace")
                 except Exception:
                     continue
                 for line_num, line in enumerate(content.splitlines(), 1):
                     if pattern in line:
-                        matches.append(
-                            f"{file_path}:{line_num}:{line.strip()[:200]}"
-                        )
+                        matches.append(f"{file_path}:{line_num}:{line.strip()[:200]}")
             return ToolResult(
                 success=True,
                 data={
@@ -499,12 +483,14 @@ class FileOpsTool(ITool):
             entries: list[dict[str, Any]] = []
             for entry in sorted(path.iterdir()):
                 stat = entry.stat() if entry.exists() else None
-                entries.append({
-                    "name": entry.name,
-                    "type": "dir" if entry.is_dir() else "file",
-                    "size": stat.st_size if stat else 0,
-                    "modified": int(stat.st_mtime) if stat else 0,
-                })
+                entries.append(
+                    {
+                        "name": entry.name,
+                        "type": "dir" if entry.is_dir() else "file",
+                        "size": stat.st_size if stat else 0,
+                        "modified": int(stat.st_mtime) if stat else 0,
+                    }
+                )
             return ToolResult(
                 success=True,
                 data={

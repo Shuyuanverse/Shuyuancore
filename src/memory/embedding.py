@@ -7,7 +7,6 @@ logger = logging.getLogger(__name__)
 
 
 class EmbeddingService:
-
     def __init__(self, model_provider: Any | None = None) -> None:
         self._provider = model_provider
 

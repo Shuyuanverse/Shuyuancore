@@ -39,8 +39,7 @@ class WebTool(ITool):
                     name="action",
                     type="string",
                     description=(
-                        "Action to perform: 'get' to fetch a URL, "
-                        "'search' to search the web"
+                        "Action to perform: 'get' to fetch a URL, 'search' to search the web"
                     ),
                     required=True,
                 ),
@@ -105,9 +104,7 @@ class WebTool(ITool):
         action = params.get("action", "")
 
         if action not in ("get", "search"):
-            errors.append(
-                f"Invalid action: '{action}'. Must be 'get' or 'search'."
-            )
+            errors.append(f"Invalid action: '{action}'. Must be 'get' or 'search'.")
 
         if action == "get":
             url = params.get("url")
@@ -117,8 +114,7 @@ class WebTool(ITool):
                 parsed = urllib.parse.urlparse(url.strip())
                 if parsed.scheme not in ("http", "https"):
                     errors.append(
-                        f"Invalid URL scheme: '{parsed.scheme}'. "
-                        "Only http and https are supported."
+                        f"Invalid URL scheme: '{parsed.scheme}'. Only http and https are supported."
                     )
 
         if action == "search":
@@ -163,9 +159,7 @@ class WebTool(ITool):
 
         action = params.get("action", "")
         timeout = int(params.get("timeout", self._default_timeout))
-        respect_robots = bool(
-            params.get("respect_robots", self._default_respect_robots)
-        )
+        respect_robots = bool(params.get("respect_robots", self._default_respect_robots))
         max_results = int(params.get("max_results", 5))
 
         start_time = time.time()
@@ -245,17 +239,12 @@ class WebTool(ITool):
             if not allowed:
                 return ToolResult(
                     success=False,
-                    error=(
-                        f"Access denied by robots.txt for: {url}"
-                    ),
+                    error=(f"Access denied by robots.txt for: {url}"),
                 )
 
         headers = {
             "User-Agent": self._user_agent,
-            "Accept": (
-                "text/html,application/xhtml+xml,"
-                "application/xml;q=0.9,*/*;q=0.8"
-            ),
+            "Accept": ("text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"),
             "Accept-Language": "en-US,en;q=0.5",
         }
 
@@ -315,16 +304,11 @@ class WebTool(ITool):
         """
 
         encoded_query = urllib.parse.quote(query)
-        search_url = (
-            f"https://html.duckduckgo.com/html/?q={encoded_query}"
-        )
+        search_url = f"https://html.duckduckgo.com/html/?q={encoded_query}"
 
         headers = {
             "User-Agent": self._user_agent,
-            "Accept": (
-                "text/html,application/xhtml+xml,"
-                "application/xml;q=0.9,*/*;q=0.8"
-            ),
+            "Accept": ("text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"),
             "Accept-Language": "en-US,en;q=0.5",
         }
 
@@ -336,9 +320,7 @@ class WebTool(ITool):
                 response = await client.get(search_url, headers=headers)
                 response.raise_for_status()
 
-            results = self._parse_duckduckgo_results(
-                response.text, max_results
-            )
+            results = self._parse_duckduckgo_results(response.text, max_results)
 
             return ToolResult(
                 success=True,
@@ -388,7 +370,7 @@ class WebTool(ITool):
         result_blocks = re.finditer(
             r'<div[^>]*class="[^"]*\bresult\b[^"]*"[^>]*>.*?'
             r'<a[^>]*class="[^"]*\bresult__a\b[^"]*"[^>]*href="([^"]*)"[^>]*>'
-            r'(.*?)</a>.*?'
+            r"(.*?)</a>.*?"
             r'<a[^>]*class="[^"]*\bresult__snippet\b[^"]*"[^>]*>(.*?)</a>',
             html_text,
             re.DOTALL,
@@ -399,26 +381,22 @@ class WebTool(ITool):
                 break
 
             href = html.unescape(match.group(1))
-            title_raw = html.unescape(
-                re.sub(r'<[^>]+>', '', match.group(2))
-            )
-            snippet_raw = html.unescape(
-                re.sub(r'<[^>]+>', '', match.group(3))
-            )
+            title_raw = html.unescape(re.sub(r"<[^>]+>", "", match.group(2)))
+            snippet_raw = html.unescape(re.sub(r"<[^>]+>", "", match.group(3)))
 
             parsed = urllib.parse.urlparse(href)
-            actual_url = urllib.parse.parse_qs(
-                parsed.query
-            ).get("uddg", [href])[0]
+            actual_url = urllib.parse.parse_qs(parsed.query).get("uddg", [href])[0]
 
-            title = ' '.join(title_raw.split())
-            snippet = ' '.join(snippet_raw.split())
+            title = " ".join(title_raw.split())
+            snippet = " ".join(snippet_raw.split())
 
-            results.append({
-                "title": title,
-                "url": actual_url,
-                "snippet": snippet,
-            })
+            results.append(
+                {
+                    "title": title,
+                    "url": actual_url,
+                    "snippet": snippet,
+                }
+            )
 
         return results
 

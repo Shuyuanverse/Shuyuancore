@@ -21,7 +21,8 @@ class PipelineContext:
             self.drift_history.append(entry)
             logger.info(
                 "[pipeline] 记录漂移: drift=%.4f level=%s",
-                entry.get("drift_score", 0), entry.get("alert_level", "none"),
+                entry.get("drift_score", 0),
+                entry.get("alert_level", "none"),
             )
 
     async def get_drift_history(self, limit: int = 50) -> list[dict]:
@@ -74,7 +75,8 @@ async def orchestrate_background(
                         reviewed = await evolution_engine.review_and_apply(prop)
                         logger.info(
                             "[pipeline] 演化提议 %s: %s",
-                            reviewed.proposal_id, reviewed.status,
+                            reviewed.proposal_id,
+                            reviewed.status,
                         )
             except Exception as exc:
                 logger.warning("[pipeline] 演化检测异常: %s", exc)

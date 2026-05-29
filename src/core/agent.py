@@ -1,3 +1,6 @@
+# Copyright 2026 ShuyuanCore contributors
+# SPDX-License-Identifier: Apache-2.0
+
 from __future__ import annotations
 
 import asyncio
@@ -45,7 +48,6 @@ logger = logging.getLogger(__name__)
 
 
 class Agent:
-
     def __init__(
         self,
         model_provider: IModelProvider,
@@ -101,9 +103,7 @@ class Agent:
 
         readiness = wake_readiness(message)
         if readiness > 0.5:
-            similar = await self._belief_store.search_similar(
-                message, top_k=5, min_confidence=0.1
-            )
+            similar = await self._belief_store.search_similar(message, top_k=5, min_confidence=0.1)
             for belief, score in similar:
                 ws = wake_score(
                     belief=belief,
@@ -180,18 +180,14 @@ class Agent:
                         last_accessed=current_time_ms(),
                         conversation_date=conversation_date,
                     )
-                    await self._belief_store.add(
-                        conversation_id, assistant_belief
-                    )
+                    await self._belief_store.add(conversation_id, assistant_belief)
                     break
                 except Exception:
                     logger.exception("coordinator_failed_fallback_to_llm")
 
             pending_tool_calls: list[dict[str, Any]] = []
 
-            async for event in self._model_provider.chat_stream(
-                history=context
-            ):
+            async for event in self._model_provider.chat_stream(history=context):
                 if event.type == "content":
                     full_response += event.content
                     yield event.content
@@ -226,9 +222,7 @@ class Agent:
                     last_accessed=current_time_ms(),
                     conversation_date=conversation_date,
                 )
-                await self._belief_store.add(
-                    conversation_id, assistant_belief
-                )
+                await self._belief_store.add(conversation_id, assistant_belief)
                 break
 
             tool_results: list[dict[str, Any]] = []
@@ -238,18 +232,13 @@ class Agent:
                 tool_name = func_info.get("name", "")
                 raw_args = func_info.get("arguments", "{}")
                 try:
-                    arguments = (
-                        json.loads(raw_args)
-                        if isinstance(raw_args, str)
-                        else raw_args
-                    )
+                    arguments = json.loads(raw_args) if isinstance(raw_args, str) else raw_args
                 except json.JSONDecodeError:
                     arguments = {}
 
                 try:
                     require_approval = (
-                        tool_name in self._dangerous_tools
-                        and resume_event is not None
+                        tool_name in self._dangerous_tools and resume_event is not None
                     )
                     if require_approval:
                         assert resume_event is not None
@@ -281,9 +270,7 @@ class Agent:
                             )
                             continue
 
-                    result = await self._tool_registry.execute(
-                        tool_name, arguments
-                    )
+                    result = await self._tool_registry.execute(tool_name, arguments)
                 except Exception as exc:
                     result = f"error: {exc}"
 
@@ -307,9 +294,7 @@ class Agent:
                         "tool_call_id": tool_call_id,
                     },
                 )
-                await self._belief_store.add(
-                    conversation_id, tool_belief
-                )
+                await self._belief_store.add(conversation_id, tool_belief)
 
             tool_call_count += 1
 
@@ -373,13 +358,8 @@ class Agent:
             timestamp_ms=now_ms,
         )
 
-        recent_beliefs = await self._belief_store.get(
-            conversation_id, limit=10
-        )
-        turns = [
-            {"content": b.content, "source": b.source}
-            for b in recent_beliefs
-        ]
+        recent_beliefs = await self._belief_store.get(conversation_id, limit=10)
+        turns = [{"content": b.content, "source": b.source} for b in recent_beliefs]
         composite_detector = CompositeBeliefDetector(
             store=self._belief_store,
             entity_extractor=self._entity_extractor,
@@ -387,9 +367,7 @@ class Agent:
             conversation_id=conversation_id,
             source="assistant",
         )
-        composite_beliefs = await composite_detector.process_multi_turn(
-            turns, now_ms
-        )
+        composite_beliefs = await composite_detector.process_multi_turn(turns, now_ms)
 
         all_new_beliefs = rule_beliefs + manual_beliefs
         if ai_belief is not None:
@@ -405,14 +383,8 @@ class Agent:
                 min_confidence=0.3,
             )
             for existing, sim_score in similar:
-                if (
-                    sim_score > 0.8
-                    and existing.id != new_belief.id
-                    and existing.status == "active"
-                ):
-                    emotion_diff = abs(
-                        existing.emotion - new_belief.emotion
-                    )
+                if sim_score > 0.8 and existing.id != new_belief.id and existing.status == "active":
+                    emotion_diff = abs(existing.emotion - new_belief.emotion)
                     if emotion_diff > 0.5:
                         await self._belief_store.overthrow(
                             old_id=existing.id,
@@ -441,6 +413,4 @@ class Agent:
                     model_provider=self._model_provider,
                 )
             except Exception:
-                logger.exception(
-                    "skill extraction failed conv=%s", conversation_id
-                )
+                logger.exception("skill extraction failed conv=%s", conversation_id)

@@ -27,11 +27,11 @@ _LLM_REVIEW_PROMPT = (
     "失败模式: {failure_modes}\n"
     "标签: {tags}\n\n"
     "请返回仅一个 JSON 对象，不要包含其他内容：\n"
-    '{{\n'
+    "{{\n"
     '  "quality_score": 0-10,\n'
     '  "issues": ["问题1", "问题2"],\n'
     '  "suggested_action": "keep"\n'
-    '}}\n\n'
+    "}}\n\n"
     "评分标准：\n"
     "- 8-10: 定义清晰，有完整因果链和边界条件\n"
     "- 5-7: 基本可用，但缺少部分关键信息\n"
@@ -51,12 +51,8 @@ async def run_curation(
 
     stale_days = settings.skills.stale_days
     archive_days = settings.skills.archive_days
-    stale_threshold_ms = int(
-        now.timestamp() - stale_days * 86400
-    ) * 1000
-    archive_threshold_ms = int(
-        now.timestamp() - archive_days * 86400
-    ) * 1000
+    stale_threshold_ms = int(now.timestamp() - stale_days * 86400) * 1000
+    archive_threshold_ms = int(now.timestamp() - archive_days * 86400) * 1000
 
     conn = await aiosqlite.connect(db_path)
     conn.row_factory = aiosqlite.Row
@@ -134,10 +130,7 @@ async def run_curation(
                 )
 
         llm_result = {"llm_reviewed": 0, "llm_demoted": 0}
-        if (
-            settings.skills.llm_review_enabled
-            and router is not None
-        ):
+        if settings.skills.llm_review_enabled and router is not None:
             llm_result = await _llm_review_skills(
                 conn=conn,
                 rows=rows,
@@ -201,7 +194,8 @@ async def _llm_review_skills(
             review = json.loads(content)
         except Exception:
             logger.warning(
-                "curator_llm_review_failed skill=%s", name,
+                "curator_llm_review_failed skill=%s",
+                name,
             )
             continue
 
@@ -227,12 +221,15 @@ async def _llm_review_skills(
             demoted += 1
             logger.info(
                 "curator_llm_demoted skill=%s quality=%d",
-                name, quality_score,
+                name,
+                quality_score,
             )
         else:
             logger.debug(
                 "curator_llm_keep skill=%s quality=%d action=%s",
-                name, quality_score, suggested_action,
+                name,
+                quality_score,
+                suggested_action,
             )
 
     return {"llm_reviewed": reviewed, "llm_demoted": demoted}

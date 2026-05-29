@@ -16,13 +16,10 @@ from src.core.interfaces import (
 
 
 class NoOpBeliefStore(IBeliefStore):
-
     async def add(self, conversation_id: str, belief: Belief) -> str:
         return belief.id
 
-    async def get(
-        self, conversation_id: str, limit: int = 50
-    ) -> list[Belief]:
+    async def get(self, conversation_id: str, limit: int = 50) -> list[Belief]:
         return []
 
     async def get_by_id(self, belief_id: str) -> Belief | None:
@@ -67,7 +64,6 @@ class NoOpSkillEngine(ISkillEngine):
 
 
 class MockToolRegistry(IToolRegistry):
-
     def __init__(self) -> None:
         self._tools: dict[str, ToolSpec] = {
             "echo": ToolSpec(
@@ -95,18 +91,14 @@ class MockToolRegistry(IToolRegistry):
             ),
         }
 
-    async def execute(
-        self, tool_name: str, arguments: dict[str, Any]
-    ) -> str:
+    async def execute(self, tool_name: str, arguments: dict[str, Any]) -> str:
         if tool_name == "echo":
             text = arguments.get("text", "")
             return f"echo: {text}"
         if tool_name == "get_current_time":
             return json.dumps(
                 {
-                    "time": time.strftime(
-                        "%Y-%m-%d %H:%M:%S", time.localtime()
-                    ),
+                    "time": time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()),
                     "timestamp_ms": int(time.time() * 1000),
                 }
             )

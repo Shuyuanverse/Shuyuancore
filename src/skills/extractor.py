@@ -16,18 +16,33 @@ logger = logging.getLogger(__name__)
 _extraction_lock = asyncio.Lock()
 
 CORRECTION_KEYWORDS: list[str] = [
-    "不对", "错了", "不是", "改一下",
-    "重新", "错了错了", "我意思是", "你理解错了",
+    "不对",
+    "错了",
+    "不是",
+    "改一下",
+    "重新",
+    "错了错了",
+    "我意思是",
+    "你理解错了",
 ]
 
 REFINEMENT_KEYWORDS: list[str] = [
-    "再加", "补充", "注意", "别忘了",
-    "也要", "同时", "顺便",
+    "再加",
+    "补充",
+    "注意",
+    "别忘了",
+    "也要",
+    "同时",
+    "顺便",
 ]
 
 EXPLICIT_SAVE_KEYWORDS: list[str] = [
-    "记住这个操作", "存成技能", "记下来",
-    "保存这个", "学一下", "学会这个",
+    "记住这个操作",
+    "存成技能",
+    "记下来",
+    "保存这个",
+    "学一下",
+    "学会这个",
 ]
 
 _LLM_SYSTEM_PROMPT = """你是一个技能提炼助手。根据提供的对话记录，提取一个可复用的技能。
@@ -134,8 +149,12 @@ async def extract_skill(
 
     async with _extraction_lock:
         return await _do_extract(
-            conversation_id, message, response,
-            belief_store, skill_store, model_provider,
+            conversation_id,
+            message,
+            response,
+            belief_store,
+            skill_store,
+            model_provider,
         )
 
 
@@ -165,17 +184,11 @@ async def _do_extract(
     tool_calls = [b for b in recent if b.source == "tool"]
     total_tool_calls = len(tool_calls)
     failed_tool_calls = sum(
-        1
-        for b in tool_calls
-        if b.content.startswith("error:") or "error" in b.content.lower()
+        1 for b in tool_calls if b.content.startswith("error:") or "error" in b.content.lower()
     )
-    tool_call_failure_rate = (
-        failed_tool_calls / total_tool_calls if total_tool_calls > 0 else 0.0
-    )
+    tool_call_failure_rate = failed_tool_calls / total_tool_calls if total_tool_calls > 0 else 0.0
 
-    has_recovered = (
-        failed_tool_calls > 0 and total_tool_calls > failed_tool_calls
-    )
+    has_recovered = failed_tool_calls > 0 and total_tool_calls > failed_tool_calls
 
     score = calculate_value_score(
         turns_count=turns_count,
@@ -227,9 +240,7 @@ async def _generate_skill_from_llm(
     response: str,
     model_provider: IModelProvider,
 ) -> dict[str, Any] | None:
-    transcript = (
-        f"用户消息: {message}\n\n助手回复: {response}\n\n"
-    )
+    transcript = f"用户消息: {message}\n\n助手回复: {response}\n\n"
 
     try:
         result = await model_provider.chat(
@@ -237,9 +248,7 @@ async def _generate_skill_from_llm(
                 {"role": "system", "content": _LLM_SYSTEM_PROMPT},
                 {
                     "role": "user",
-                    "content": (
-                        f"根据以下对话，提炼一个技能。\n\n{transcript}"
-                    ),
+                    "content": (f"根据以下对话，提炼一个技能。\n\n{transcript}"),
                 },
             ],
             model="qwen-turbo",
@@ -258,8 +267,6 @@ async def _generate_skill_from_llm(
     parsed["causality_level1"] = ""
     parsed["causality_level2"] = ""
     parsed["preconditions"] = []
-    parsed["version_history"] = [
-        {"version": "1.0", "change": "auto-extracted from conversation"}
-    ]
+    parsed["version_history"] = [{"version": "1.0", "change": "auto-extracted from conversation"}]
 
     return parsed

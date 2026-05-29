@@ -22,7 +22,6 @@ logger = logging.getLogger(__name__)
 
 
 class CryptoTool(ITool):
-
     def get_spec(self) -> ToolSpec:
         return ToolSpec(
             name="crypto",
@@ -72,16 +71,13 @@ class CryptoTool(ITool):
         action: str = params.get("action", "")
         valid_actions = {"encrypt", "decrypt", "sign", "verify", "generate_key"}
         if action not in valid_actions:
-            errors.append(
-                f"action must be one of: {', '.join(sorted(valid_actions))}"
-            )
+            errors.append(f"action must be one of: {', '.join(sorted(valid_actions))}")
             return errors
         if not params.get("data"):
             errors.append("data parameter is required and must not be empty")
         if action in ("encrypt", "decrypt") and not _HAS_FERNET:
             errors.append(
-                "cryptography is not installed. "
-                "Install it with: pip install cryptography"
+                "cryptography is not installed. Install it with: pip install cryptography"
             )
         return errors
 
@@ -137,9 +133,7 @@ class CryptoTool(ITool):
                 data={
                     "encrypted": encoded,
                     "algorithm": "fernet",
-                    "key_id": hashlib.sha256(
-                        fernet_key.encode("utf-8")
-                    ).hexdigest()[:8],
+                    "key_id": hashlib.sha256(fernet_key.encode("utf-8")).hexdigest()[:8],
                 },
                 duration_ms=(time.time() - start) * 1000,
             )
@@ -238,8 +232,7 @@ class CryptoTool(ITool):
         if not _HAS_FERNET:
             return ToolResult(
                 success=False,
-                error="cryptography is not installed. "
-                "Install it with: pip install cryptography",
+                error="cryptography is not installed. Install it with: pip install cryptography",
                 duration_ms=(time.time() - start) * 1000,
             )
         try:
@@ -249,8 +242,7 @@ class CryptoTool(ITool):
                 data={
                     "key": key,
                     "algorithm": "fernet",
-                    "warning": "Save this key securely. "
-                    "Set it as MASTER_KEY in your environment.",
+                    "warning": "Save this key securely. Set it as MASTER_KEY in your environment.",
                 },
                 duration_ms=(time.time() - start) * 1000,
             )
@@ -268,9 +260,7 @@ class CryptoTool(ITool):
             return env_key
         if _HAS_FERNET:
             generated = Fernet.generate_key().decode("utf-8")
-            logger.warning(
-                "No MASTER_KEY found in environment. Generated temporary key."
-            )
+            logger.warning("No MASTER_KEY found in environment. Generated temporary key.")
             return generated
         return hashlib.sha256(b"shuyuan-core-fallback").hexdigest()
 

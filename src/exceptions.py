@@ -1,3 +1,6 @@
+# Copyright 2026 ShuyuanCore contributors
+# SPDX-License-Identifier: Apache-2.0
+
 from __future__ import annotations
 
 from typing import Any
@@ -70,8 +73,7 @@ class ModelCallError(ModelError):
     code: int = 2001
     http_status: int = 502
     default_message: str = (
-        "LLM API 调用失败（超时或服务端错误）"
-        " / LLM API call failed (timeout or server error)"
+        "LLM API 调用失败（超时或服务端错误） / LLM API call failed (timeout or server error)"
     )
 
 
@@ -142,8 +144,7 @@ class ToolExecutionError(ToolError):
     code: int = 6001
     http_status: int = 500
     default_message: str = (
-        "工具执行失败（命令返回非零退出码）"
-        " / Tool execution failed (non-zero exit code)"
+        "工具执行失败（命令返回非零退出码） / Tool execution failed (non-zero exit code)"
     )
 
 
@@ -151,8 +152,7 @@ class ToolApprovalTimeoutError(ToolError):
     code: int = 6002
     http_status: int = 408
     default_message: str = (
-        "工具审批超时（5 分钟内未审批）"
-        " / Tool approval timeout (not approved within 5 minutes)"
+        "工具审批超时（5 分钟内未审批） / Tool approval timeout (not approved within 5 minutes)"
     )
 
 
@@ -193,8 +193,7 @@ class CronError(ShuyuanCoreError):
     code: int = 8001
     http_status: int = 400
     default_message: str = (
-        "定时任务创建失败（cron 表达式无效）"
-        " / Cron job creation failed (invalid cron expression)"
+        "定时任务创建失败（cron 表达式无效） / Cron job creation failed (invalid cron expression)"
     )
 
 
@@ -219,9 +218,7 @@ class ApprovalRequiredError(ApprovalError):
 class MCPCommandNotFoundError(ApprovalError):
     code: int = 9003
     http_status: int = 502
-    default_message: str = (
-        "MCP 服务器 stdio 命令不存在 / MCP server stdio command not found"
-    )
+    default_message: str = "MCP 服务器 stdio 命令不存在 / MCP server stdio command not found"
 
 
 class AgentError(ShuyuanCoreError):
@@ -233,25 +230,19 @@ class AgentError(ShuyuanCoreError):
 class SubAgentTimeoutError(AgentError):
     code: int = 12001
     http_status: int = 408
-    default_message: str = (
-        "子代理执行超时 / Sub-agent execution timeout"
-    )
+    default_message: str = "子代理执行超时 / Sub-agent execution timeout"
 
 
 class CoordinatorTimeoutError(AgentError):
     code: int = 12002
     http_status: int = 408
-    default_message: str = (
-        "协调器执行超时 / Coordinator execution timeout"
-    )
+    default_message: str = "协调器执行超时 / Coordinator execution timeout"
 
 
 class ArbitrationError(AgentError):
     code: int = 12003
     http_status: int = 500
-    default_message: str = (
-        "仲裁器融合失败 / Arbitration fusion failed"
-    )
+    default_message: str = "仲裁器融合失败 / Arbitration fusion failed"
 
 
 class SessionError(ShuyuanCoreError):
@@ -275,9 +266,7 @@ class MessageNotFoundError(SessionError):
 class SessionArchivedError(SessionError):
     code: int = 10003
     http_status: int = 409
-    default_message: str = (
-        "会话已归档（无法发送消息） / Session archived (cannot send messages)"
-    )
+    default_message: str = "会话已归档（无法发送消息） / Session archived (cannot send messages)"
 
 
 class SessionDeletedError(SessionError):
@@ -295,17 +284,14 @@ class ConfigurationError(ShuyuanCoreError):
 class ConfigMissingError(ConfigurationError):
     code: int = 11000
     http_status: int = 500
-    default_message: str = (
-        "配置文件不存在或解析失败 / Config file missing or parse failure"
-    )
+    default_message: str = "配置文件不存在或解析失败 / Config file missing or parse failure"
 
 
 class ConfigUpdateError(ConfigurationError):
     code: int = 11001
     http_status: int = 400
     default_message: str = (
-        "配置更新失败（运行时配置验证失败）"
-        " / Config update failed (runtime validation failure)"
+        "配置更新失败（运行时配置验证失败） / Config update failed (runtime validation failure)"
     )
 
 

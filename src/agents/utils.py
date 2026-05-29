@@ -19,17 +19,13 @@ async def compute_perturbation_strength(
     density_weight = cfg.perturbation_density_weight
     decision_weight = cfg.perturbation_decision_weight
 
-    total_weight = (
-        semantic_weight + contradiction_weight + density_weight + decision_weight
-    )
+    total_weight = semantic_weight + contradiction_weight + density_weight + decision_weight
     if total_weight <= 0:
         return 0.5
 
     score = 0.0
 
-    similar = await belief_store.search_similar(
-        user_message, top_k=5, min_confidence=0.1
-    )
+    similar = await belief_store.search_similar(user_message, top_k=5, min_confidence=0.1)
     if similar:
         max_sim = max(s for _, s in similar)
         semantic_distance = 1.0 - max_sim
@@ -55,9 +51,21 @@ async def compute_perturbation_strength(
                 score += density_factor * density_weight
 
     decision_keywords = [
-        "要不要", "应不应该", "该不该", "是不是该", "是否应该",
-        "应该", "推荐", "建议", "选哪个", "哪个好", "最好",
-        "怎么办", "如何选择", "能不能", "可以吗",
+        "要不要",
+        "应不应该",
+        "该不该",
+        "是不是该",
+        "是否应该",
+        "应该",
+        "推荐",
+        "建议",
+        "选哪个",
+        "哪个好",
+        "最好",
+        "怎么办",
+        "如何选择",
+        "能不能",
+        "可以吗",
     ]
     if any(kw in user_message for kw in decision_keywords):
         score += decision_weight

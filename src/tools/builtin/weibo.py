@@ -9,10 +9,15 @@ import httpx
 
 from src.tools.interfaces import ITool, ToolParameter, ToolResult, ToolSpec
 
-VALID_ACTIONS: frozenset[str] = frozenset({
-    "search_weibo", "get_weibo", "search_user",
-    "get_user_weibos", "get_comments",
-})
+VALID_ACTIONS: frozenset[str] = frozenset(
+    {
+        "search_weibo",
+        "get_weibo",
+        "search_user",
+        "get_user_weibos",
+        "get_comments",
+    }
+)
 
 ACTION_REQUIRED_PARAMS: dict[str, set[str]] = {
     "search_weibo": {"keyword"},
@@ -59,35 +64,26 @@ class WeiBoTool(ITool):
                     name="action",
                     type="string",
                     description=(
-                        "Action: search_weibo/get_weibo/search_user/"
-                        "get_user_weibos/get_comments"
+                        "Action: search_weibo/get_weibo/search_user/get_user_weibos/get_comments"
                     ),
                     required=True,
                 ),
                 ToolParameter(
                     name="keyword",
                     type="string",
-                    description=(
-                        "Search keyword, required for search_weibo "
-                        "and search_user"
-                    ),
+                    description=("Search keyword, required for search_weibo and search_user"),
                     required=False,
                 ),
                 ToolParameter(
                     name="weibo_id",
                     type="string",
-                    description=(
-                        "Weibo post ID, required for get_weibo "
-                        "and get_comments"
-                    ),
+                    description=("Weibo post ID, required for get_weibo and get_comments"),
                     required=False,
                 ),
                 ToolParameter(
                     name="user_id",
                     type="string",
-                    description=(
-                        "Weibo user ID, required for get_user_weibos"
-                    ),
+                    description=("Weibo user ID, required for get_user_weibos"),
                     required=False,
                 ),
                 ToolParameter(
@@ -141,18 +137,14 @@ class WeiBoTool(ITool):
 
         if action not in VALID_ACTIONS:
             valid = ", ".join(sorted(VALID_ACTIONS))
-            errors.append(
-                f"Invalid action: {action}. Must be one of: {valid}"
-            )
+            errors.append(f"Invalid action: {action}. Must be one of: {valid}")
             return errors
 
         required = ACTION_REQUIRED_PARAMS.get(action, set())
         for param in required:
             value = params.get(param)
             if not value or (isinstance(value, str) and not value.strip()):
-                errors.append(
-                    f"'{param}' is required for action '{action}'"
-                )
+                errors.append(f"'{param}' is required for action '{action}'")
 
         limit = params.get("limit", 10)
         if limit is not None:
@@ -199,9 +191,7 @@ class WeiBoTool(ITool):
             result: ToolResult
             if action == "search_weibo":
                 keyword = params.get("keyword", "").strip()
-                result = await self._search_weibo(
-                    keyword, timeout, limit
-                )
+                result = await self._search_weibo(keyword, timeout, limit)
             elif action == "get_weibo":
                 weibo_id = params.get("weibo_id", "").strip()
                 result = await self._get_weibo(weibo_id, timeout)
@@ -210,18 +200,12 @@ class WeiBoTool(ITool):
                 result = await self._search_user(keyword, timeout, limit)
             elif action == "get_user_weibos":
                 user_id = params.get("user_id", "").strip()
-                result = await self._get_user_weibos(
-                    user_id, timeout, limit
-                )
+                result = await self._get_user_weibos(user_id, timeout, limit)
             elif action == "get_comments":
                 weibo_id = params.get("weibo_id", "").strip()
-                result = await self._get_comments(
-                    weibo_id, timeout, limit
-                )
+                result = await self._get_comments(weibo_id, timeout, limit)
             else:
-                result = ToolResult(
-                    success=False, error=f"Unknown action: {action}"
-                )
+                result = ToolResult(success=False, error=f"Unknown action: {action}")
 
             result.duration_ms = (time.time() - start) * 1000
             return result
@@ -266,9 +250,7 @@ class WeiBoTool(ITool):
                 timeout=httpx.Timeout(timeout),
                 follow_redirects=True,
             ) as client:
-                response = await client.get(
-                    SEARCH_URL, params=params, headers=headers
-                )
+                response = await client.get(SEARCH_URL, params=params, headers=headers)
                 response.raise_for_status()
 
             text = response.text
@@ -326,25 +308,22 @@ class WeiBoTool(ITool):
                 break
 
             content_html = match.group(1)
-            text = re.sub(r'<[^>]+>', '', content_html)
+            text = re.sub(r"<[^>]+>", "", content_html)
             text = text.strip()
 
-            mid_match = re.search(r'weibo_id=(\d+)', content_html)
+            mid_match = re.search(r"weibo_id=(\d+)", content_html)
             weibo_id = mid_match.group(1) if mid_match else ""
 
-            url_match = re.search(
-                r'href="(//weibo\.com/\d+/[^"]+)"', content_html
-            )
-            url = (
-                f"https:{url_match.group(1)}"
-                if url_match else ""
-            )
+            url_match = re.search(r'href="(//weibo\.com/\d+/[^"]+)"', content_html)
+            url = f"https:{url_match.group(1)}" if url_match else ""
 
-            posts.append({
-                "id": weibo_id,
-                "text": text,
-                "url": url,
-            })
+            posts.append(
+                {
+                    "id": weibo_id,
+                    "text": text,
+                    "url": url,
+                }
+            )
 
         return posts
 
@@ -387,14 +366,14 @@ class WeiBoTool(ITool):
             card_pattern = re.compile(
                 r'<div[^>]*class="[^"]*card[^"]*"[^>]*>.*?'
                 r'<div[^>]*class="[^"]*weibo-text[^"]*"[^>]*>'
-                r'(.*?)</div>',
+                r"(.*?)</div>",
                 re.DOTALL,
             )
 
             content = ""
             card_match = card_pattern.search(text)
             if card_match:
-                content = re.sub(r'<[^>]+>', '', card_match.group(1))
+                content = re.sub(r"<[^>]+>", "", card_match.group(1))
                 content = content.strip()
 
             return ToolResult(
@@ -414,10 +393,7 @@ class WeiBoTool(ITool):
         except httpx.HTTPStatusError as e:
             return ToolResult(
                 success=False,
-                error=(
-                    f"Get weibo returned HTTP "
-                    f"{e.response.status_code}"
-                ),
+                error=(f"Get weibo returned HTTP {e.response.status_code}"),
             )
         except httpx.RequestError as e:
             return ToolResult(
@@ -458,9 +434,7 @@ class WeiBoTool(ITool):
                 timeout=httpx.Timeout(timeout),
                 follow_redirects=True,
             ) as client:
-                response = await client.get(
-                    USER_SEARCH_URL, params=params, headers=headers
-                )
+                response = await client.get(USER_SEARCH_URL, params=params, headers=headers)
                 response.raise_for_status()
 
             text = response.text
@@ -469,7 +443,7 @@ class WeiBoTool(ITool):
             user_pattern = re.compile(
                 r'<div[^>]*class="[^"]*card-user[^"]*"[^>]*>.*?'
                 r'<a[^>]*href="([^"]*)"[^>]*>.*?'
-                r'<strong[^>]*>(.*?)</strong>',
+                r"<strong[^>]*>(.*?)</strong>",
                 re.DOTALL,
             )
 
@@ -477,14 +451,14 @@ class WeiBoTool(ITool):
                 if len(users) >= limit:
                     break
                 href = match.group(1).strip()
-                name = re.sub(r'<[^>]+>', '', match.group(2)).strip()
-                full_url = (
-                    f"https:{href}" if href.startswith("//") else href
+                name = re.sub(r"<[^>]+>", "", match.group(2)).strip()
+                full_url = f"https:{href}" if href.startswith("//") else href
+                users.append(
+                    {
+                        "name": name,
+                        "url": full_url,
+                    }
                 )
-                users.append({
-                    "name": name,
-                    "url": full_url,
-                })
 
             return ToolResult(
                 success=True,
@@ -503,10 +477,7 @@ class WeiBoTool(ITool):
         except httpx.HTTPStatusError as e:
             return ToolResult(
                 success=False,
-                error=(
-                    f"User search returned HTTP "
-                    f"{e.response.status_code}"
-                ),
+                error=(f"User search returned HTTP {e.response.status_code}"),
             )
         except httpx.RequestError as e:
             return ToolResult(
@@ -573,14 +544,16 @@ class WeiBoTool(ITool):
                 if not mblog:
                     continue
 
-                posts.append({
-                    "id": mblog.get("id", ""),
-                    "text": mblog.get("text", ""),
-                    "created_at": mblog.get("created_at", ""),
-                    "reposts_count": mblog.get("reposts_count", 0),
-                    "comments_count": mblog.get("comments_count", 0),
-                    "attitudes_count": mblog.get("attitudes_count", 0),
-                })
+                posts.append(
+                    {
+                        "id": mblog.get("id", ""),
+                        "text": mblog.get("text", ""),
+                        "created_at": mblog.get("created_at", ""),
+                        "reposts_count": mblog.get("reposts_count", 0),
+                        "comments_count": mblog.get("comments_count", 0),
+                        "attitudes_count": mblog.get("attitudes_count", 0),
+                    }
+                )
 
             return ToolResult(
                 success=True,
@@ -599,10 +572,7 @@ class WeiBoTool(ITool):
         except httpx.HTTPStatusError as e:
             return ToolResult(
                 success=False,
-                error=(
-                    f"Get user weibos returned HTTP "
-                    f"{e.response.status_code}"
-                ),
+                error=(f"Get user weibos returned HTTP {e.response.status_code}"),
             )
         except httpx.RequestError as e:
             return ToolResult(
@@ -666,16 +636,18 @@ class WeiBoTool(ITool):
                 if len(comments) >= limit:
                     break
                 user = cmt.get("user", {})
-                comments.append({
-                    "id": cmt.get("id", ""),
-                    "text": cmt.get("text", ""),
-                    "created_at": cmt.get("created_at", ""),
-                    "user": {
-                        "id": user.get("id", ""),
-                        "screen_name": user.get("screen_name", ""),
-                    },
-                    "like_count": cmt.get("like_count", 0),
-                })
+                comments.append(
+                    {
+                        "id": cmt.get("id", ""),
+                        "text": cmt.get("text", ""),
+                        "created_at": cmt.get("created_at", ""),
+                        "user": {
+                            "id": user.get("id", ""),
+                            "screen_name": user.get("screen_name", ""),
+                        },
+                        "like_count": cmt.get("like_count", 0),
+                    }
+                )
 
             return ToolResult(
                 success=True,
@@ -694,10 +666,7 @@ class WeiBoTool(ITool):
         except httpx.HTTPStatusError as e:
             return ToolResult(
                 success=False,
-                error=(
-                    f"Get comments returned HTTP "
-                    f"{e.response.status_code}"
-                ),
+                error=(f"Get comments returned HTTP {e.response.status_code}"),
             )
         except httpx.RequestError as e:
             return ToolResult(

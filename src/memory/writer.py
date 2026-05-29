@@ -36,7 +36,6 @@ _LAYER_MAP: dict[str, int] = {
 
 
 class RuleBasedWriter:
-
     def __init__(
         self,
         store: IBeliefStore,
@@ -89,7 +88,6 @@ _MANUAL_SEPARATOR_PATTERN = re.compile(r"\s*[,，、;；]\s*")
 
 
 class ManualMemoryWriter:
-
     def __init__(
         self,
         store: IBeliefStore,
@@ -139,7 +137,6 @@ class ManualMemoryWriter:
 
 
 class AiInferenceWriter:
-
     def __init__(
         self,
         store: IBeliefStore,
@@ -188,7 +185,6 @@ class AiInferenceWriter:
 
 
 class CompositeBeliefDetector:
-
     def __init__(
         self,
         store: IBeliefStore,
@@ -214,9 +210,7 @@ class CompositeBeliefDetector:
         if len(turns) < self._min_rounds:
             return []
 
-        combined_text = " ".join(
-            turn.get("content", "") for turn in turns
-        )
+        combined_text = " ".join(turn.get("content", "") for turn in turns)
 
         if len(combined_text) < 100:
             return []
@@ -226,15 +220,11 @@ class CompositeBeliefDetector:
             return []
 
         emotion = self._emotion_analyzer.analyze(combined_text)
-        all_emotions = [
-            self._emotion_analyzer.analyze(turn.get("content", ""))
-            for turn in turns
-        ]
+        all_emotions = [self._emotion_analyzer.analyze(turn.get("content", "")) for turn in turns]
 
-        topic_keywords = list({
-            kw for turn in turns
-            for kw in self._entity_extractor.extract(turn.get("content", ""))
-        })
+        topic_keywords = list(
+            {kw for turn in turns for kw in self._entity_extractor.extract(turn.get("content", ""))}
+        )
 
         belief = Belief(
             id=str(uuid.uuid4()),

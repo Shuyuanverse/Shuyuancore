@@ -65,9 +65,7 @@ async def export_skills(
 
     manifest = {
         "schema_version": _MANIFEST_SCHEMA_VERSION,
-        "exported_at": datetime.now(timezone.utc).strftime(
-            "%Y-%m-%dT%H:%M:%SZ"
-        ),
+        "exported_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
         "skills": skill_names,
         "dependencies": list(dependencies),
         "source": "community",
@@ -104,9 +102,7 @@ async def export_skills(
             tmp_zip.unlink()
         raise
 
-    logger.info(
-        "skills_exported count=%d path=%s", len(skill_names), output_path
-    )
+    logger.info("skills_exported count=%d path=%s", len(skill_names), output_path)
     return output_path
 
 
@@ -127,10 +123,7 @@ async def import_skills(
         manifest: dict[str, Any] = json.loads(manifest_raw)
 
         if manifest.get("schema_version") != _MANIFEST_SCHEMA_VERSION:
-            raise SkillImportError(
-                f"Unsupported schema version: "
-                f"{manifest.get('schema_version')}"
-            )
+            raise SkillImportError(f"Unsupported schema version: {manifest.get('schema_version')}")
 
         skills_to_import = manifest.get("skills", [])
         dependencies = manifest.get("dependencies", [])
@@ -150,9 +143,7 @@ async def import_skills(
             edges_path = f"skills/{skill_name}_edges.json"
 
             if node_path not in zf.namelist():
-                logger.warning(
-                    "missing_node_data skill=%s", skill_name
-                )
+                logger.warning("missing_node_data skill=%s", skill_name)
                 continue
 
             node_raw = zf.read(node_path).decode("utf-8")
@@ -167,11 +158,7 @@ async def import_skills(
                     except (json.JSONDecodeError, TypeError):
                         existing_source = []
                 is_community = False
-                for v in (
-                    existing_source
-                    if isinstance(existing_source, list)
-                    else []
-                ):
+                for v in existing_source if isinstance(existing_source, list) else []:
                     if isinstance(v, dict) and v.get("source") == "community":
                         is_community = True
                         break
@@ -194,9 +181,7 @@ async def import_skills(
             node_data["node_id"] = generate_node_id()
             import_source = manifest.get("source", "community")
             node_data["source"] = import_source
-            await skill_store.create_skill(
-                node_data, conversation_id="import"
-            )
+            await skill_store.create_skill(node_data, conversation_id="import")
             imported.append(skill_name)
 
             if edges_path in zf.namelist():

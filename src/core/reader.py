@@ -40,7 +40,6 @@ def estimate_tokens(text: str, model: str = "gpt-4") -> int:
 
 
 class Reader(IReader):
-
     def __init__(self, belief_store: IBeliefStore) -> None:
         self._belief_store = belief_store
 

@@ -105,9 +105,7 @@ class DouYinTool(ITool):
 
         valid_actions = ("search_video", "get_video", "search_user", "get_user_videos")
         if action not in valid_actions:
-            errors.append(
-                f"Invalid action: '{action}'. Must be one of {valid_actions}."
-            )
+            errors.append(f"Invalid action: '{action}'. Must be one of {valid_actions}.")
 
         if action == "search_video":
             keyword = params.get("keyword")
@@ -208,9 +206,7 @@ class DouYinTool(ITool):
                 user_id=user_id,
                 action=f"douyin_{action}",
                 resource=(
-                    params.get("keyword")
-                    or params.get("video_id")
-                    or params.get("user_id", "")
+                    params.get("keyword") or params.get("video_id") or params.get("user_id", "")
                 ),
                 params={
                     "action": action,
@@ -230,10 +226,7 @@ class DouYinTool(ITool):
             audit.log(
                 user_id=user_id,
                 action=f"douyin_{action}",
-                resource=(
-                    params.get("keyword")
-                    or params.get("video_id", "")
-                ),
+                resource=(params.get("keyword") or params.get("video_id", "")),
                 params={"action": action},
                 result="error",
                 duration_ms=duration_ms,
@@ -299,9 +292,7 @@ class DouYinTool(ITool):
                     data={
                         "keyword": keyword,
                         "videos": data.get("data", data.get("item_list", [])),
-                        "total": len(
-                            data.get("data", data.get("item_list", []))
-                        ),
+                        "total": len(data.get("data", data.get("item_list", []))),
                     },
                 )
 
@@ -398,8 +389,7 @@ class DouYinTool(ITool):
                 follow_redirects=True,
             ) as client:
                 response = await client.get(
-                    f"https://www.douyin.com/aweme/v1/web/item/detail/"
-                    f"?item_id={video_id}",
+                    f"https://www.douyin.com/aweme/v1/web/item/detail/?item_id={video_id}",
                     headers={
                         "User-Agent": (
                             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
@@ -511,9 +501,7 @@ class DouYinTool(ITool):
                     data={
                         "keyword": keyword,
                         "users": data.get("data", data.get("user_list", [])),
-                        "total": len(
-                            data.get("data", data.get("user_list", []))
-                        ),
+                        "total": len(data.get("data", data.get("user_list", []))),
                     },
                 )
 
@@ -631,9 +619,7 @@ class DouYinTool(ITool):
                     data={
                         "user_id": user_id,
                         "videos": data.get("data", data.get("item_list", [])),
-                        "total": len(
-                            data.get("data", data.get("item_list", []))
-                        ),
+                        "total": len(data.get("data", data.get("item_list", []))),
                     },
                 )
 

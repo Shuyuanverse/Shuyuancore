@@ -46,9 +46,7 @@ class AnchorManager:
         await self._persist_anchor(version)
         return version
 
-    async def create_from_samples(
-        self, persona_id: str, content_list: list[str]
-    ) -> AnchorVersion:
+    async def create_from_samples(self, persona_id: str, content_list: list[str]) -> AnchorVersion:
         import hashlib
 
         combined = "\n".join(content_list)
@@ -67,18 +65,12 @@ class AnchorManager:
         await self._persist_anchor(version)
         return version
 
-    async def load_anchors(
-        self, persona_id: str
-    ) -> AnchorVersion | None:
+    async def load_anchors(self, persona_id: str) -> AnchorVersion | None:
         if self._belief_store is None:
             return None
 
-        style_belief = await self._belief_store.get_by_id(
-            f"style_anchor_{persona_id}"
-        )
-        decision_belief = await self._belief_store.get_by_id(
-            f"decision_anchor_{persona_id}"
-        )
+        style_belief = await self._belief_store.get_by_id(f"style_anchor_{persona_id}")
+        decision_belief = await self._belief_store.get_by_id(f"decision_anchor_{persona_id}")
 
         if style_belief is None and decision_belief is None:
             return None
@@ -114,12 +106,8 @@ class AnchorManager:
 
         from src.core.interfaces import Belief
 
-        style_belief = await self._belief_store.get_by_id(
-            f"style_anchor_{anchor.persona_id}"
-        )
-        decision_belief = await self._belief_store.get_by_id(
-            f"decision_anchor_{anchor.persona_id}"
-        )
+        style_belief = await self._belief_store.get_by_id(f"style_anchor_{anchor.persona_id}")
+        decision_belief = await self._belief_store.get_by_id(f"decision_anchor_{anchor.persona_id}")
 
         now_ms = _ms_time()
 

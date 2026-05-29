@@ -29,8 +29,7 @@ class KnowledgeBaseTool(ITool):
         self._spec = ToolSpec(
             name="knowledge_base",
             description=(
-                "Access knowledge bases from Notion, Yuque, Obsidian, "
-                "or local markdown files"
+                "Access knowledge bases from Notion, Yuque, Obsidian, or local markdown files"
             ),
             category="office",
             dangerous=False,
@@ -38,27 +37,19 @@ class KnowledgeBaseTool(ITool):
                 ToolParameter(
                     name="provider",
                     type="string",
-                    description=(
-                        "Knowledge base provider: "
-                        "notion/yuque/obsidian/local"
-                    ),
+                    description=("Knowledge base provider: notion/yuque/obsidian/local"),
                     required=True,
                 ),
                 ToolParameter(
                     name="action",
                     type="string",
-                    description=(
-                        "Action to perform: list/read/write/search"
-                    ),
+                    description=("Action to perform: list/read/write/search"),
                     required=True,
                 ),
                 ToolParameter(
                     name="path",
                     type="string",
-                    description=(
-                        "File path or resource identifier "
-                        "(e.g. repo_id/doc_slug)"
-                    ),
+                    description=("File path or resource identifier (e.g. repo_id/doc_slug)"),
                     required=False,
                 ),
                 ToolParameter(
@@ -71,8 +62,7 @@ class KnowledgeBaseTool(ITool):
                     name="content",
                     type="object",
                     description=(
-                        "Content payload for write action "
-                        "(dict with keys like title, body)"
+                        "Content payload for write action (dict with keys like title, body)"
                     ),
                     required=False,
                 ),
@@ -121,8 +111,7 @@ class KnowledgeBaseTool(ITool):
         action = params.get("action", "")
         if action not in VALID_ACTIONS:
             errors.append(
-                f"Invalid action: {action}. "
-                f"Must be one of: {', '.join(sorted(VALID_ACTIONS))}"
+                f"Invalid action: {action}. Must be one of: {', '.join(sorted(VALID_ACTIONS))}"
             )
 
         if action == "search" and not params.get("query"):
@@ -133,36 +122,22 @@ class KnowledgeBaseTool(ITool):
 
         if provider == "notion":
             if not os.environ.get("NOTION_TOKEN"):
-                errors.append(
-                    "NOTION_TOKEN environment variable is not set"
-                )
+                errors.append("NOTION_TOKEN environment variable is not set")
             if action in ("list", "write"):
                 if not os.environ.get("NOTION_DATABASE_ID"):
-                    errors.append(
-                        "NOTION_DATABASE_ID environment "
-                        "variable is not set"
-                    )
+                    errors.append("NOTION_DATABASE_ID environment variable is not set")
             if action == "read" and not params.get("page_id"):
-                errors.append(
-                    "read action for notion requires a 'page_id' parameter"
-                )
+                errors.append("read action for notion requires a 'page_id' parameter")
             if action == "write" and not params.get("page_id"):
-                errors.append(
-                    "write action for notion requires a 'page_id' parameter"
-                )
+                errors.append("write action for notion requires a 'page_id' parameter")
 
         if provider == "yuque":
             if not os.environ.get("YUQUE_TOKEN"):
-                errors.append(
-                    "YUQUE_TOKEN environment variable is not set"
-                )
+                errors.append("YUQUE_TOKEN environment variable is not set")
 
         if provider == "obsidian":
             if not os.environ.get("OBSIDIAN_VAULT_PATH"):
-                errors.append(
-                    "OBSIDIAN_VAULT_PATH environment "
-                    "variable is not set"
-                )
+                errors.append("OBSIDIAN_VAULT_PATH environment variable is not set")
 
         return errors
 
@@ -285,11 +260,13 @@ class KnowledgeBaseTool(ITool):
             for entry in sorted(base.iterdir()):
                 if entry.is_file() and entry.suffix == ".md":
                     stat = entry.stat()
-                    files.append({
-                        "name": entry.name,
-                        "size": stat.st_size,
-                        "modified": int(stat.st_mtime),
-                    })
+                    files.append(
+                        {
+                            "name": entry.name,
+                            "size": stat.st_size,
+                            "modified": int(stat.st_mtime),
+                        }
+                    )
             return ToolResult(
                 success=True,
                 data={
@@ -382,25 +359,27 @@ class KnowledgeBaseTool(ITool):
                 if not file_path.is_file():
                     continue
                 try:
-                    content = await asyncio.to_thread(
-                        file_path.read_text, errors="replace"
-                    )
+                    content = await asyncio.to_thread(file_path.read_text, errors="replace")
                 except Exception:
                     continue
                 line_matches: list[dict[str, Any]] = []
                 for line_num, line in enumerate(content.splitlines(), 1):
                     if pattern.search(line):
-                        line_matches.append({
-                            "line": line_num,
-                            "content": line.strip()[:200],
-                        })
+                        line_matches.append(
+                            {
+                                "line": line_num,
+                                "content": line.strip()[:200],
+                            }
+                        )
                 if line_matches:
                     rel_path = str(file_path.relative_to(base))
-                    matches.append({
-                        "file": rel_path,
-                        "matches": line_matches,
-                        "count": len(line_matches),
-                    })
+                    matches.append(
+                        {
+                            "file": rel_path,
+                            "matches": line_matches,
+                            "count": len(line_matches),
+                        }
+                    )
             return ToolResult(
                 success=True,
                 data={
@@ -453,12 +432,8 @@ class KnowledgeBaseTool(ITool):
         try:
             parent = target.parent
             if not parent.exists():
-                await asyncio.to_thread(
-                    parent.mkdir, parents=True, exist_ok=True
-                )
-            await asyncio.to_thread(
-                target.write_text, body, encoding="utf-8"
-            )
+                await asyncio.to_thread(parent.mkdir, parents=True, exist_ok=True)
+            await asyncio.to_thread(target.write_text, body, encoding="utf-8")
             return ToolResult(
                 success=True,
                 data={
@@ -538,16 +513,16 @@ class KnowledgeBaseTool(ITool):
                 for prop in props.values():
                     if prop.get("type") == "title":
                         titles = prop.get("title", [])
-                        title_prop = "".join(
-                            t.get("plain_text", "") for t in titles
-                        )
+                        title_prop = "".join(t.get("plain_text", "") for t in titles)
                         break
-                pages.append({
-                    "id": page.get("id"),
-                    "title": title_prop or "",
-                    "created_time": page.get("created_time"),
-                    "last_edited_time": page.get("last_edited_time"),
-                })
+                pages.append(
+                    {
+                        "id": page.get("id"),
+                        "title": title_prop or "",
+                        "created_time": page.get("created_time"),
+                        "last_edited_time": page.get("last_edited_time"),
+                    }
+                )
             return ToolResult(
                 success=True,
                 data={
@@ -631,9 +606,7 @@ class KnowledgeBaseTool(ITool):
         properties: dict[str, Any] = {}
         title_text = content.get("title", "") if isinstance(content, dict) else ""
         if title_text:
-            properties["Title"] = {
-                "title": [{"text": {"content": title_text}}]
-            }
+            properties["Title"] = {"title": [{"text": {"content": title_text}}]}
 
         body: dict[str, Any] = {
             "parent": {"database_id": database_id},
@@ -643,13 +616,13 @@ class KnowledgeBaseTool(ITool):
         children: list[dict[str, Any]] = []
         body_text = content.get("body", "") if isinstance(content, dict) else ""
         if body_text:
-            children.append({
-                "object": "block",
-                "type": "paragraph",
-                "paragraph": {
-                    "rich_text": [{"type": "text", "text": {"content": body_text}}]
-                },
-            })
+            children.append(
+                {
+                    "object": "block",
+                    "type": "paragraph",
+                    "paragraph": {"rich_text": [{"type": "text", "text": {"content": body_text}}]},
+                }
+            )
         if children:
             body["children"] = children
 
@@ -766,12 +739,14 @@ class KnowledgeBaseTool(ITool):
                 docs_list = data.get("data", [])
                 docs: list[dict[str, Any]] = []
                 for doc in docs_list:
-                    docs.append({
-                        "id": doc.get("id"),
-                        "title": doc.get("title"),
-                        "slug": doc.get("slug"),
-                        "updated_at": doc.get("updated_at"),
-                    })
+                    docs.append(
+                        {
+                            "id": doc.get("id"),
+                            "title": doc.get("title"),
+                            "slug": doc.get("slug"),
+                            "updated_at": doc.get("updated_at"),
+                        }
+                    )
                 return ToolResult(
                     success=True,
                     data={
@@ -808,14 +783,16 @@ class KnowledgeBaseTool(ITool):
                 repos_list = data.get("data", [])
                 repos: list[dict[str, Any]] = []
                 for repo in repos_list:
-                    repos.append({
-                        "id": repo.get("id"),
-                        "name": repo.get("name"),
-                        "slug": repo.get("slug"),
-                        "namespace": repo.get("namespace"),
-                        "description": repo.get("description"),
-                        "updated_at": repo.get("updated_at"),
-                    })
+                    repos.append(
+                        {
+                            "id": repo.get("id"),
+                            "name": repo.get("name"),
+                            "slug": repo.get("slug"),
+                            "namespace": repo.get("namespace"),
+                            "description": repo.get("description"),
+                            "updated_at": repo.get("updated_at"),
+                        }
+                    )
                 return ToolResult(
                     success=True,
                     data={
@@ -858,10 +835,7 @@ class KnowledgeBaseTool(ITool):
         if not path:
             return ToolResult(
                 success=False,
-                error=(
-                    "path parameter is required for yuque read. "
-                    "Format: repo_id/doc_slug"
-                ),
+                error=("path parameter is required for yuque read. Format: repo_id/doc_slug"),
             )
 
         url = f"https://www.yuque.com/api/v2/repos/{path}"
@@ -952,11 +926,13 @@ class KnowledgeBaseTool(ITool):
                     continue
                 rel = f.relative_to(vault)
                 stat = f.stat()
-                files.append({
-                    "path": str(rel.as_posix()),
-                    "size": stat.st_size,
-                    "modified": int(stat.st_mtime),
-                })
+                files.append(
+                    {
+                        "path": str(rel.as_posix()),
+                        "size": stat.st_size,
+                        "modified": int(stat.st_mtime),
+                    }
+                )
             return ToolResult(
                 success=True,
                 data={
@@ -1049,25 +1025,27 @@ class KnowledgeBaseTool(ITool):
                 if not file_path.is_file():
                     continue
                 try:
-                    content = await asyncio.to_thread(
-                        file_path.read_text, errors="replace"
-                    )
+                    content = await asyncio.to_thread(file_path.read_text, errors="replace")
                 except Exception:
                     continue
                 line_matches: list[dict[str, Any]] = []
                 for line_num, line in enumerate(content.splitlines(), 1):
                     if pattern.search(line):
-                        line_matches.append({
-                            "line": line_num,
-                            "content": line.strip()[:200],
-                        })
+                        line_matches.append(
+                            {
+                                "line": line_num,
+                                "content": line.strip()[:200],
+                            }
+                        )
                 if line_matches:
                     rel_path = str(file_path.relative_to(vault).as_posix())
-                    matches.append({
-                        "file": rel_path,
-                        "matches": line_matches,
-                        "count": len(line_matches),
-                    })
+                    matches.append(
+                        {
+                            "file": rel_path,
+                            "matches": line_matches,
+                            "count": len(line_matches),
+                        }
+                    )
             return ToolResult(
                 success=True,
                 data={

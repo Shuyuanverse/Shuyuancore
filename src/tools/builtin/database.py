@@ -12,7 +12,6 @@ from src.tools.interfaces import ITool, ToolParameter, ToolResult, ToolSpec
 
 
 class DatabaseTool(ITool):
-
     def get_spec(self) -> ToolSpec:
         return ToolSpec(
             name="database",

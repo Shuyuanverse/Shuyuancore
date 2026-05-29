@@ -38,7 +38,6 @@ class ChatStreamEvent:
 
 
 class IModelProvider(ABC):
-
     @abstractmethod
     async def chat(
         self,
@@ -46,8 +45,7 @@ class IModelProvider(ABC):
         model: str | None = None,
         temperature: float | None = None,
         max_tokens: int | None = None,
-    ) -> ChatResult:
-        ...
+    ) -> ChatResult: ...
 
     @abstractmethod
     async def chat_stream(
@@ -64,21 +62,17 @@ class IModelProvider(ABC):
         self,
         texts: list[str],
         model: str | None = None,
-    ) -> EmbeddingResult:
-        ...
+    ) -> EmbeddingResult: ...
 
     @abstractmethod
-    async def check_health(self) -> HealthStatus:
-        ...
+    async def check_health(self) -> HealthStatus: ...
 
     @property
     @abstractmethod
-    def name(self) -> str:
-        ...
+    def name(self) -> str: ...
 
 
 class ProviderRegistry:
-
     def __init__(self) -> None:
         self._providers: dict[str, IModelProvider] = {}
 

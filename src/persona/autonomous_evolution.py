@@ -12,8 +12,13 @@ TRIGGER_DAYS = 7
 MAX_PROPOSALS = 5
 
 DIMENSIONS = [
-    "formality", "warmth", "directness", "playfulness",
-    "detail_orientation", "emotional_expression", "pace",
+    "formality",
+    "warmth",
+    "directness",
+    "playfulness",
+    "detail_orientation",
+    "emotional_expression",
+    "pace",
 ]
 
 
@@ -86,7 +91,8 @@ class AutonomousEvolution:
             proposal.status = "rejected"
             logger.info(
                 "[evolution] 拒绝演化提议: %s (consistency=%.2f)",
-                proposal.dimension, proposal.consistency_score,
+                proposal.dimension,
+                proposal.consistency_score,
             )
         elif proposal.consistency_score <= AUTO_THRESHOLD:
             proposal.delta = proposal.delta * proposal.consistency_score
@@ -94,13 +100,16 @@ class AutonomousEvolution:
             proposal.status = "auto_adjusted"
             logger.info(
                 "[evolution] 缩小幅度自动执行: %s (consistency=%.2f delta=%.4f)",
-                proposal.dimension, proposal.consistency_score, proposal.delta,
+                proposal.dimension,
+                proposal.consistency_score,
+                proposal.delta,
             )
         else:
             proposal.status = "approved"
             logger.info(
                 "[evolution] 演化提议通过: %s (consistency=%.2f)",
-                proposal.dimension, proposal.consistency_score,
+                proposal.dimension,
+                proposal.consistency_score,
             )
 
         return proposal

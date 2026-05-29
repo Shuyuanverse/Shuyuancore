@@ -24,6 +24,7 @@ def _has_chinese(text: str) -> bool:
     global _CHINESE_PATTERN
     if _CHINESE_PATTERN is None:
         import re
+
         _CHINESE_PATTERN = re.compile(r"[\u4e00-\u9fff\u3400-\u4dbf]")
     return bool(_CHINESE_PATTERN.search(text))
 
@@ -78,7 +79,6 @@ def _belief_from_row(row: aiosqlite.Row) -> Belief:
 
 
 class PersistentBeliefStore(IBeliefStore):
-
     def __init__(
         self,
         db_path: str = _DB_PATH,
@@ -256,9 +256,7 @@ class PersistentBeliefStore(IBeliefStore):
 
         return belief_id
 
-    async def get(
-        self, conversation_id: str, limit: int = 50
-    ) -> list[Belief]:
+    async def get(self, conversation_id: str, limit: int = 50) -> list[Belief]:
         conn = await self._get_conn()
         cursor = await conn.execute(
             """
@@ -394,9 +392,7 @@ class PersistentBeliefStore(IBeliefStore):
             try:
                 query_vector = await self._embedding_service.embed(sanitized)
                 if query_vector is not None:
-                    vector_results = await self._vector_store.search(
-                        query_vector, top_k
-                    )
+                    vector_results = await self._vector_store.search(query_vector, top_k)
                     for belief_id, score in vector_results:
                         belief = await self.get_by_id(belief_id)
                         if (
@@ -579,13 +575,20 @@ class PersistentBeliefStore(IBeliefStore):
             """
             if user_id:
                 params = [
-                    conversation_id, user_id,
-                    cursor_ts, cursor_ts, cursor_id, effective_limit,
+                    conversation_id,
+                    user_id,
+                    cursor_ts,
+                    cursor_ts,
+                    cursor_id,
+                    effective_limit,
                 ]
             else:
                 params = [
                     conversation_id,
-                    cursor_ts, cursor_ts, cursor_id, effective_limit,
+                    cursor_ts,
+                    cursor_ts,
+                    cursor_id,
+                    effective_limit,
                 ]
         else:
             query = f"""

@@ -11,7 +11,6 @@ from src.tools.interfaces import ITool, ToolParameter, ToolResult, ToolSpec
 
 
 class GitTool(ITool):
-
     def get_spec(self) -> ToolSpec:
         return ToolSpec(
             name="git",
@@ -75,12 +74,16 @@ class GitTool(ITool):
         errors: list[str] = []
         action: str = params.get("action", "")
         valid_actions = {
-            "clone", "commit", "push", "status", "diff", "log", "create_pr",
+            "clone",
+            "commit",
+            "push",
+            "status",
+            "diff",
+            "log",
+            "create_pr",
         }
         if action not in valid_actions:
-            errors.append(
-                f"action must be one of: {', '.join(sorted(valid_actions))}"
-            )
+            errors.append(f"action must be one of: {', '.join(sorted(valid_actions))}")
             return errors
         if action == "commit" and not params.get("message"):
             errors.append("commit operation requires message parameter")
@@ -104,34 +107,62 @@ class GitTool(ITool):
 
         if action == "clone":
             return await self._clone(
-                params, repo_path, user_id, start, audit,
+                params,
+                repo_path,
+                user_id,
+                start,
+                audit,
             )
         elif action == "commit":
             return await self._commit(
-                params, repo_path, user_id, start, audit,
+                params,
+                repo_path,
+                user_id,
+                start,
+                audit,
             )
         elif action == "push":
             return await self._push(
-                params, repo_path, user_id, start, audit,
+                params,
+                repo_path,
+                user_id,
+                start,
+                audit,
             )
         elif action == "status":
             return await self._run_git(
-                ["status"], repo_path, "git.status",
-                user_id, start, audit,
+                ["status"],
+                repo_path,
+                "git.status",
+                user_id,
+                start,
+                audit,
             )
         elif action == "diff":
             return await self._run_git(
-                ["diff"], repo_path, "git.diff",
-                user_id, start, audit,
+                ["diff"],
+                repo_path,
+                "git.diff",
+                user_id,
+                start,
+                audit,
             )
         elif action == "log":
             return await self._run_git(
-                ["log", "--oneline", "-n", "20"], repo_path, "git.log",
-                user_id, start, audit,
+                ["log", "--oneline", "-n", "20"],
+                repo_path,
+                "git.log",
+                user_id,
+                start,
+                audit,
             )
         else:
             return await self._create_pr(
-                params, repo_path, user_id, start, audit,
+                params,
+                repo_path,
+                user_id,
+                start,
+                audit,
             )
 
     async def _run_git(
@@ -481,9 +512,13 @@ class GitTool(ITool):
         try:
             if self._has_gh_cli():
                 cmd = [
-                    "gh", "pr", "create",
-                    "--title", pr_title,
-                    "--body", pr_body,
+                    "gh",
+                    "pr",
+                    "create",
+                    "--title",
+                    pr_title,
+                    "--body",
+                    pr_body,
                 ]
                 branch: str | None = params.get("branch")
                 if branch:

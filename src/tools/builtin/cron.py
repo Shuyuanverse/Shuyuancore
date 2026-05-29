@@ -17,20 +17,21 @@ _ACTION_REQUIRED_PARAMS: dict[str, set[str]] = {
     "trigger": {"task_id"},
 }
 
-_VALID_ACTIONS: frozenset[str] = frozenset({
-    "list", "create", "delete", "trigger",
-})
+_VALID_ACTIONS: frozenset[str] = frozenset(
+    {
+        "list",
+        "create",
+        "delete",
+        "trigger",
+    }
+)
 
 
 class CronTool(ITool):
-
     def __init__(self) -> None:
         self._spec = ToolSpec(
             name="cron",
-            description=(
-                "定时任务管理工具，支持列出、创建、删除和"
-                "立即触发定时任务。"
-            ),
+            description=("定时任务管理工具，支持列出、创建、删除和立即触发定时任务。"),
             category="extension",
             dangerous=False,
             parameters=[
@@ -53,9 +54,7 @@ class CronTool(ITool):
                 ToolParameter(
                     name="cron_expression",
                     type="string",
-                    description=(
-                        "Cron 表达式（5位），create 操作必填"
-                    ),
+                    description=("Cron 表达式（5位），create 操作必填"),
                     required=False,
                     default=None,
                 ),
@@ -69,9 +68,7 @@ class CronTool(ITool):
                 ToolParameter(
                     name="task_id",
                     type="string",
-                    description=(
-                        "任务 ID，delete 和 trigger 操作必填"
-                    ),
+                    description=("任务 ID，delete 和 trigger 操作必填"),
                     required=False,
                     default=None,
                 ),
@@ -105,18 +102,14 @@ class CronTool(ITool):
 
         if action not in _VALID_ACTIONS:
             valid = ", ".join(sorted(_VALID_ACTIONS))
-            errors.append(
-                f"Invalid action: {action}. Must be one of: {valid}"
-            )
+            errors.append(f"Invalid action: {action}. Must be one of: {valid}")
             return errors
 
         required = _ACTION_REQUIRED_PARAMS.get(action, set())
         for param in required:
             value = params.get(param)
             if not value or (isinstance(value, str) and not value.strip()):
-                errors.append(
-                    f"'{param}' is required for action '{action}'"
-                )
+                errors.append(f"'{param}' is required for action '{action}'")
 
         return errors
 

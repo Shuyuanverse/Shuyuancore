@@ -74,24 +74,32 @@ class StyleProtectionPipeline:
 
         logger.info(
             "[protection] drift=%.4f level=%s persona=%s",
-            drift, result.alert_level, profile.persona_id,
+            drift,
+            result.alert_level,
+            profile.persona_id,
         )
         return result
 
     def _extract_style_vector(self, text: str) -> list[float]:
         from src.persona.style_encoder import StyleEncoder
+
         encoder = StyleEncoder()
         dims = encoder.encode(text)
         raw = [
-            dims.formality, dims.warmth, dims.directness,
-            dims.playfulness, dims.detail_orientation,
-            dims.emotional_expression, dims.pace,
+            dims.formality,
+            dims.warmth,
+            dims.directness,
+            dims.playfulness,
+            dims.detail_orientation,
+            dims.emotional_expression,
+            dims.pace,
         ]
         import numpy as np
+
         seed = int(sum(raw) * 1e6) % (2**31)
         rng = np.random.default_rng(seed=seed)
         repeat = self.config.anchor_dimensions // 7 + 1
-        base = np.array(raw * repeat)[:self.config.anchor_dimensions]
+        base = np.array(raw * repeat)[: self.config.anchor_dimensions]
         noise = rng.normal(0, 0.02, self.config.anchor_dimensions)
         vec = np.clip(base + noise, 0, 1)
         return vec.tolist()
@@ -113,7 +121,10 @@ class StyleProtectionPipeline:
         return prompt
 
     def _adjust_response(
-        self, text: str, result: ProtectionResult, perception: object,
+        self,
+        text: str,
+        result: ProtectionResult,
+        perception: object,
     ) -> Optional[str]:
         perception = getattr(perception, "user_emotion_hint", None)
         if perception == "negative_high" and result.drift_score >= 0.15:

@@ -21,7 +21,6 @@ _DEFAULT_CALENDAR = "data/calendar.ics"
 
 
 class CalendarTool(ITool):
-
     def get_spec(self) -> ToolSpec:
         return ToolSpec(
             name="calendar",
@@ -86,9 +85,7 @@ class CalendarTool(ITool):
         action: str = params.get("action", "")
         valid_actions = {"list", "add", "delete"}
         if action not in valid_actions:
-            errors.append(
-                f"action must be one of: {', '.join(sorted(valid_actions))}"
-            )
+            errors.append(f"action must be one of: {', '.join(sorted(valid_actions))}")
             return errors
         if action == "add":
             if not params.get("title"):
@@ -116,15 +113,26 @@ class CalendarTool(ITool):
 
         if action == "list":
             return await self._list_events(
-                cal_path, user_id, start, audit,
+                cal_path,
+                user_id,
+                start,
+                audit,
             )
         elif action == "add":
             return await self._add_event(
-                cal_path, params, user_id, start, audit,
+                cal_path,
+                params,
+                user_id,
+                start,
+                audit,
             )
         else:
             return await self._delete_event(
-                cal_path, params, user_id, start, audit,
+                cal_path,
+                params,
+                user_id,
+                start,
+                audit,
             )
 
     async def _list_events(
@@ -347,7 +355,8 @@ class CalendarTool(ITool):
         return self._parse_ics_manually(content)
 
     def _parse_ics_with_icalendar(
-        self, content: str,
+        self,
+        content: str,
     ) -> list[dict[str, str]]:
         cal = icalendar.Calendar.from_ical(content)
         events: list[dict[str, str]] = []
@@ -356,13 +365,15 @@ class CalendarTool(ITool):
                 uid = str(component.get("UID", ""))
                 dtstart = component.get("DTSTART")
                 dtend = component.get("DTEND")
-                events.append({
-                    "uid": uid,
-                    "summary": str(component.get("SUMMARY", "")),
-                    "description": str(component.get("DESCRIPTION", "")),
-                    "dtstart": self._format_dt(dtstart),
-                    "dtend": self._format_dt(dtend),
-                })
+                events.append(
+                    {
+                        "uid": uid,
+                        "summary": str(component.get("SUMMARY", "")),
+                        "description": str(component.get("DESCRIPTION", "")),
+                        "dtstart": self._format_dt(dtstart),
+                        "dtend": self._format_dt(dtend),
+                    }
+                )
         return events
 
     def _parse_ics_manually(self, content: str) -> list[dict[str, str]]:
@@ -406,9 +417,7 @@ class CalendarTool(ITool):
         for event in events:
             lines.append("BEGIN:VEVENT")
             lines.append(f"UID:{event.get('uid', str(uuid.uuid4()))}")
-            lines.append(
-                f"DTSTAMP:{now.strftime('%Y%m%dT%H%M%SZ')}"
-            )
+            lines.append(f"DTSTAMP:{now.strftime('%Y%m%dT%H%M%SZ')}")
             dtstart = event.get("dtstart", "")
             if dtstart:
                 dtstart_ics = self._to_ics_dt(dtstart)

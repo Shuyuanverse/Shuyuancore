@@ -23,7 +23,6 @@ _LLM_SUBAGENT_PROMPT = (
 
 
 class SubAgent(ISubAgent):
-
     def __init__(
         self,
         belief_store: IBeliefStore,
@@ -105,7 +104,4 @@ class SubAgent(ISubAgent):
         return summary
 
     def _build_text_summary(self, task: str, scope: str, context_summary: str) -> str:
-        return (
-            f"[子代理 scope={scope}] 任务: {task}\n"
-            f"上下文: {context_summary[:500]}"
-        )
+        return f"[子代理 scope={scope}] 任务: {task}\n上下文: {context_summary[:500]}"

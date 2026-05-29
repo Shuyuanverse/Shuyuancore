@@ -22,7 +22,6 @@ _ENV_PASSWORD = "EMAIL_PASSWORD"
 
 
 class EmailTool(ITool):
-
     def get_spec(self) -> ToolSpec:
         return ToolSpec(
             name="email",
@@ -131,18 +130,36 @@ class EmailTool(ITool):
 
         if action == "send":
             return await self._send_email(
-                params, user_id, start, audit,
-                smtp_host, smtp_port, email_user, email_password,
+                params,
+                user_id,
+                start,
+                audit,
+                smtp_host,
+                smtp_port,
+                email_user,
+                email_password,
             )
         elif action == "list":
             return await self._list_emails(
-                params, user_id, start, audit,
-                imap_host, imap_port, email_user, email_password,
+                params,
+                user_id,
+                start,
+                audit,
+                imap_host,
+                imap_port,
+                email_user,
+                email_password,
             )
         else:
             return await self._read_email(
-                params, user_id, start, audit,
-                imap_host, imap_port, email_user, email_password,
+                params,
+                user_id,
+                start,
+                audit,
+                imap_host,
+                imap_port,
+                email_user,
+                email_password,
             )
 
     async def _send_email(
@@ -267,9 +284,7 @@ class EmailTool(ITool):
                     )
                     if typ != "OK":
                         continue
-                    summary = self._parse_list_response(
-                        msg_id, fetch_data
-                    )
+                    summary = self._parse_list_response(msg_id, fetch_data)
                     if summary:
                         emails.append(summary)
 
@@ -357,9 +372,7 @@ class EmailTool(ITool):
                         duration_ms=(time.time() - start) * 1000,
                     )
 
-                parsed = email.message_from_bytes(
-                    raw_email, policy=email_policy
-                )
+                parsed = email.message_from_bytes(raw_email, policy=email_policy)
                 email_data = self._parse_email_message(parsed, msg_id, flags)
                 client.close()
 
@@ -470,10 +483,12 @@ class EmailTool(ITool):
                 if cdisp == "attachment":
                     filename = part.get_filename() or "unnamed"
                     ctype = part.get_content_type()
-                    attachments.append({
-                        "filename": filename,
-                        "type": ctype,
-                    })
+                    attachments.append(
+                        {
+                            "filename": filename,
+                            "type": ctype,
+                        }
+                    )
 
         return {
             "id": msg_id,

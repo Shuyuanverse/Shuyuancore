@@ -9,6 +9,7 @@ from src.tools.interfaces import ITool, ToolParameter, ToolResult, ToolSpec
 
 try:
     import matplotlib
+
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
 
@@ -18,7 +19,6 @@ except ImportError:
 
 
 class ChartTool(ITool):
-
     def get_spec(self) -> ToolSpec:
         return ToolSpec(
             name="chart",
@@ -82,9 +82,7 @@ class ChartTool(ITool):
         action: str = params.get("action", "")
         valid_actions = {"bar", "line", "pie", "scatter", "mermaid"}
         if action not in valid_actions:
-            errors.append(
-                f"action must be one of: {', '.join(sorted(valid_actions))}"
-            )
+            errors.append(f"action must be one of: {', '.join(sorted(valid_actions))}")
             return errors
         data = params.get("data")
         if not data or not isinstance(data, list) or len(data) == 0:
@@ -294,13 +292,9 @@ class ChartTool(ITool):
                     if "from" in item and "to" in item:
                         label = item.get("label", "")
                         if label:
-                            mermaid_lines.append(
-                                f"    {item['from']} -->|{label}| {item['to']}"
-                            )
+                            mermaid_lines.append(f"    {item['from']} -->|{label}| {item['to']}")
                         else:
-                            mermaid_lines.append(
-                                f"    {item['from']} --> {item['to']}"
-                            )
+                            mermaid_lines.append(f"    {item['from']} --> {item['to']}")
             elif chart_type_str == "sequence":
                 mermaid_lines.append("sequenceDiagram")
                 for item in data:
@@ -318,12 +312,8 @@ class ChartTool(ITool):
                 mermaid_lines.append("    dateFormat  YYYY-MM-DD")
                 for item in data:
                     if "task" in item and "start" in item and "end" in item:
-                        mermaid_lines.append(
-                            f"    section {item.get('section', 'Default')}"
-                        )
-                        mermaid_lines.append(
-                            f"    {item['task']} : {item['start']}, {item['end']}"
-                        )
+                        mermaid_lines.append(f"    section {item.get('section', 'Default')}")
+                        mermaid_lines.append(f"    {item['task']} : {item['start']}, {item['end']}")
             else:
                 mermaid_lines.append("graph TD")
                 mermaid_lines.append(f"    A[{chart_type_str}]")

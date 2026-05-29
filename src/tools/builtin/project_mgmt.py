@@ -12,7 +12,6 @@ from src.tools.interfaces import ITool, ToolParameter, ToolResult, ToolSpec
 
 
 class ProjectMgmtTool(ITool):
-
     def get_spec(self) -> ToolSpec:
         return ToolSpec(
             name="project_mgmt",
@@ -30,8 +29,7 @@ class ProjectMgmtTool(ITool):
                 ToolParameter(
                     name="action",
                     type="string",
-                    description="Action: list_issues / create_issue / "
-                    "update_issue / close_issue",
+                    description="Action: list_issues / create_issue / update_issue / close_issue",
                     required=True,
                 ),
                 ToolParameter(
@@ -51,8 +49,7 @@ class ProjectMgmtTool(ITool):
                 ToolParameter(
                     name="issue_id",
                     type="string",
-                    description="Issue number or ID, required for "
-                    "update_issue and close_issue",
+                    description="Issue number or ID, required for update_issue and close_issue",
                     required=False,
                     default=None,
                 ),
@@ -101,17 +98,16 @@ class ProjectMgmtTool(ITool):
 
         valid_providers = {"github", "jira"}
         if provider not in valid_providers:
-            errors.append(
-                f"provider must be one of: {', '.join(sorted(valid_providers))}"
-            )
+            errors.append(f"provider must be one of: {', '.join(sorted(valid_providers))}")
 
         valid_actions = {
-            "list_issues", "create_issue", "update_issue", "close_issue",
+            "list_issues",
+            "create_issue",
+            "update_issue",
+            "close_issue",
         }
         if action not in valid_actions:
-            errors.append(
-                f"action must be one of: {', '.join(sorted(valid_actions))}"
-            )
+            errors.append(f"action must be one of: {', '.join(sorted(valid_actions))}")
 
         if errors:
             return errors
@@ -339,7 +335,10 @@ class ProjectMgmtTool(ITool):
 
         except ImportError:
             fallback = await self._github_via_cli(
-                params, user_id, start, token,
+                params,
+                user_id,
+                start,
+                token,
             )
             return fallback
         except httpx.HTTPStatusError as e:
@@ -391,10 +390,23 @@ class ProjectMgmtTool(ITool):
 
         try:
             if action == "list_issues":
-                cmd = ["gh", "issue", "list", "--repo", repo,
-                       "--state", "open", "--json", "number,title,state,labels,createdAt,url"]
+                cmd = [
+                    "gh",
+                    "issue",
+                    "list",
+                    "--repo",
+                    repo,
+                    "--state",
+                    "open",
+                    "--json",
+                    "number,title,state,labels,createdAt,url",
+                ]
                 result = subprocess.run(
-                    cmd, capture_output=True, text=True, timeout=60, env=env,
+                    cmd,
+                    capture_output=True,
+                    text=True,
+                    timeout=60,
+                    env=env,
                 )
                 if result.returncode != 0:
                     return ToolResult(
@@ -433,8 +445,7 @@ class ProjectMgmtTool(ITool):
                 )
 
             elif action == "create_issue":
-                cmd = ["gh", "issue", "create", "--repo", repo,
-                       "--title", params["title"]]
+                cmd = ["gh", "issue", "create", "--repo", repo, "--title", params["title"]]
                 body = params.get("body")
                 if body:
                     cmd.extend(["--body", body])
@@ -447,7 +458,11 @@ class ProjectMgmtTool(ITool):
                         cmd.extend(["--label", label])
 
                 result = subprocess.run(
-                    cmd, capture_output=True, text=True, timeout=60, env=env,
+                    cmd,
+                    capture_output=True,
+                    text=True,
+                    timeout=60,
+                    env=env,
                 )
                 if result.returncode != 0:
                     return ToolResult(
@@ -475,7 +490,11 @@ class ProjectMgmtTool(ITool):
                 issue_id: str = params["issue_id"]
                 cmd = ["gh", "issue", "close", issue_id, "--repo", repo]
                 result = subprocess.run(
-                    cmd, capture_output=True, text=True, timeout=60, env=env,
+                    cmd,
+                    capture_output=True,
+                    text=True,
+                    timeout=60,
+                    env=env,
                 )
                 if result.returncode != 0:
                     return ToolResult(
@@ -513,7 +532,11 @@ class ProjectMgmtTool(ITool):
                     cmd.extend(["--add-label", ",".join(labels)])
 
                 result = subprocess.run(
-                    cmd, capture_output=True, text=True, timeout=60, env=env,
+                    cmd,
+                    capture_output=True,
+                    text=True,
+                    timeout=60,
+                    env=env,
                 )
                 if result.returncode != 0:
                     return ToolResult(
@@ -546,8 +569,7 @@ class ProjectMgmtTool(ITool):
         except FileNotFoundError:
             return ToolResult(
                 success=False,
-                error="gh CLI not found and httpx not available. "
-                "Install gh CLI or httpx.",
+                error="gh CLI not found and httpx not available. Install gh CLI or httpx.",
                 duration_ms=(time.time() - start) * 1000,
             )
         except Exception as e:
@@ -575,8 +597,7 @@ class ProjectMgmtTool(ITool):
         if not all([jira_url, jira_email, jira_token]):
             return ToolResult(
                 success=False,
-                error="JIRA_URL, JIRA_EMAIL, and JIRA_API_TOKEN "
-                "environment variables must be set",
+                error="JIRA_URL, JIRA_EMAIL, and JIRA_API_TOKEN environment variables must be set",
                 duration_ms=(time.time() - start) * 1000,
             )
 
@@ -608,7 +629,8 @@ class ProjectMgmtTool(ITool):
                     jql = f"project={project} AND status!=Closed ORDER BY created DESC"
                     url = f"{jira_url}/rest/api/2/search"
                     response = await client.get(
-                        url, headers=auth_headers,
+                        url,
+                        headers=auth_headers,
                         params={"jql": jql, "maxResults": 50},
                     )
                     response.raise_for_status()
@@ -747,7 +769,8 @@ class ProjectMgmtTool(ITool):
 
                     transitions_url = f"{jira_url}/rest/api/2/issue/{issue_id}/transitions"
                     trans_response = await client.get(
-                        transitions_url, headers=auth_headers,
+                        transitions_url,
+                        headers=auth_headers,
                     )
                     if trans_response.status_code == 200:
                         transitions = trans_response.json().get("transitions", [])

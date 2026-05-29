@@ -14,12 +14,8 @@ from src.skills.utils import preconditions_satisfied
 
 logger = logging.getLogger(__name__)
 
-_EXACT_PATTERN = re.compile(
-    r"(?:/skill\s+|用|使用|调用|执行)\s*([\w\-]+)\s*(?:技能|方法|步骤)?"
-)
-_USE_SKILL_PATTERN = re.compile(
-    r"(?:用|使用|调用|执行)\s*(.+?)\s*(?:技能|方法|步骤)"
-)
+_EXACT_PATTERN = re.compile(r"(?:/skill\s+|用|使用|调用|执行)\s*([\w\-]+)\s*(?:技能|方法|步骤)?")
+_USE_SKILL_PATTERN = re.compile(r"(?:用|使用|调用|执行)\s*(.+?)\s*(?:技能|方法|步骤)")
 
 
 async def match_skill(
@@ -102,9 +98,7 @@ async def _try_vector_match(
     skill_store: PersistentSkillStore,
     embedding_service: EmbeddingService,
 ) -> dict[str, Any] | None:
-    similar_beliefs = await belief_store.search_similar(
-        user_message, top_k=10, min_confidence=0.1
-    )
+    similar_beliefs = await belief_store.search_similar(user_message, top_k=10, min_confidence=0.1)
     if not similar_beliefs:
         return None
 

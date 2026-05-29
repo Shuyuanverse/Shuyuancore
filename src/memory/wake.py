@@ -112,7 +112,6 @@ def wake_readiness(user_msg: str, consecutive_tech_rounds: int = 0) -> float:
 
 
 class WakeFrequencyTracker:
-
     def __init__(self, session_window_ms: int = 300000) -> None:
         self._belief_tracker: dict[str, int] = {}
         self._session_tracker: dict[str, int] = {}

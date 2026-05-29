@@ -17,7 +17,6 @@ _logger = get_logger("shuyuancore.models.http")
 
 
 class HttpxClient:
-
     def __init__(
         self,
         base_url: str,
@@ -54,9 +53,7 @@ class HttpxClient:
                         connect=self._connect_timeout,
                     ),
                 ) as client:
-                    response = await client.request(
-                        method, url, headers=headers, json=json_data
-                    )
+                    response = await client.request(method, url, headers=headers, json=json_data)
 
                 if response.status_code == 429 and attempt < self._max_retries:
                     wait = _DEFAULT_BACKOFF * (2 ** (attempt - 1))
@@ -99,10 +96,7 @@ class HttpxClient:
 
             except httpx.HTTPStatusError as exc:
                 last_error = exc
-                if (
-                    exc.response.status_code in _RETRYABLE_STATUSES
-                    and attempt < self._max_retries
-                ):
+                if exc.response.status_code in _RETRYABLE_STATUSES and attempt < self._max_retries:
                     wait = _DEFAULT_BACKOFF * (2 ** (attempt - 1))
                     await asyncio.sleep(wait)
                 else:

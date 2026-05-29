@@ -13,21 +13,21 @@ _ACTION_REQUIRED_PARAMS: dict[str, set[str]] = {
     "cancel": {"task_id"},
 }
 
-_VALID_ACTIONS: frozenset[str] = frozenset({
-    "delegate", "check_status", "cancel",
-})
+_VALID_ACTIONS: frozenset[str] = frozenset(
+    {
+        "delegate",
+        "check_status",
+        "cancel",
+    }
+)
 
 
 class DelegationTool(ITool):
-
     def __init__(self) -> None:
         self._tasks: dict[str, dict[str, Any]] = {}
         self._spec = ToolSpec(
             name="delegation",
-            description=(
-                "子代理委托工具，支持创建子代理任务、"
-                "检查任务状态和取消任务。"
-            ),
+            description=("子代理委托工具，支持创建子代理任务、检查任务状态和取消任务。"),
             category="extension",
             dangerous=True,
             parameters=[
@@ -43,18 +43,14 @@ class DelegationTool(ITool):
                 ToolParameter(
                     name="task_description",
                     type="string",
-                    description=(
-                        "任务描述，delegate 操作必填"
-                    ),
+                    description=("任务描述，delegate 操作必填"),
                     required=False,
                     default=None,
                 ),
                 ToolParameter(
                     name="task_id",
                     type="string",
-                    description=(
-                        "任务 ID，check_status 和 cancel 操作必填"
-                    ),
+                    description=("任务 ID，check_status 和 cancel 操作必填"),
                     required=False,
                     default=None,
                 ),
@@ -68,9 +64,7 @@ class DelegationTool(ITool):
                 ToolParameter(
                     name="timeout",
                     type="integer",
-                    description=(
-                        "任务超时时间（秒），默认为 300"
-                    ),
+                    description=("任务超时时间（秒），默认为 300"),
                     required=False,
                     default=300,
                 ),
@@ -90,18 +84,14 @@ class DelegationTool(ITool):
 
         if action not in _VALID_ACTIONS:
             valid = ", ".join(sorted(_VALID_ACTIONS))
-            errors.append(
-                f"Invalid action: {action}. Must be one of: {valid}"
-            )
+            errors.append(f"Invalid action: {action}. Must be one of: {valid}")
             return errors
 
         required = _ACTION_REQUIRED_PARAMS.get(action, set())
         for param in required:
             value = params.get(param)
             if not value or (isinstance(value, str) and not value.strip()):
-                errors.append(
-                    f"'{param}' is required for action '{action}'"
-                )
+                errors.append(f"'{param}' is required for action '{action}'")
 
         return errors
 
@@ -115,9 +105,7 @@ class DelegationTool(ITool):
         audit = get_audit_logger()
 
         if action == "check_status":
-            return await self._check_status(
-                params, user_id, start, audit
-            )
+            return await self._check_status(params, user_id, start, audit)
 
         from src.tools.approval import request_approval, wait_for_approval
 
@@ -144,13 +132,9 @@ class DelegationTool(ITool):
             )
 
         if action == "delegate":
-            return await self._delegate_task(
-                params, user_id, start, audit
-            )
+            return await self._delegate_task(params, user_id, start, audit)
         elif action == "cancel":
-            return await self._cancel_task(
-                params, user_id, start, audit
-            )
+            return await self._cancel_task(params, user_id, start, audit)
 
         return ToolResult(
             success=False,

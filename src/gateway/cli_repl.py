@@ -323,9 +323,7 @@ async def run_repl(agent: Agent | None = None) -> None:
 
     while True:
         try:
-            prompt_html = HTML(
-                f"<prompt>{_current_mode}</prompt> {conversation_id[:8]}> "
-            )
+            prompt_html = HTML(f"<prompt>{_current_mode}</prompt> {conversation_id[:8]}> ")
             user_input = await session.prompt_async(prompt_html)
             user_input = user_input.strip()
         except (EOFError, KeyboardInterrupt):

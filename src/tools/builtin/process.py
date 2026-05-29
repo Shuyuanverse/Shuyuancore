@@ -10,7 +10,6 @@ from src.tools.interfaces import ITool, ToolParameter, ToolResult, ToolSpec
 
 
 class ProcessTool(ITool):
-
     def get_spec(self) -> ToolSpec:
         return ToolSpec(
             name="process",
@@ -94,11 +93,13 @@ class ProcessTool(ITool):
                             proc_status = line.split(":", 1)[1].strip()
                     if name_filter and name_filter not in proc_name:
                         continue
-                    processes.append({
-                        "pid": pid,
-                        "name": proc_name,
-                        "status": proc_status,
-                    })
+                    processes.append(
+                        {
+                            "pid": pid,
+                            "name": proc_name,
+                            "status": proc_status,
+                        }
+                    )
                 except (OSError, IOError, ValueError):
                     continue
         except PermissionError:

@@ -31,6 +31,7 @@ class HardFactGuard:
 
     async def extract_from_core_md(self, core_md: str, persona_id: str) -> list[str]:
         from src.config import get_settings
+
         settings = get_settings()
         hard_fact_conf = settings.persona.hard_fact
         categories = hard_fact_conf.categories
@@ -44,7 +45,7 @@ class HardFactGuard:
             for cat in categories:
                 prefix = cat + "|"
                 if line.startswith(prefix):
-                    content = line[len(prefix):].strip()
+                    content = line[len(prefix) :].strip()
                     if content:
                         parsed.append((cat, content))
                     break

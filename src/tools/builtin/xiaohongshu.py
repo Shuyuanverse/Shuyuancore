@@ -106,9 +106,7 @@ class XiaoHongShuTool(ITool):
 
         valid_actions = ("search_note", "get_note", "search_user", "get_user_comments")
         if action not in valid_actions:
-            errors.append(
-                f"Invalid action: '{action}'. Must be one of {valid_actions}."
-            )
+            errors.append(f"Invalid action: '{action}'. Must be one of {valid_actions}.")
 
         if action == "search_note":
             keyword = params.get("keyword")
@@ -209,9 +207,7 @@ class XiaoHongShuTool(ITool):
                 user_id=user_id,
                 action=f"xiaohongshu_{action}",
                 resource=(
-                    params.get("keyword")
-                    or params.get("note_id")
-                    or params.get("user_id", "")
+                    params.get("keyword") or params.get("note_id") or params.get("user_id", "")
                 ),
                 params={
                     "action": action,
@@ -231,10 +227,7 @@ class XiaoHongShuTool(ITool):
             audit.log(
                 user_id=user_id,
                 action=f"xiaohongshu_{action}",
-                resource=(
-                    params.get("keyword")
-                    or params.get("note_id", "")
-                ),
+                resource=(params.get("keyword") or params.get("note_id", "")),
                 params={"action": action},
                 result="error",
                 duration_ms=duration_ms,

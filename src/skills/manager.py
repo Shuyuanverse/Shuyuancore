@@ -26,7 +26,6 @@ _SKILLS_DIR = Path("data/skills")
 
 
 class PersistentSkillStore(ISkillStore):
-
     def __init__(
         self,
         belief_store: IBeliefStore | None = None,
@@ -83,9 +82,7 @@ class PersistentSkillStore(ISkillStore):
             return None
         return self._row_to_dict(row)
 
-    async def get_skill_by_belief_id(
-        self, belief_id: str
-    ) -> dict[str, Any] | None:
+    async def get_skill_by_belief_id(self, belief_id: str) -> dict[str, Any] | None:
         conn = await self._get_conn()
         cursor = await conn.execute(
             """
@@ -156,9 +153,7 @@ class PersistentSkillStore(ISkillStore):
                 timestamp=now_ms,
                 status="active",
             )
-            belief_id = await self._belief_store.add(
-                conversation_id, belief
-            )
+            belief_id = await self._belief_store.add(conversation_id, belief)
             skill_node.belief_id = belief_id
 
         await conn.execute(
@@ -261,9 +256,7 @@ class PersistentSkillStore(ISkillStore):
                     ensure_ascii=False,
                 ),
                 json.dumps(
-                    node.get(
-                        "version_history", existing.get("version_history", [])
-                    ),
+                    node.get("version_history", existing.get("version_history", [])),
                     ensure_ascii=False,
                 ),
                 node.get("status", existing.get("status", "active")),
@@ -281,28 +274,14 @@ class PersistentSkillStore(ISkillStore):
             belief_id=existing.get("belief_id", ""),
             description=node.get("description", existing.get("description", "")),
             tags=node.get("tags", existing.get("tags", [])),
-            preconditions=node.get(
-                "preconditions", existing.get("preconditions", [])
-            ),
-            causality_level0=node.get(
-                "causality_level0", existing.get("causality_level0", "")
-            ),
-            causality_level1=node.get(
-                "causality_level1", existing.get("causality_level1", "")
-            ),
-            causality_level2=node.get(
-                "causality_level2", existing.get("causality_level2", "")
-            ),
+            preconditions=node.get("preconditions", existing.get("preconditions", [])),
+            causality_level0=node.get("causality_level0", existing.get("causality_level0", "")),
+            causality_level1=node.get("causality_level1", existing.get("causality_level1", "")),
+            causality_level2=node.get("causality_level2", existing.get("causality_level2", "")),
             boundaries=node.get("boundaries", existing.get("boundaries", [])),
-            failure_modes=node.get(
-                "failure_modes", existing.get("failure_modes", [])
-            ),
-            dependencies=node.get(
-                "dependencies", existing.get("dependencies", [])
-            ),
-            version_history=node.get(
-                "version_history", existing.get("version_history", [])
-            ),
+            failure_modes=node.get("failure_modes", existing.get("failure_modes", [])),
+            dependencies=node.get("dependencies", existing.get("dependencies", [])),
+            version_history=node.get("version_history", existing.get("version_history", [])),
             status=node.get("status", existing.get("status", "active")),
             is_pinned=node.get("is_pinned", existing.get("is_pinned", False)),
             created_at=existing.get("created_at", now_ms),
@@ -324,9 +303,7 @@ class PersistentSkillStore(ISkillStore):
                         "UPDATE beliefs SET confidence = ?, base_confidence = ? WHERE id = ?",
                         (confidence, confidence, belief_id),
                     )
-                    await propagate_confidence(
-                        self._belief_store, belief_id, delta
-                    )
+                    await propagate_confidence(self._belief_store, belief_id, delta)
 
         logger.info("skill_updated name=%s", name)
 
@@ -341,9 +318,7 @@ class PersistentSkillStore(ISkillStore):
             try:
                 await self._belief_store.remove("", belief_id)
             except Exception:
-                logger.warning(
-                    "failed_to_remove_belief belief_id=%s", belief_id
-                )
+                logger.warning("failed_to_remove_belief belief_id=%s", belief_id)
 
         await conn.execute(
             "DELETE FROM skill_nodes WHERE name = ?",
@@ -377,7 +352,6 @@ class PersistentSkillStore(ISkillStore):
 
 
 class PersistentSkillGraph(ISkillGraph):
-
     def __init__(self, db_path: str = "data/state.db") -> None:
         self._db_path = db_path
         self._conn: aiosqlite.Connection | None = None
@@ -419,9 +393,7 @@ class PersistentSkillGraph(ISkillGraph):
         )
         return edge_id
 
-    async def get_edges(
-        self, node_name: str | None = None
-    ) -> list[dict[str, Any]]:
+    async def get_edges(self, node_name: str | None = None) -> list[dict[str, Any]]:
         conn = await self._get_conn()
         if node_name:
             cursor = await conn.execute(
@@ -433,9 +405,7 @@ class PersistentSkillGraph(ISkillGraph):
                 (node_name, node_name),
             )
         else:
-            cursor = await conn.execute(
-                "SELECT * FROM skill_edges ORDER BY created_at DESC"
-            )
+            cursor = await conn.execute("SELECT * FROM skill_edges ORDER BY created_at DESC")
         rows = await cursor.fetchall()
         return [dict(r) for r in rows]
 
@@ -460,15 +430,11 @@ class PersistentSkillGraph(ISkillGraph):
         await conn.commit()
 
         if edge_type in ("enables", "causally-linked"):
-            await self._sync_to_belief_depends_on(
-                conn, from_node, to_node, add=False
-            )
+            await self._sync_to_belief_depends_on(conn, from_node, to_node, add=False)
 
         logger.info("skill_edge_removed edge_id=%s", edge_id)
 
-    async def traverse(
-        self, start_name: str
-    ) -> list[dict[str, Any]]:
+    async def traverse(self, start_name: str) -> list[dict[str, Any]]:
         conn = await self._get_conn()
         visited: set[str] = set()
         result: list[dict[str, Any]] = []

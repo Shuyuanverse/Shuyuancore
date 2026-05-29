@@ -27,7 +27,6 @@ class AuditEntry:
 
 
 class AuditLogger:
-
     def __init__(self, db_path: str = "data/state.db") -> None:
         self._db_path: str = db_path
         self._cache: list[AuditEntry] = []
@@ -102,7 +101,7 @@ class AuditLogger:
             duration_ms,
         )
         if len(self._cache) > self._max_entries:
-            self._cache = self._cache[-self._max_entries // 2:]
+            self._cache = self._cache[-self._max_entries // 2 :]
 
     async def log_async(
         self,
@@ -215,9 +214,7 @@ class AuditLogger:
         return result
 
 
-_SENSITIVE_KEYS = {
-    "api_key", "token", "password", "secret", "cookie", "authorization"
-}
+_SENSITIVE_KEYS = {"api_key", "token", "password", "secret", "cookie", "authorization"}
 
 
 def _sanitize_params(params: dict[str, Any]) -> dict[str, Any]:

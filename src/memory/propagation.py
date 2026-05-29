@@ -59,9 +59,7 @@ async def overthrow(
     if new_belief is None:
         raise ValueError(f"New belief {new_id} not found for overthrow")
 
-    new_belief.depends_on = list(
-        set(new_belief.depends_on + old_belief.depends_on)
-    )
+    new_belief.depends_on = list(set(new_belief.depends_on + old_belief.depends_on))
     new_belief.metadata["overthrow_reason"] = reason
     new_belief.metadata["supersedes"] = old_id
     await store.update(new_belief)

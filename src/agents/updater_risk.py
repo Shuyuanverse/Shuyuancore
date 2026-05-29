@@ -20,7 +20,6 @@ _RISK_SYSTEM_PROMPT = """你是一个风险分析师（风险更新器）。
 
 
 class RiskUpdater(IUpdater):
-
     def __init__(self, model_provider: IModelProvider) -> None:
         self._model_provider = model_provider
 
@@ -34,9 +33,7 @@ class RiskUpdater(IUpdater):
 
         if ctx.belief_store:
             recent = await ctx.belief_store.get(ctx.conversation_id, limit=20)
-            belief_context = "\n".join(
-                f"[置信度 {b.confidence:.2f}] {b.content}" for b in recent
-            )
+            belief_context = "\n".join(f"[置信度 {b.confidence:.2f}] {b.content}" for b in recent)
             if belief_context:
                 messages.append(
                     {
@@ -49,8 +46,7 @@ class RiskUpdater(IUpdater):
             {
                 "role": "user",
                 "content": (
-                    f"用户的当前消息：{ctx.message}\n\n"
-                    f"请从风险角度分析潜在的失败模式和隐患。"
+                    f"用户的当前消息：{ctx.message}\n\n请从风险角度分析潜在的失败模式和隐患。"
                 ),
             }
         )

@@ -22,7 +22,6 @@ except ImportError:
 
 
 class MonitoringTool(ITool):
-
     def get_spec(self) -> ToolSpec:
         return ToolSpec(
             name="monitoring",
@@ -66,9 +65,7 @@ class MonitoringTool(ITool):
         action: str = params.get("action", "")
         valid_actions = {"server_status", "website_check", "ping"}
         if action not in valid_actions:
-            errors.append(
-                f"action must be one of: {', '.join(sorted(valid_actions))}"
-            )
+            errors.append(f"action must be one of: {', '.join(sorted(valid_actions))}")
             return errors
         if action == "website_check" and not params.get("url"):
             errors.append("website_check operation requires url parameter")

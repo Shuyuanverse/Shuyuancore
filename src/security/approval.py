@@ -30,7 +30,6 @@ class ApprovalRequest:
 
 
 class ApprovalManager:
-
     def __init__(self, db_path: str = _DB_PATH) -> None:
         self._db_path: str = db_path
         self._conn: aiosqlite.Connection | None = None
@@ -75,9 +74,7 @@ class ApprovalManager:
         )
         await conn.commit()
 
-        cursor = await conn.execute(
-            "SELECT * FROM approvals WHERE status = 'pending'"
-        )
+        cursor = await conn.execute("SELECT * FROM approvals WHERE status = 'pending'")
         rows = await cursor.fetchall()
         async with self._lock:
             for row in rows:
@@ -258,9 +255,7 @@ class ApprovalManager:
             created_at=row["created_at"],
             timeout=row["timeout"],
             status=row["status"],
-            approved=(
-                bool(row["approved"]) if row["approved"] is not None else None
-            ),
+            approved=(bool(row["approved"]) if row["approved"] is not None else None),
             reason=row["reason"],
             resolved_by=row["resolved_by"],
             resolved_at=row["resolved_at"],
@@ -280,16 +275,12 @@ class ApprovalManager:
         results: list[ApprovalRequest] = []
         for row in rows:
             async with self._lock:
-                event = self._events.get(
-                    row["approval_id"], asyncio.Event()
-                )
+                event = self._events.get(row["approval_id"], asyncio.Event())
             results.append(
                 ApprovalRequest(
                     approval_id=row["approval_id"],
                     tool_name=row["tool_name"],
-                    params=json.loads(row["params_json"])
-                    if row["params_json"]
-                    else {},
+                    params=json.loads(row["params_json"]) if row["params_json"] else {},
                     user_id=row["user_id"],
                     created_at=row["created_at"],
                     timeout=row["timeout"],

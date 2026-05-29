@@ -6,9 +6,15 @@ from typing import Any
 from src.tools.approval import request_approval, wait_for_approval
 from src.tools.interfaces import ITool, ToolParameter, ToolResult, ToolSpec
 
-VALID_ACTIONS: frozenset[str] = frozenset({
-    "screenshot", "navigate", "click", "fill", "text_content",
-})
+VALID_ACTIONS: frozenset[str] = frozenset(
+    {
+        "screenshot",
+        "navigate",
+        "click",
+        "fill",
+        "text_content",
+    }
+)
 
 ACTION_REQUIRED_PARAMS: dict[str, set[str]] = {
     "screenshot": {"url"},
@@ -40,27 +46,19 @@ class BrowserTool(ITool):
                 ToolParameter(
                     name="action",
                     type="string",
-                    description=(
-                        "Action to perform: screenshot/navigate/click/"
-                        "fill/text_content"
-                    ),
+                    description=("Action to perform: screenshot/navigate/click/fill/text_content"),
                     required=True,
                 ),
                 ToolParameter(
                     name="url",
                     type="string",
-                    description=(
-                        "Target URL, required for navigate and screenshot"
-                    ),
+                    description=("Target URL, required for navigate and screenshot"),
                     required=False,
                 ),
                 ToolParameter(
                     name="selector",
                     type="string",
-                    description=(
-                        "CSS selector, required for click, fill, "
-                        "and text_content"
-                    ),
+                    description=("CSS selector, required for click, fill, and text_content"),
                     required=False,
                 ),
                 ToolParameter(
@@ -89,6 +87,7 @@ class BrowserTool(ITool):
 
         try:
             import playwright  # noqa: F401
+
             return True
         except ImportError:
             return False
@@ -121,18 +120,14 @@ class BrowserTool(ITool):
 
         if action not in VALID_ACTIONS:
             valid = ", ".join(sorted(VALID_ACTIONS))
-            errors.append(
-                f"Invalid action: {action}. Must be one of: {valid}"
-            )
+            errors.append(f"Invalid action: {action}. Must be one of: {valid}")
             return errors
 
         required = ACTION_REQUIRED_PARAMS.get(action, set())
         for param in required:
             value = params.get(param)
             if not value or (isinstance(value, str) and not value.strip()):
-                errors.append(
-                    f"'{param}' is required for action '{action}'"
-                )
+                errors.append(f"'{param}' is required for action '{action}'")
 
         return errors
 
@@ -233,10 +228,9 @@ class BrowserTool(ITool):
                     target_url: str = params["url"]
                     await page.goto(target_url, timeout=timeout)
                     await page.wait_for_load_state("networkidle")
-                    screenshot_bytes = await page.screenshot(
-                        full_page=True, type="png"
-                    )
+                    screenshot_bytes = await page.screenshot(full_page=True, type="png")
                     import base64
+
                     encoded = base64.b64encode(screenshot_bytes).decode("utf-8")
                     return ToolResult(
                         success=True,
@@ -274,9 +268,7 @@ class BrowserTool(ITool):
 
                 elif action == "text_content":
                     element_selector: str = params["selector"]
-                    element = await page.wait_for_selector(
-                        element_selector, timeout=timeout
-                    )
+                    element = await page.wait_for_selector(element_selector, timeout=timeout)
                     if element is None:
                         return ToolResult(
                             success=False,

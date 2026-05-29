@@ -20,7 +20,6 @@ _INNOVATION_SYSTEM_PROMPT = """你是一个创新探索者（创新更新器）�
 
 
 class InnovationUpdater(IUpdater):
-
     def __init__(self, model_provider: IModelProvider) -> None:
         self._model_provider = model_provider
 
@@ -34,9 +33,7 @@ class InnovationUpdater(IUpdater):
 
         if ctx.belief_store:
             recent = await ctx.belief_store.get(ctx.conversation_id, limit=20)
-            belief_context = "\n".join(
-                f"[置信度 {b.confidence:.2f}] {b.content}" for b in recent
-            )
+            belief_context = "\n".join(f"[置信度 {b.confidence:.2f}] {b.content}" for b in recent)
             if belief_context:
                 messages.append(
                     {

@@ -24,13 +24,10 @@ _ARBITRATOR_POLISH_PROMPT = """你是一个文本润色助手。
 
 
 class Arbitrator(IArbitrator):
-
     def __init__(self, model_provider: IModelProvider) -> None:
         self._model_provider = model_provider
 
-    async def arbitrate(
-        self, ctx: UpdateContext, updater_results: list[UpdaterResult]
-    ) -> str:
+    async def arbitrate(self, ctx: UpdateContext, updater_results: list[UpdaterResult]) -> str:
         if not updater_results:
             return "无可用更新器结果，无法生成回复。"
 
@@ -47,9 +44,7 @@ class Arbitrator(IArbitrator):
 
         return await self._polish(ctx, weighted)
 
-    async def _polish(
-        self, ctx: UpdateContext, weighted: list[UpdaterResult]
-    ) -> str:
+    async def _polish(self, ctx: UpdateContext, weighted: list[UpdaterResult]) -> str:
         cfg = get_settings()
         model = cfg.models.routing.tool
 
@@ -60,9 +55,7 @@ class Arbitrator(IArbitrator):
                 history=[
                     {
                         "role": "system",
-                        "content": _ARBITRATOR_POLISH_PROMPT.format(
-                            input_data=input_data
-                        ),
+                        "content": _ARBITRATOR_POLISH_PROMPT.format(input_data=input_data),
                     },
                     {
                         "role": "user",
@@ -138,10 +131,7 @@ def _weighted_fusion(
 
 def _format_single_result(result: UpdaterResult) -> str:
     label = _source_label(result.source)
-    return (
-        f"[{label}视角] {result.content}\n"
-        f"（置信度 {result.confidence:.2f}）"
-    )
+    return f"[{label}视角] {result.content}\n（置信度 {result.confidence:.2f}）"
 
 
 def _format_structured_data(
@@ -160,8 +150,7 @@ def _format_structured_data(
 
     best = max(results, key=lambda r: r.confidence)
     lines.append(
-        f"\n[综合] 加权置信度最高的视角：{_source_label(best.source)} "
-        f"({best.confidence:.2f})"
+        f"\n[综合] 加权置信度最高的视角：{_source_label(best.source)} ({best.confidence:.2f})"
     )
     return "\n".join(lines)
 

@@ -71,9 +71,7 @@ class DocGenTool(ITool):
         action = params.get("action", "")
         valid_actions = {"markdown", "pdf", "docx", "ppt"}
         if action not in valid_actions:
-            errors.append(
-                f"action must be one of: {', '.join(sorted(valid_actions))}"
-            )
+            errors.append(f"action must be one of: {', '.join(sorted(valid_actions))}")
             return errors
 
         content = params.get("content")
@@ -111,17 +109,11 @@ class DocGenTool(ITool):
 
         try:
             if action == "markdown":
-                return await self._generate_markdown(
-                    content, out, start
-                )
+                return await self._generate_markdown(content, out, start)
             elif action == "pdf":
-                return await self._generate_pdf(
-                    content, title, out, start
-                )
+                return await self._generate_pdf(content, title, out, start)
             elif action == "docx":
-                return await self._generate_docx(
-                    content, title, out, start
-                )
+                return await self._generate_docx(content, title, out, start)
             else:
                 return ToolResult(
                     success=False,
@@ -214,12 +206,8 @@ class DocGenTool(ITool):
                 bottomMargin=20 * mm,
             )
             styles = getSampleStyleSheet()
-            title_style = ParagraphStyle(
-                "DocTitle", parent=styles["Title"], spaceAfter=12
-            )
-            body_style = ParagraphStyle(
-                "DocBody", parent=styles["Normal"], spaceAfter=6
-            )
+            title_style = ParagraphStyle("DocTitle", parent=styles["Title"], spaceAfter=12)
+            body_style = ParagraphStyle("DocBody", parent=styles["Normal"], spaceAfter=6)
 
             story: list[Any] = []
             story.append(Paragraph(title, title_style))
@@ -228,9 +216,12 @@ class DocGenTool(ITool):
             for para in content.split("\n\n"):
                 stripped = para.strip()
                 if stripped:
-                    safe_text = stripped.replace("&", "&amp;").replace(
-                        "<", "&lt;"
-                    ).replace(">", "&gt;").replace("\n", "<br/>")
+                    safe_text = (
+                        stripped.replace("&", "&amp;")
+                        .replace("<", "&lt;")
+                        .replace(">", "&gt;")
+                        .replace("\n", "<br/>")
+                    )
                     story.append(Paragraph(safe_text, body_style))
                     story.append(Spacer(1, 3 * mm))
 

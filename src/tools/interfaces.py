@@ -44,37 +44,29 @@ class ToolResult:
 
 
 class ITool(ABC):
-
     @abstractmethod
-    def get_spec(self) -> ToolSpec:
-        ...
+    def get_spec(self) -> ToolSpec: ...
 
     @abstractmethod
     async def execute(
         self,
         params: dict[str, Any],
         user_id: str = "default",
-    ) -> ToolResult:
-        ...
+    ) -> ToolResult: ...
 
     @abstractmethod
-    async def validate(self, params: dict[str, Any]) -> list[str]:
-        ...
+    async def validate(self, params: dict[str, Any]) -> list[str]: ...
 
 
 class IToolRegistry(ABC):
+    @abstractmethod
+    def register(self, tool: ITool) -> None: ...
 
     @abstractmethod
-    def register(self, tool: ITool) -> None:
-        ...
+    def get_tool(self, name: str) -> ITool | None: ...
 
     @abstractmethod
-    def get_tool(self, name: str) -> ITool | None:
-        ...
-
-    @abstractmethod
-    def list_tools(self, category: str | None = None) -> list[ToolSpec]:
-        ...
+    def list_tools(self, category: str | None = None) -> list[ToolSpec]: ...
 
     @abstractmethod
     async def execute_tool(
@@ -82,5 +74,4 @@ class IToolRegistry(ABC):
         name: str,
         params: dict[str, Any],
         user_id: str = "default",
-    ) -> ToolResult:
-        ...
+    ) -> ToolResult: ...

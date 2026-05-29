@@ -29,7 +29,6 @@ def _cosine_similarity(a: list[float], b: list[float]) -> float:
 
 
 class _MemoryIndex:
-
     def __init__(self) -> None:
         self._vectors: dict[str, list[float]] = {}
         self._metadata: dict[str, dict[str, Any]] = {}
@@ -75,7 +74,6 @@ class _MemoryIndex:
 
 
 class _ChromaIndex:
-
     def __init__(self, persist_dir: str = "data/chroma") -> None:
         self._client = chromadb.PersistentClient(path=persist_dir)
         self._collection = self._client.get_or_create_collection(
@@ -135,7 +133,6 @@ class _ChromaIndex:
 
 
 class VectorStore:
-
     def __init__(self, persist_dir: str = "data/chroma") -> None:
         if _HAS_CHROMADB:
             logger.info("using_chromadb_persistent_index persist_dir=%s", persist_dir)

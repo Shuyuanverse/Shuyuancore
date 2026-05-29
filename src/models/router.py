@@ -50,7 +50,6 @@ def _parse_model_spec(spec: str) -> tuple[str, str]:
 
 
 class Router:
-
     def __init__(
         self,
         registry: ProviderRegistry | None = None,
@@ -128,9 +127,7 @@ class Router:
         temperature: float | None = None,
         max_tokens: int | None = None,
     ) -> ChatResult:
-        return await self._call_with_failover(
-            "chat", task_type, history, temperature, max_tokens
-        )
+        return await self._call_with_failover("chat", task_type, history, temperature, max_tokens)
 
     async def embed(
         self,
@@ -158,12 +155,16 @@ class Router:
         for rule in self._rules:
             if rule.task_type == task_type:
                 return rule
-        default_chat = self._rules[0] if self._rules else RouteRule(
-            task_type=task_type,
-            primary_provider="",
-            primary_model="",
-            fallback_provider="",
-            fallback_model="",
+        default_chat = (
+            self._rules[0]
+            if self._rules
+            else RouteRule(
+                task_type=task_type,
+                primary_provider="",
+                primary_model="",
+                fallback_provider="",
+                fallback_model="",
+            )
         )
         return default_chat
 
@@ -211,9 +212,7 @@ class Router:
                 state.consecutive_429_count = 0
 
             should_failover: bool = bool(
-                state.primary_failures >= 1
-                and rule.fallback_provider
-                and rule.fallback_model
+                state.primary_failures >= 1 and rule.fallback_provider and rule.fallback_model
             )
 
             if state.consecutive_429_count >= _FAILOVER_CONSECUTIVE_429_LIMIT:

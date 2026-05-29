@@ -195,6 +195,7 @@ def create_app(
     async def _notify_systemd():
         try:
             from systemd import daemon as sd_daemon  # type: ignore[import-untyped]
+
             sd_daemon.notify("READY=1")
             logger.info("systemd notification sent: READY=1")
         except ImportError:
@@ -217,11 +218,7 @@ def create_app(
     @app.middleware("http")
     async def _guard(request: Request, call_next: Any) -> Any:
         path = request.url.path
-        if (
-            path in _WHITELIST_PATHS
-            or path.startswith("/docs")
-            or path.startswith("/openapi")
-        ):
+        if path in _WHITELIST_PATHS or path.startswith("/docs") or path.startswith("/openapi"):
             return await call_next(request)
 
         user_id = _extract_user_id(request)
@@ -234,9 +231,7 @@ def create_app(
                 if not _check_rate_limit(user_id, rpm):
                     return JSONResponse(
                         status_code=429,
-                        content={
-                            "error": {"code": 429, "message": "Rate limit exceeded"}
-                        },
+                        content={"error": {"code": 429, "message": "Rate limit exceeded"}},
                         headers={"Retry-After": "60", "X-User-ID": user_id},
                     )
 
@@ -254,9 +249,7 @@ def create_app(
         return response
 
     @app.exception_handler(Exception)
-    async def _global_exception_handler(
-        request: Request, exc: Exception
-    ) -> JSONResponse:
+    async def _global_exception_handler(request: Request, exc: Exception) -> JSONResponse:
         req_id = getattr(request.state, "request_id", "unknown")
         logger.exception("Unhandled exception request_id=%s", req_id)
         return _build_error_response(500, 0, str(exc))
@@ -301,9 +294,7 @@ def create_app(
         }
 
     @app.post("/api/v1/chat/stream")
-    async def chat_stream(
-        request: StreamChatRequest, req: Request
-    ) -> StreamingResponse:
+    async def chat_stream(request: StreamChatRequest, req: Request) -> StreamingResponse:
         agent = _agent_instance
         if agent is None:
             agent = _build_agent_from_config()

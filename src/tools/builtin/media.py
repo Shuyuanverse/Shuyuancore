@@ -16,13 +16,18 @@ _ACTION_REQUIRED_PARAMS: dict[str, set[str]] = {
     "convert_format": {"input_path", "output_format"},
 }
 
-_VALID_ACTIONS: frozenset[str] = frozenset({
-    "image_to_text", "tts", "stt", "resize_image", "convert_format",
-})
+_VALID_ACTIONS: frozenset[str] = frozenset(
+    {
+        "image_to_text",
+        "tts",
+        "stt",
+        "resize_image",
+        "convert_format",
+    }
+)
 
 
 class MediaTool(ITool):
-
     def __init__(self) -> None:
         self._spec = ToolSpec(
             name="media",
@@ -48,8 +53,7 @@ class MediaTool(ITool):
                     name="input_path",
                     type="string",
                     description=(
-                        "输入文件路径，image_to_text / stt / "
-                        "resize_image / convert_format 操作必填"
+                        "输入文件路径，image_to_text / stt / resize_image / convert_format 操作必填"
                     ),
                     required=False,
                     default=None,
@@ -112,22 +116,16 @@ class MediaTool(ITool):
 
         if action not in _VALID_ACTIONS:
             valid = ", ".join(sorted(_VALID_ACTIONS))
-            errors.append(
-                f"Invalid action: {action}. Must be one of: {valid}"
-            )
+            errors.append(f"Invalid action: {action}. Must be one of: {valid}")
             return errors
 
         required = _ACTION_REQUIRED_PARAMS.get(action, set())
         for param in required:
             value = params.get(param)
             if value is None:
-                errors.append(
-                    f"'{param}' is required for action '{action}'"
-                )
+                errors.append(f"'{param}' is required for action '{action}'")
             elif isinstance(value, str) and not value.strip():
-                errors.append(
-                    f"'{param}' must not be empty for action '{action}'"
-                )
+                errors.append(f"'{param}' must not be empty for action '{action}'")
 
         return errors
 
@@ -142,25 +140,15 @@ class MediaTool(ITool):
 
         try:
             if action == "image_to_text":
-                return await self._image_to_text(
-                    params, user_id, start, audit
-                )
+                return await self._image_to_text(params, user_id, start, audit)
             elif action == "tts":
-                return await self._tts(
-                    params, user_id, start, audit
-                )
+                return await self._tts(params, user_id, start, audit)
             elif action == "stt":
-                return await self._stt(
-                    params, user_id, start, audit
-                )
+                return await self._stt(params, user_id, start, audit)
             elif action == "resize_image":
-                return await self._resize_image(
-                    params, user_id, start, audit
-                )
+                return await self._resize_image(params, user_id, start, audit)
             elif action == "convert_format":
-                return await self._convert_format(
-                    params, user_id, start, audit
-                )
+                return await self._convert_format(params, user_id, start, audit)
             else:
                 return ToolResult(
                     success=False,
@@ -300,6 +288,7 @@ class MediaTool(ITool):
             import io
 
             from gtts import gTTS
+
             tts = gTTS(text=text, lang=language[:2])
             audio_bytes = io.BytesIO()
             tts.write_to_fp(audio_bytes)
@@ -489,10 +478,7 @@ class MediaTool(ITool):
             )
             return ToolResult(
                 success=False,
-                error=(
-                    "Pillow is not installed. "
-                    "Install with: pip install Pillow"
-                ),
+                error=("Pillow is not installed. Install with: pip install Pillow"),
                 duration_ms=duration_ms,
             )
 
@@ -564,9 +550,6 @@ class MediaTool(ITool):
             )
             return ToolResult(
                 success=False,
-                error=(
-                    "Pillow is not installed. "
-                    "Install with: pip install Pillow"
-                ),
+                error=("Pillow is not installed. Install with: pip install Pillow"),
                 duration_ms=duration_ms,
             )

@@ -9,9 +9,13 @@ import httpx
 
 from src.tools.interfaces import ITool, ToolParameter, ToolResult, ToolSpec
 
-VALID_ACTIONS: frozenset[str] = frozenset({
-    "search_article", "get_article", "get_account_articles",
-})
+VALID_ACTIONS: frozenset[str] = frozenset(
+    {
+        "search_article",
+        "get_article",
+        "get_account_articles",
+    }
+)
 
 ACTION_REQUIRED_PARAMS: dict[str, set[str]] = {
     "search_article": {"keyword"},
@@ -52,35 +56,25 @@ class WeChatMpTool(ITool):
                 ToolParameter(
                     name="action",
                     type="string",
-                    description=(
-                        "Action: search_article/get_article/"
-                        "get_account_articles"
-                    ),
+                    description=("Action: search_article/get_article/get_account_articles"),
                     required=True,
                 ),
                 ToolParameter(
                     name="keyword",
                     type="string",
-                    description=(
-                        "Search keyword, required for search_article"
-                    ),
+                    description=("Search keyword, required for search_article"),
                     required=False,
                 ),
                 ToolParameter(
                     name="article_url",
                     type="string",
-                    description=(
-                        "Article URL, required for get_article"
-                    ),
+                    description=("Article URL, required for get_article"),
                     required=False,
                 ),
                 ToolParameter(
                     name="account_name",
                     type="string",
-                    description=(
-                        "Official account name, required for "
-                        "get_account_articles"
-                    ),
+                    description=("Official account name, required for get_account_articles"),
                     required=False,
                 ),
                 ToolParameter(
@@ -134,18 +128,14 @@ class WeChatMpTool(ITool):
 
         if action not in VALID_ACTIONS:
             valid = ", ".join(sorted(VALID_ACTIONS))
-            errors.append(
-                f"Invalid action: {action}. Must be one of: {valid}"
-            )
+            errors.append(f"Invalid action: {action}. Must be one of: {valid}")
             return errors
 
         required = ACTION_REQUIRED_PARAMS.get(action, set())
         for param in required:
             value = params.get(param)
             if not value or (isinstance(value, str) and not value.strip()):
-                errors.append(
-                    f"'{param}' is required for action '{action}'"
-                )
+                errors.append(f"'{param}' is required for action '{action}'")
 
         limit = params.get("limit", 10)
         if limit is not None:
@@ -192,23 +182,15 @@ class WeChatMpTool(ITool):
             result: ToolResult
             if action == "search_article":
                 keyword = params.get("keyword", "").strip()
-                result = await self._search_article(
-                    keyword, timeout, limit
-                )
+                result = await self._search_article(keyword, timeout, limit)
             elif action == "get_article":
                 article_url = params.get("article_url", "").strip()
                 result = await self._get_article(article_url, timeout)
             elif action == "get_account_articles":
-                account_name = params.get(
-                    "account_name", ""
-                ).strip()
-                result = await self._get_account_articles(
-                    account_name, timeout, limit
-                )
+                account_name = params.get("account_name", "").strip()
+                result = await self._get_account_articles(account_name, timeout, limit)
             else:
-                result = ToolResult(
-                    success=False, error=f"Unknown action: {action}"
-                )
+                result = ToolResult(success=False, error=f"Unknown action: {action}")
 
             result.duration_ms = (time.time() - start) * 1000
             return result
@@ -242,10 +224,7 @@ class WeChatMpTool(ITool):
                 "AppleWebKit/537.36 (KHTML, like Gecko) "
                 "Chrome/120.0.0.0 Safari/537.36"
             ),
-            "Accept": (
-                "text/html,application/xhtml+xml,"
-                "application/xml;q=0.9,*/*;q=0.8"
-            ),
+            "Accept": ("text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"),
             "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.5",
         }
 
@@ -288,10 +267,7 @@ class WeChatMpTool(ITool):
         except httpx.HTTPStatusError as e:
             return ToolResult(
                 success=False,
-                error=(
-                    f"Article search returned HTTP "
-                    f"{e.response.status_code}"
-                ),
+                error=(f"Article search returned HTTP {e.response.status_code}"),
             )
         except httpx.RequestError as e:
             return ToolResult(
@@ -328,19 +304,13 @@ class WeChatMpTool(ITool):
             item_html = item_match.group(0)
 
             href = item_match.group(1).strip()
-            full_url = (
-                f"https:{href}" if href.startswith("//") else href
-            )
+            full_url = f"https:{href}" if href.startswith("//") else href
 
-            title_pattern = re.compile(
-                r'<h3[^>]*>.*?<a[^>]*>(.*?)</a>', re.DOTALL
-            )
+            title_pattern = re.compile(r"<h3[^>]*>.*?<a[^>]*>(.*?)</a>", re.DOTALL)
             title_match = title_pattern.search(item_html)
             title = ""
             if title_match:
-                title = re.sub(
-                    r'<[^>]+>', '', title_match.group(1)
-                ).strip()
+                title = re.sub(r"<[^>]+>", "", title_match.group(1)).strip()
 
             account_pattern = re.compile(
                 r'<a[^>]*class="[^"]*account[^"]*"[^>]*>(.*?)</a>',
@@ -349,9 +319,7 @@ class WeChatMpTool(ITool):
             account_match = account_pattern.search(item_html)
             account = ""
             if account_match:
-                account = re.sub(
-                    r'<[^>]+>', '', account_match.group(1)
-                ).strip()
+                account = re.sub(r"<[^>]+>", "", account_match.group(1)).strip()
 
             summary_pattern = re.compile(
                 r'<p[^>]*class="[^"]*txt-info[^"]*"[^>]*>(.*?)</p>',
@@ -360,16 +328,16 @@ class WeChatMpTool(ITool):
             summary_match = summary_pattern.search(item_html)
             summary = ""
             if summary_match:
-                summary = re.sub(
-                    r'<[^>]+>', '', summary_match.group(1)
-                ).strip()
+                summary = re.sub(r"<[^>]+>", "", summary_match.group(1)).strip()
 
-            articles.append({
-                "title": title,
-                "url": full_url,
-                "account": account,
-                "summary": summary,
-            })
+            articles.append(
+                {
+                    "title": title,
+                    "url": full_url,
+                    "account": account,
+                    "summary": summary,
+                }
+            )
 
         return articles
 
@@ -396,10 +364,7 @@ class WeChatMpTool(ITool):
                 "AppleWebKit/537.36 (KHTML, like Gecko) "
                 "Chrome/120.0.0.0 Safari/537.36"
             ),
-            "Accept": (
-                "text/html,application/xhtml+xml,"
-                "application/xml;q=0.9,*/*;q=0.8"
-            ),
+            "Accept": ("text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"),
             "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.5",
         }
 
@@ -408,9 +373,7 @@ class WeChatMpTool(ITool):
                 timeout=httpx.Timeout(timeout),
                 follow_redirects=True,
             ) as client:
-                response = await client.get(
-                    article_url, headers=headers
-                )
+                response = await client.get(article_url, headers=headers)
                 response.raise_for_status()
 
             text = response.text
@@ -418,31 +381,29 @@ class WeChatMpTool(ITool):
             title = ""
             title_pattern = re.compile(
                 r'<h1[^>]*class="[^"]*rich_media_title[^"]*"[^>]*>'
-                r'(.*?)</h1>',
+                r"(.*?)</h1>",
                 re.DOTALL,
             )
             title_match = title_pattern.search(text)
             if title_match:
-                title = re.sub(
-                    r'<[^>]+>', '', title_match.group(1)
-                ).strip()
+                title = re.sub(r"<[^>]+>", "", title_match.group(1)).strip()
 
             content = ""
             content_pattern = re.compile(
                 r'<div[^>]*class="[^"]*rich_media_content[^"]*"[^>]*>'
-                r'(.*?)</div>',
+                r"(.*?)</div>",
                 re.DOTALL,
             )
             content_match = content_pattern.search(text)
             if content_match:
                 content_raw = content_match.group(1)
-                content = re.sub(r'<[^>]+>', '', content_raw)
-                content = re.sub(r'\s+', ' ', content).strip()
+                content = re.sub(r"<[^>]+>", "", content_raw)
+                content = re.sub(r"\s+", " ", content).strip()
 
             publish_time = ""
             time_pattern = re.compile(
                 r'<em[^>]*class="[^"]*rich_media_meta_text[^"]*"[^>]*>'
-                r'(\d{4}[\d-:\s]+)',
+                r"(\d{4}[\d-:\s]+)",
             )
             time_match = time_pattern.search(text)
             if time_match:
@@ -456,9 +417,7 @@ class WeChatMpTool(ITool):
             )
             account_match = account_pattern.search(text)
             if account_match:
-                account_name = re.sub(
-                    r'<[^>]+>', '', account_match.group(1)
-                ).strip()
+                account_name = re.sub(r"<[^>]+>", "", account_match.group(1)).strip()
 
             if not content:
                 return ToolResult(
@@ -489,10 +448,7 @@ class WeChatMpTool(ITool):
         except httpx.HTTPStatusError as e:
             return ToolResult(
                 success=False,
-                error=(
-                    f"Get article returned HTTP "
-                    f"{e.response.status_code}"
-                ),
+                error=(f"Get article returned HTTP {e.response.status_code}"),
             )
         except httpx.RequestError as e:
             return ToolResult(
@@ -525,10 +481,7 @@ class WeChatMpTool(ITool):
                 "AppleWebKit/537.36 (KHTML, like Gecko) "
                 "Chrome/120.0.0.0 Safari/537.36"
             ),
-            "Accept": (
-                "text/html,application/xhtml+xml,"
-                "application/xml;q=0.9,*/*;q=0.8"
-            ),
+            "Accept": ("text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"),
             "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.5",
         }
 
@@ -554,26 +507,24 @@ class WeChatMpTool(ITool):
             text = response.text
             account_link_pattern = re.compile(
                 r'<a[^>]*href="(//weixin\.sogou\.com/gzh\?[^"]+)"'
-                r'[^>]*>.*?</a>',
+                r"[^>]*>.*?</a>",
                 re.DOTALL,
             )
 
             account_url = ""
             for link_match in account_link_pattern.finditer(text):
                 href = link_match.group(1).strip()
-                if account_name in href or account_name in text[
-                    max(0, link_match.start() - 200
-                ):link_match.end()]:
+                if (
+                    account_name in href
+                    or account_name in text[max(0, link_match.start() - 200) : link_match.end()]
+                ):
                     account_url = f"https:{href}"
                     break
 
             if not account_url:
                 return ToolResult(
                     success=False,
-                    error=(
-                        f"Account '{account_name}' not found "
-                        f"on Sogou WeChat"
-                    ),
+                    error=(f"Account '{account_name}' not found on Sogou WeChat"),
                 )
 
             await self._enforce_rate_limit()
@@ -582,9 +533,7 @@ class WeChatMpTool(ITool):
                 timeout=httpx.Timeout(timeout),
                 follow_redirects=True,
             ) as client:
-                account_resp = await client.get(
-                    account_url, headers=headers
-                )
+                account_resp = await client.get(account_url, headers=headers)
                 account_resp.raise_for_status()
 
             account_text = account_resp.text
@@ -596,54 +545,43 @@ class WeChatMpTool(ITool):
                 re.DOTALL,
             )
 
-            for art_match in article_pattern.finditer(
-                account_text
-            ):
+            for art_match in article_pattern.finditer(account_text):
                 if len(articles) >= limit:
                     break
 
                 art_html = art_match.group(0)
                 href = art_match.group(1).strip()
-                full_url = (
-                    f"https:{href}"
-                    if href.startswith("//") else href
-                )
+                full_url = f"https:{href}" if href.startswith("//") else href
 
                 title_match = re.search(
-                    r'<h3[^>]*>.*?<a[^>]*>(.*?)</a>',
+                    r"<h3[^>]*>.*?<a[^>]*>(.*?)</a>",
                     art_html,
                     re.DOTALL,
                 )
                 title = ""
                 if title_match:
-                    title = re.sub(
-                        r'<[^>]+>', '', title_match.group(1)
-                    ).strip()
+                    title = re.sub(r"<[^>]+>", "", title_match.group(1)).strip()
 
                 summary_match = re.search(
                     r'<p[^>]*class="[^"]*txt-info[^"]*"[^>]*>'
-                    r'(.*?)</p>',
+                    r"(.*?)</p>",
                     art_html,
                     re.DOTALL,
                 )
                 summary = ""
                 if summary_match:
-                    summary = re.sub(
-                        r'<[^>]+>', '', summary_match.group(1)
-                    ).strip()
+                    summary = re.sub(r"<[^>]+>", "", summary_match.group(1)).strip()
 
-                time_match = re.search(
-                    r'(\d{4}-\d{2}-\d{2})', art_html
+                time_match = re.search(r"(\d{4}-\d{2}-\d{2})", art_html)
+
+                articles.append(
+                    {
+                        "title": title,
+                        "url": full_url,
+                        "summary": summary,
+                        "date": (time_match.group(1) if time_match else ""),
+                    }
                 )
-
-                articles.append({
-                    "title": title,
-                    "url": full_url,
-                    "summary": summary,
-                    "date": (
-                        time_match.group(1) if time_match else ""
-                    ),
-                })
 
             return ToolResult(
                 success=True,
@@ -657,23 +595,15 @@ class WeChatMpTool(ITool):
         except httpx.TimeoutException:
             return ToolResult(
                 success=False,
-                error=(
-                    f"Get account articles timed out "
-                    f"after {timeout}s"
-                ),
+                error=(f"Get account articles timed out after {timeout}s"),
             )
         except httpx.HTTPStatusError as e:
             return ToolResult(
                 success=False,
-                error=(
-                    f"Get account articles returned HTTP "
-                    f"{e.response.status_code}"
-                ),
+                error=(f"Get account articles returned HTTP {e.response.status_code}"),
             )
         except httpx.RequestError as e:
             return ToolResult(
                 success=False,
-                error=(
-                    f"Get account articles request failed: {e}"
-                ),
+                error=(f"Get account articles request failed: {e}"),
             )
