@@ -130,13 +130,6 @@ persona:
     shared_layers: [L3, L4]
     independent_layers: [L1, L6]
 
-evolution:
-  trigger_days: 7
-  trigger_count: 40
-  max_active_modules: 5
-  fuse_threshold: 3
-  archive_inactive_days: 14
-
 prediction:
   enable_proactive: false
   idle_timeout_seconds: 30
