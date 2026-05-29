@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from typing import Any
+from typing import Any, List, Tuple
 
 
 @dataclass
@@ -72,6 +72,96 @@ class IBeliefStore(ABC):
 
     @abstractmethod
     async def overthrow(self, old_id: str, new_id: str, reason: str) -> None: ...
+
+
+class IConversationManager(ABC):
+    """对话管理器接口。
+
+    负责：
+    - 创建对话
+    - 添加消息
+    - 获取消息历史
+    - 列表对话
+    - 删除对话
+    """
+
+    @abstractmethod
+    async def create_conversation(self, user_id: str, title: str = "") -> str:
+        """创建新对话。
+
+        Args:
+            user_id: 用户 ID
+            title: 对话标题（可选）
+
+        Returns:
+            str: 对话 ID
+        """
+        ...
+
+    @abstractmethod
+    async def add_message(
+        self,
+        conversation_id: str,
+        role: str,
+        content: str,
+        metadata: dict[str, Any] | None = None,
+    ) -> None:
+        """添加消息到对话。
+
+        Args:
+            conversation_id: 对话 ID
+            role: 角色（user/assistant/system）
+            content: 消息内容
+            metadata: 元数据（可选）
+        """
+        ...
+
+    @abstractmethod
+    async def get_messages(
+        self,
+        conversation_id: str,
+        limit: int = 50,
+        before: str | None = None,
+    ) -> list[dict[str, Any]]:
+        """获取对话消息历史。
+
+        Args:
+            conversation_id: 对话 ID
+            limit: 最大消息数
+            before: 游标（格式："{timestamp}_{id}"）
+
+        Returns:
+            list[dict]: 消息列表
+        """
+        ...
+
+    @abstractmethod
+    async def list_conversations(
+        self,
+        user_id: str,
+        limit: int = 20,
+        cursor: str | None = None,
+    ) -> tuple[list[dict[str, Any]], str | None, bool]:
+        """列表用户的所有对话。
+
+        Args:
+            user_id: 用户 ID
+            limit: 每页数量
+            cursor: 分页游标
+
+        Returns:
+            tuple: (对话列表，下一个游标，是否有更多)
+        """
+        ...
+
+    @abstractmethod
+    async def delete_conversation(self, conversation_id: str) -> None:
+        """删除对话及其所有消息。
+
+        Args:
+            conversation_id: 对话 ID
+        """
+        ...
 
 
 class IReader(ABC):
