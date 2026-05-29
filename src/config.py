@@ -322,7 +322,10 @@ class EvolutionConfig(BaseModel):
 
 
 class PredictionConfig(BaseModel):
-    enable_proactive: bool = True
+    enable_proactive: bool = False          # 主动发起总开关
+    idle_timeout_seconds: int = 30          # 空闲超时（秒）
+    confidence_threshold: float = 0.7       # 预测置信度阈值
+    max_idle_checks_per_conversation: int = 3  # 单次对话最大主动提醒次数
     feedback_loop: bool = True
 
 

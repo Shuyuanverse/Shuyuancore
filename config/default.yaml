@@ -138,7 +138,10 @@ evolution:
   archive_inactive_days: 14
 
 prediction:
-  enable_proactive: true
+  enable_proactive: false
+  idle_timeout_seconds: 30
+  confidence_threshold: 0.7
+  max_idle_checks_per_conversation: 3
   feedback_loop: true
 
 security:
