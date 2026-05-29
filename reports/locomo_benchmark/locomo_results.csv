@@ -1,4 +1,0 @@
-system,sample_id,question,expected,predicted,category,category_id,score,latency_ms,error
-shuyuancore,0,When did Caroline go to the LGBTQ support group?,7 May 2023,ERROR: no such table: beliefs,temporal,2,0.0,0.23591100034536794,
-shuyuancore,0,When did Melanie paint a sunrise?,2022,ERROR: no such table: beliefs,temporal,2,0.0,0.20538299941108562,
-shuyuancore,0,What fields would Caroline be likely to pursue in her educaton?,"Psychology, counseling certification",ERROR: no such table: beliefs,open_domain,3,0.0,0.19543300004443154,
