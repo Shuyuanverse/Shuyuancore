@@ -501,7 +501,11 @@ class PersistentBeliefStore(IBeliefStore):
                                 (belief_id,),
                             )
                             row = await cursor.fetchone()
-                            if row and row["timestamp"] >= cutoff_ms and row["memory_type"] == "task":
+                            if (
+                                row
+                                and row["timestamp"] >= cutoff_ms
+                                and row["memory_type"] == "task"
+                            ):
                                 count += 1
 
                     if count > 0:

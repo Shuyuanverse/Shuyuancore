@@ -178,7 +178,7 @@ class StyleVectorGenerator:
             vec[12] = sentence_patterns.get("long", 0.0) + sentence_patterns.get("very_long", 0.0)
             if len(lengths) > 1:
                 mean_len = sum(lengths) / len(lengths)
-                variance = sum((l - mean_len) ** 2 for l in lengths) / len(lengths)
+                variance = sum((ln - mean_len) ** 2 for ln in lengths) / len(lengths)
                 vec[13] = min(variance / 100.0, 1.0)
         vec[14] = sentence_patterns.get("declarative", 0.0)
         vec[15] = sentence_patterns.get("interrogative", 0.0)

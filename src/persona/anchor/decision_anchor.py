@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import time
 from typing import Any, Dict, List, Optional
 
 import numpy as np
@@ -23,8 +24,7 @@ except ImportError:
     nn = object
     TORCH_AVAILABLE = False
 
-from .base import AnchorConfig, DecisionAnchor, generate_anchor_id
-
+from .base import AnchorConfig, AnchorType, DecisionAnchor, generate_anchor_id
 
 if not TORCH_AVAILABLE:
 
@@ -155,18 +155,8 @@ class DecisionEncoder(_DecisionEncoderBase):
             # BERT 不可用，返回随机向量（降级）
             return np.random.randn(768).astype(np.float32)
 
-        inputs = tokenizer(
-            text,
-            return_tensors="pt",
-            padding=True,
-            truncation=True,
-            max_length=512,
-        )
-
-        with torch.no_grad():
-            outputs = torch.nn.modules.Module()  # 占位，实际需加载 BERT 模型
-
-        # 简化处理：返回占位向量
+        # BERT 推理占位：待模型加载后使用 tokenizer 编码
+        del tokenizer, text
         return np.random.randn(768).astype(np.float32)
 
     def _discretize_priorities(self, priorities: List[Dict[str, float]]) -> np.ndarray:
@@ -505,7 +495,3 @@ class DecisionAnchorManager:
             del self._anchors[anchor_id]
             return True
         return False
-
-
-import time
-from .base import AnchorType

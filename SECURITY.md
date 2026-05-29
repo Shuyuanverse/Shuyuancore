@@ -4,8 +4,9 @@
 
 如果你发现 ShuyuanCore 中存在安全漏洞，请通过以下方式联系我们：
 
-- **邮箱**：[shuyuancore@example.com](mailto:shuyuancore@example.com)
+- **邮箱**：[fenghuazongjuelun@qq.com](mailto:fenghuazongjuelun@qq.com)
 - **邮件主题**：请以 `[SECURITY]` 开头
+- **GitHub Security Advisories**（可选）：[提交私有安全报告](https://github.com/Shuyuanverse/Shuyuancore/security/advisories/new)
 
 **请不要通过公开 Issue 报告安全漏洞**，以便我们有时间在漏洞被利用之前进行修复。
 

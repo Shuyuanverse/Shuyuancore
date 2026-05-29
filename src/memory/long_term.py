@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import json
 import logging
 import time
 from typing import Any
@@ -94,12 +93,14 @@ class LongTermMemory:
             for m in msgs[:3]:
                 content = str(m.get("content", ""))
                 previews.append(content[:_MAX_CONTENT_PREVIEW])
-            summaries.append({
-                "conversation_id": conv.get("id"),
-                "message_count": conv.get("message_count", 0),
-                "last_message_at": conv.get("last_message_at", 0),
-                "preview": " | ".join(previews),
-            })
+            summaries.append(
+                {
+                    "conversation_id": conv.get("id"),
+                    "message_count": conv.get("message_count", 0),
+                    "last_message_at": conv.get("last_message_at", 0),
+                    "preview": " | ".join(previews),
+                }
+            )
 
         summaries.sort(key=lambda x: x.get("last_message_at", 0) or 0, reverse=True)
         return summaries
@@ -125,11 +126,15 @@ class LongTermMemory:
                 await self._belief_store.remove(conversation_id, belief.id)
                 removed += 1
             except Exception:
-                logger.exception("failed_to_remove_belief conv=%s belief=%s", conversation_id, belief.id)
+                logger.exception(
+                    "failed_to_remove_belief conv=%s belief=%s", conversation_id, belief.id
+                )
 
         logger.info(
             "pruned %d beliefs from conversation %s (kept %d)",
-            removed, conversation_id, max_beliefs,
+            removed,
+            conversation_id,
+            max_beliefs,
         )
         return removed
 

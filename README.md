@@ -2,7 +2,7 @@
 
 [![Python](https://img.shields.io/badge/Python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![License](https://img.shields.io/badge/License-Apache%202.0-green.svg)](LICENSE)
-[![Tests](https://img.shields.io/badge/Tests-927%20cases-orange.svg)](tests/)
+[![CI](https://github.com/Shuyuanverse/Shuyuancore/actions/workflows/ci.yml/badge.svg)](https://github.com/Shuyuanverse/Shuyuancore/actions/workflows/ci.yml)
 
 **智能进化、风格一致、深度记忆、自主行动的开源 AI Agent。**
 
@@ -24,8 +24,9 @@
 
 ### 核心能力
 
-- **8 平台接入**：CLI、API Server、OpenAI 兼容代理、微信、企业微信、飞书、钉钉、QQ、Telegram
-- **200+ 模型路由**：支持 OpenAI、Anthropic、Google、DeepSeek、Qwen 等，按任务类型自动路由
+- **多平台接入（已实现）**：CLI、API Server、交互式 REPL
+- **多平台接入（计划中，欢迎贡献）**：OpenAI 兼容代理、微信、企业微信、飞书、钉钉、QQ、Telegram
+- **多提供商模型路由**：DashScope、DeepSeek、OpenAI 兼容 API、Ollama 等，按任务类型自动路由与故障转移
 - **29 内置工具**：终端、文件、浏览器、Git、数据库、邮件、日历、图表、加密、监控等
 - **3LLM 分工**：主 LLM（实时交互）+ 复盘 LLM（后台优化）+ 工具 LLM（参数解析）
 
@@ -46,19 +47,10 @@
 
 ## 快速开始
 
-### 方式一：pip 安装
+### 方式一：源码部署（推荐）
 
 ```bash
-pip install shuyuancore
-cp .env.example .env
-# 编辑 .env 填入 API Key
-shuyuancore serve
-```
-
-### 方式二：源码部署
-
-```bash
-git clone https://github.com/ElementaAI/Shuyuancore.git
+git clone https://github.com/Shuyuanverse/Shuyuancore.git
 cd Shuyuancore
 python3 -m venv venv && source venv/bin/activate
 pip install -e .
@@ -67,17 +59,17 @@ cp .env.example .env
 shuyuancore serve
 ```
 
-### 方式三：Docker 一键部署
+### 方式二：Docker 一键部署
 
 ```bash
-git clone https://github.com/ElementaAI/Shuyuancore.git
+git clone https://github.com/Shuyuanverse/Shuyuancore.git
 cd Shuyuancore
 cp .env.example .env
 # 编辑 .env 填入 API Key
 docker-compose up -d
 ```
 
-### 方式四：CLI 交互
+### 方式三：CLI 交互
 
 ```bash
 shuyuancore repl
@@ -184,7 +176,7 @@ ShuyuanCore/
 │   └── prediction/    # 预测式用户建模
 ├── config/
 │   └── default.yaml   # 默认配置
-├── tests/             # 927 个测试用例
+├── tests/             # 900+ 个测试用例
 ├── docs/              # 14 份技术文档
 ├── deploy/            # Docker/systemd/Nginx 部署配置
 ├── migrations/        # Alembic 数据库迁移

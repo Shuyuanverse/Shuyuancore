@@ -8,11 +8,10 @@
 from __future__ import annotations
 
 import re
-import math
 from collections import Counter
-from typing import Dict, List, Any
+from typing import Dict, List
 
-from .base import BaseStyleExtractor, StyleExtractionResult, StyleConfig
+from .base import BaseStyleExtractor, StyleConfig, StyleExtractionResult
 
 
 class TextStyleAnalyzer(BaseStyleExtractor):
@@ -493,7 +492,7 @@ class TextStyleAnalyzer(BaseStyleExtractor):
 
         if len(lengths) > 1:
             mean_length = sum(lengths) / len(lengths)
-            variance = sum((l - mean_length) ** 2 for l in lengths) / len(lengths)
+            variance = sum((ln - mean_length) ** 2 for ln in lengths) / len(lengths)
             length_variance_score = min(variance / 100.0, 1.0)
         else:
             length_variance_score = 0.0

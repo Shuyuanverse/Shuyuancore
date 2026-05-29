@@ -91,7 +91,9 @@ class ConversationManager(IConversationManager):
             try:
                 before_ts, before_id = before.rsplit("_", 1)
                 before_timestamp = int(before_ts)
-                messages = [m for m in messages if (m["timestamp"], m["id"]) < (before_timestamp, before_id)]
+                messages = [
+                    m for m in messages if (m["timestamp"], m["id"]) < (before_timestamp, before_id)
+                ]
             except (ValueError, AttributeError):
                 logger.warning("Invalid before cursor: %s", before)
 

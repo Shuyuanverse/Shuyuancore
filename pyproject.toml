@@ -6,7 +6,21 @@ build-backend = "hatchling.build"
 name = "shuyuancore"
 version = "1.0.0"
 description = "ShuyuanCore - 智能进化、风格一致、深度记忆、自主行动的开源AI Agent"
+readme = "README.md"
+license = "Apache-2.0"
 requires-python = ">=3.10"
+authors = [{ name = "山野", email = "fenghuazongjuelun@qq.com" }]
+keywords = ["ai", "agent", "llm", "memory", "persona"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: Apache Software License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
 dependencies = [
     "pydantic-settings>=2.0.0",
     "pyyaml>=6.0",
@@ -24,6 +38,15 @@ dependencies = [
     "tiktoken>=0.5.0",
     "emoji>=2.0",
 ]
+
+[project.urls]
+Homepage = "https://github.com/Shuyuanverse/Shuyuancore"
+Repository = "https://github.com/Shuyuanverse/Shuyuancore"
+Issues = "https://github.com/Shuyuanverse/Shuyuancore/issues"
+Documentation = "https://github.com/Shuyuanverse/Shuyuancore/tree/main/docs"
+
+[project.scripts]
+shuyuancore = "main:main"
 
 [project.optional-dependencies]
 tools = ["docker>=7.0"]
@@ -60,11 +83,15 @@ dev = [
 [tool.hatch.build.targets.wheel]
 packages = ["src"]
 
+[tool.hatch.build.targets.wheel.force-include]
+"main.py" = "main.py"
+
 [tool.ruff]
 line-length = 100
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "N", "W"]
+ignore = ["E501"]
 
 [tool.ruff.format]
 quote-style = "double"

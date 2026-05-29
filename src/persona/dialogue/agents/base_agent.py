@@ -17,11 +17,11 @@ import asyncio
 import logging
 import time
 from abc import ABC, abstractmethod
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from enum import Enum
 from typing import Any, Callable, Dict, List, Optional
 
-from .agent_protocol import AgentMessage, Priority
+from .agent_protocol import AgentMessage
 
 logger = logging.getLogger(__name__)
 

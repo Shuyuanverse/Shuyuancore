@@ -14,6 +14,18 @@
 
 from __future__ import annotations
 
+from .adjustment_history import (
+    AdjustmentHistory,
+    AdjustmentRecord,
+    ReviewResult,
+    TriggerType,
+)
+from .anchor_manager import (
+    AnchorSimilarityService,
+    AnchorVersionManager,
+    FeedbackSample,
+    WassersteinDriftDetector,
+)
 from .base import (
     AnchorBase,
     AnchorConfig,
@@ -27,37 +39,25 @@ from .base import (
     generate_anchor_id,
     validate_vector_dimension,
 )
+from .bidirectional_mapping import (
+    MAX_CUMULATIVE_ADJUSTMENT,
+    MAX_DRIFT_SCORE,
+    MAX_SINGLE_ADJUSTMENT,
+    AdjustmentResult,
+    AdjustmentSnapshot,
+    BidirectionalMapper,
+)
 from .decision_anchor import (
+    TORCH_AVAILABLE,
     DecisionAnchorManager,
     DecisionEncoder,
     DecisionEncoderLight,
-    TORCH_AVAILABLE,
 )
-from .anchor_manager import (
-    AnchorSimilarityService,
-    AnchorVersionManager,
-    FeedbackSample,
-    WassersteinDriftDetector,
-)
+from .semantic_translator import SemanticTranslator
 from .value_dimensions import (
     ValueDimension,
     ValueDimensionsRegistry,
     ValueRange,
-)
-from .semantic_translator import SemanticTranslator
-from .bidirectional_mapping import (
-    AdjustmentResult,
-    AdjustmentSnapshot,
-    BidirectionalMapper,
-    MAX_CUMULATIVE_ADJUSTMENT,
-    MAX_DRIFT_SCORE,
-    MAX_SINGLE_ADJUSTMENT,
-)
-from .adjustment_history import (
-    AdjustmentHistory,
-    AdjustmentRecord,
-    ReviewResult,
-    TriggerType,
 )
 
 __all__ = [

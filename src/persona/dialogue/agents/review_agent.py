@@ -469,12 +469,10 @@ class ReviewAgent(BaseAgent):
         }
 
         max_level = ConflictLevel.NONE
-        max_score = 0
 
         for result in results:
             if level_order[result.conflict_level] > level_order[max_level]:
                 max_level = result.conflict_level
-                max_score = result.conflict_score
 
         return max_level
 

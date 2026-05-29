@@ -19,7 +19,7 @@
 ## 一键安装
 
 ```bash
-curl -sSL https://github.com/ElementaAI/Shuyuancore/releases/latest/download/install.sh | bash
+curl -sSL https://github.com/Shuyuanverse/Shuyuancore/releases/latest/download/install.sh | bash
 ```
 
 安装完成后：
@@ -44,7 +44,7 @@ sudo apt-get install -y git python3 python3-pip python3-venv curl
 ```bash
 sudo mkdir -p /opt/shuyuancore
 sudo chown $USER:$USER /opt/shuyuancore
-git clone https://github.com/ElementaAI/Shuyuancore.git /opt/shuyuancore
+git clone https://github.com/Shuyuanverse/Shuyuancore.git /opt/shuyuancore
 cd /opt/shuyuancore
 ```
 
@@ -95,7 +95,7 @@ sudo systemctl enable --now shuyuancore
 
 ```bash
 # 克隆仓库
-git clone https://github.com/ElementaAI/Shuyuancore.git
+git clone https://github.com/Shuyuanverse/Shuyuancore.git
 cd Shuyuancore
 
 # 创建 .env 文件

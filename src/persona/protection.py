@@ -76,7 +76,9 @@ class StyleProtectionPipeline:
             ) % (count, drift, profile.style_dimensions.to_prompt_text())
             logger.warning(
                 "[protection] 强制校准触发: %d 次连续漂移 (persona=%s, drift=%.4f)",
-                count, pid, drift,
+                count,
+                pid,
+                drift,
             )
             _DRIFT_COUNTER[pid] = 0
         else:
@@ -95,18 +97,24 @@ class StyleProtectionPipeline:
         return result
 
     def _extract_style_vector(self, text: str) -> list[float]:
-        from src.persona.style.style_encoder import StyleEncoder, StyleDimension
+        from src.persona.style.style_encoder import StyleDimension, StyleEncoder
 
         encoder = StyleEncoder()
         profile = encoder.encode(text)
         raw = [
-            profile.dimensions.get("colloquial", StyleDimension(name="colloquial", value=0.5)).value,
+            profile.dimensions.get(
+                "colloquial", StyleDimension(name="colloquial", value=0.5)
+            ).value,
             profile.dimensions.get("formal", StyleDimension(name="formal", value=0.5)).value,
             profile.dimensions.get("emotional", StyleDimension(name="emotional", value=0.5)).value,
-            profile.dimensions.get("interactive", StyleDimension(name="interactive", value=0.5)).value,
+            profile.dimensions.get(
+                "interactive", StyleDimension(name="interactive", value=0.5)
+            ).value,
             profile.dimensions.get("logical", StyleDimension(name="logical", value=0.5)).value,
             profile.dimensions.get("concise", StyleDimension(name="concise", value=0.5)).value,
-            profile.dimensions.get("expressive", StyleDimension(name="expressive", value=0.5)).value,
+            profile.dimensions.get(
+                "expressive", StyleDimension(name="expressive", value=0.5)
+            ).value,
         ]
 
         import numpy as np

@@ -5,10 +5,8 @@ import logging
 import time
 import uuid
 from collections.abc import AsyncIterator
-from typing import Any
-
-from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
+from typing import Any
 
 from fastapi import FastAPI, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware

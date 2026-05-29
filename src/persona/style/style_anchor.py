@@ -5,9 +5,8 @@
 from __future__ import annotations
 
 import hashlib
-import json
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Any
+from typing import Any, Dict, List, Optional
 
 import numpy as np
 
@@ -371,7 +370,7 @@ def extract_style_from_text(texts: List[str]) -> Dict:
     total_chars = 0
     total_sentences = 0
     total_paragraphs = 0
-    emoji_counts: Dict[str, int] = Counter()
+    emoji_counts: Dict[str, int] = {}
     question_count = 0
     exclamation_count = 0
     hashtag_count = 0
@@ -406,7 +405,7 @@ def extract_style_from_text(texts: List[str]) -> Dict:
 
         emojis = emoji_pattern.findall(text)
         for emoji in emojis:
-            emoji_counts[emoji] += 1
+            emoji_counts[emoji] = emoji_counts.get(emoji, 0) + 1
 
         question_count += text.count("?") + text.count("?")
         exclamation_count += text.count("!") + text.count("！")
@@ -432,6 +431,3 @@ def extract_style_from_text(texts: List[str]) -> Dict:
         "exclamation_density": exclamation_count / max(total_chars, 1),
         "punctuation_variety": len(punct_set) / 20.0,
     }
-
-
-from collections import Counter

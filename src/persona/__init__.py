@@ -6,21 +6,21 @@ from __future__ import annotations
 
 from .profile import PersonaProfile, StyleDimensions
 from .style import (
+    TORCH_AVAILABLE,
     BaseStyleExtractor,
-    StyleConfig,
-    StyleExtractionResult,
-    StyleFeatureType,
-    TextStyleAnalyzer,
-    StyleDimension,
-    StyleEncoder,
-    StyleProfile,
-    StyleVector,
-    StyleVectorGenerator,
     StyleAnchor,
     StyleAnchorEncoder,
     StyleAnchorManager,
+    StyleConfig,
+    StyleDimension,
+    StyleEncoder,
+    StyleExtractionResult,
+    StyleFeatureType,
+    StyleProfile,
+    StyleVector,
+    StyleVectorGenerator,
+    TextStyleAnalyzer,
     extract_style_from_text,
-    TORCH_AVAILABLE,
 )
 
 __all__ = [

@@ -7,7 +7,7 @@ echo "============================================"
 
 # Configuration
 INSTALL_DIR=${INSTALL_DIR:-/opt/shuyuancore}
-GIT_REPO=${GIT_REPO:-https://github.com/ElementaAI/Shuyuancore.git}
+GIT_REPO=${GIT_REPO:-https://github.com/Shuyuanverse/Shuyuancore.git}
 BRANCH=${BRANCH:-main}
 SYSTEM_USER=${SYSTEM_USER:-shuyuancore}
 
