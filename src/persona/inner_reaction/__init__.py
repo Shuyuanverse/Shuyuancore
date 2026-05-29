@@ -14,28 +14,28 @@ from __future__ import annotations
 from .perception import (
     ATMOSPHERE_KEYWORDS,
     IDENTITY_CONFUSION_PATTERNS,
+    PATIENCE_DECAY_PER_NEGATIVE,
+    PATIENCE_DECAY_PER_REPEAT,
+    REPEAT_SIMILARITY_THRESHOLD,
     USER_EMOTION_KEYWORDS,
+    WOLF_THRESHOLD,
     PerceptionEngine,
     PerceptionResult,
-    REPEAT_SIMILARITY_THRESHOLD,
-    PATIENCE_DECAY_PER_REPEAT,
-    PATIENCE_DECAY_PER_NEGATIVE,
-    WOLF_THRESHOLD,
-)
-from .reaction import (
-    InnerReaction,
-    InnerReactionBuilder,
-)
-from .pipeline import (
-    InnerReactionConfig,
-    InnerReactionPipeline,
-    InnerReactionResult,
 )
 from .persona_synergy_bus import (
     InnerIntent,
     PersonaSynergyBus,
     PreConsciousSignal,
     SynergyBusResult,
+)
+from .pipeline import (
+    InnerReactionConfig,
+    InnerReactionPipeline,
+    InnerReactionResult,
+)
+from .reaction import (
+    InnerReaction,
+    InnerReactionBuilder,
 )
 
 __all__ = [

@@ -20,7 +20,6 @@ adjustment_records:
 
 from __future__ import annotations
 
-import asyncio
 import json
 import sqlite3
 import time
@@ -28,7 +27,7 @@ import uuid
 from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional
 
 import numpy as np
 
@@ -225,7 +224,7 @@ class AdjustmentHistory:
 
         cursor.execute(
             """
-            INSERT INTO adjustment_records 
+            INSERT INTO adjustment_records
             (id, anchor_id, trigger_type, adjustment_vector, values_before, values_after,
              review_result, drift_score_before, drift_score_after, created_at)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)

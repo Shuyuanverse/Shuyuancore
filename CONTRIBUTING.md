@@ -26,7 +26,7 @@
 
 ```bash
 # 1. Fork 并克隆仓库
-git clone https://github.com/ElementaAI/Shuyuancore.git
+git clone https://github.com/Shuyuanverse/Shuyuancore.git
 cd Shuyuancore
 
 # 2. 创建虚拟环境
@@ -48,7 +48,7 @@ pytest
 
 ### Bug 报告
 
-请在 [Issues](https://github.com/ElementaAI/Shuyuancore/issues) 中使用 Bug Report 模板，包含：
+请在 [Issues](https://github.com/Shuyuanverse/Shuyuancore/issues) 中使用 Bug Report 模板，包含：
 
 - **复现步骤**：清晰描述如何触发问题
 - **预期行为**：你认为应该发生什么

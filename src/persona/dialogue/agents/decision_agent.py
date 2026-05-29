@@ -15,9 +15,10 @@ import logging
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
 
-from .base_agent import AgentConfig, BaseAgent
-from .agent_protocol import AgentMessage, MessageType, Priority
 from src.persona.inner_reaction.perception import PerceptionResult
+
+from .agent_protocol import AgentMessage, MessageType
+from .base_agent import AgentConfig, BaseAgent
 
 logger = logging.getLogger(__name__)
 
@@ -341,7 +342,7 @@ class DecisionAgent(BaseAgent):
             loop = asyncio.get_event_loop()
             if loop.is_running():
                 # 在已有事件循环中创建新任务
-                task = loop.create_task(self.process(message))
+                _ = loop.create_task(self.process(message))
                 # 简化处理：不等待
                 return DecisionOutput(
                     response="异步处理中...",

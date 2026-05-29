@@ -17,17 +17,17 @@ from typing import Any, Dict, List, Optional
 
 import numpy as np
 
-from src.persona.style.text_style import TextStyleAnalyzer
-from src.persona.style.style_encoder import StyleEncoder, StyleProfile
-from src.persona.style.style_vector import StyleVectorGenerator
-from src.persona.style.style_anchor import StyleAnchorEncoder
-from src.persona.anchor.decision_anchor import DecisionEncoder, DecisionEncoderLight
 from src.persona.anchor.anchor_manager import AnchorVersionManager
+from src.persona.anchor.base import AnchorVersion
+from src.persona.anchor.decision_anchor import DecisionEncoder, DecisionEncoderLight
 from src.persona.anchor.semantic_translator import SemanticTranslator
-from src.persona.anchor.value_dimensions import ValueDimensionsRegistry
 from src.persona.hard_fact_guard import HardFactGuard
-from src.persona.protection import StyleProtectionPipeline, ProtectionConfig
 from src.persona.profile import PersonaProfile, StyleDimensions
+from src.persona.protection import ProtectionConfig, StyleProtectionPipeline
+from src.persona.style.style_anchor import StyleAnchorEncoder
+from src.persona.style.style_encoder import StyleEncoder
+from src.persona.style.style_vector import StyleVectorGenerator
+from src.persona.style.text_style import TextStyleAnalyzer
 
 logger = logging.getLogger(__name__)
 
@@ -173,7 +173,6 @@ class PersonaCompiler:
         Raises:
             ValueError: 当样本量不足或超过限制时
         """
-        import time
 
         start_time = time.time()
         metadata = CompilationMetadata()
@@ -360,7 +359,6 @@ class PersonaCompiler:
         Raises:
             ValueError: 当样本量不足或 CORE.md 缺失关键信息时
         """
-        import time
 
         start_time = time.time()
         metadata = CompilationMetadata()
@@ -561,7 +559,6 @@ class PersonaCompiler:
         Returns:
             Optional[AnchorVersion]: 如果触发更新则返回新版本，否则返回 None
         """
-        import time
 
         start_time = time.time()
 

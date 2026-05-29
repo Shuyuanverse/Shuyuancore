@@ -13,16 +13,16 @@ from .base import (
     StyleExtractionResult,
     StyleFeatureType,
 )
-from .text_style import TextStyleAnalyzer
-from .style_encoder import StyleDimension, StyleEncoder, StyleProfile
-from .style_vector import StyleVector, StyleVectorGenerator
 from .style_anchor import (
+    TORCH_AVAILABLE,
     StyleAnchor,
     StyleAnchorEncoder,
     StyleAnchorManager,
     extract_style_from_text,
-    TORCH_AVAILABLE,
 )
+from .style_encoder import StyleDimension, StyleEncoder, StyleProfile
+from .style_vector import StyleVector, StyleVectorGenerator
+from .text_style import TextStyleAnalyzer
 
 __all__ = [
     "BaseStyleExtractor",

@@ -5,7 +5,7 @@
 ### 1. 克隆仓库
 
 ```bash
-git clone https://github.com/ElementaAI/Shuyuancore.git
+git clone https://github.com/Shuyuanverse/Shuyuancore.git
 cd Shuyuancore
 ```
 

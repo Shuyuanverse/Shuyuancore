@@ -17,8 +17,8 @@ from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
 
 from .perception import PerceptionEngine, PerceptionResult
-from .reaction import InnerReactionBuilder, InnerReaction
 from .persona_synergy_bus import PersonaSynergyBus, SynergyBusResult
+from .reaction import InnerReaction, InnerReactionBuilder
 
 logger = logging.getLogger(__name__)
 

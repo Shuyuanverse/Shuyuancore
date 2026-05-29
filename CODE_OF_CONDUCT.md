@@ -46,8 +46,8 @@
 
 如遇辱骂、骚扰或其他不可接受的行为，可通过以下方式联系维护团队报告：
 
-- 邮箱：[shuyuancore@example.com](mailto:shuyuancore@example.com)
-- GitHub Issue（标记为 `conduct`）
+- 邮箱：[fenghuazongjuelun@qq.com](mailto:fenghuazongjuelun@qq.com)
+- GitHub Issue（标记为 `conduct`）：[新建 Issue](https://github.com/Shuyuanverse/Shuyuancore/issues/new)
 
 所有投诉将得到及时和公正的审查。
 

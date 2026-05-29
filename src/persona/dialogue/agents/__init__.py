@@ -20,6 +20,12 @@ from .agent_protocol import (
     Priority,
     Protocol,
 )
+from .arbitrate_agent import (
+    ArbitrateAgent,
+    ArbitrationResult,
+    CorrectionStrategy,
+    VectorSpaceCorrector,
+)
 from .base_agent import (
     AgentConfig,
     AgentStatus,
@@ -34,24 +40,18 @@ from .decision_agent import (
     DecisionContext,
     DecisionOutput,
 )
+from .dialogue_coordinator import (
+    CoordinatedResult,
+    CoordinatorConfig,
+    DialogueCoordinator,
+    WorkflowContext,
+    create_coordinator,
+)
 from .review_agent import (
     ConflictDetectionResult,
     ConflictLevel,
     ReviewAgent,
     ReviewAgentContextExtension,
-)
-from .arbitrate_agent import (
-    ArbitrateAgent,
-    ArbitrationResult,
-    CorrectionStrategy,
-    VectorSpaceCorrector,
-)
-from .dialogue_coordinator import (
-    CoordinatorConfig,
-    CoordinatedResult,
-    DialogueCoordinator,
-    WorkflowContext,
-    create_coordinator,
 )
 
 __all__ = [
@@ -87,5 +87,6 @@ __all__ = [
     "CoordinatorConfig",
     "DialogueCoordinator",
     "CoordinatedResult",
+    "WorkflowContext",
     "create_coordinator",
 ]

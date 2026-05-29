@@ -18,9 +18,9 @@ import uuid
 from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
 if TYPE_CHECKING:
-    from src.persona.dialogue.agents import ReviewAgent
     from src.config import EvolutionConfig
     from src.core.interfaces import IBeliefStore
+    from src.persona.dialogue.agents import ReviewAgent
 
 from src.config import get_settings
 from src.models.provider import get_model_provider
@@ -119,7 +119,13 @@ class ModuleManager:
         conn.commit()
         conn.close()
 
-        logger.info("Created module: %s (id=%s, partition=%s, quality=%.2f)", name, module_id, memory_partition, quality)
+        logger.info(
+            "Created module: %s (id=%s, partition=%s, quality=%.2f)",
+            name,
+            module_id,
+            memory_partition,
+            quality,
+        )
         return module_id
 
     async def _generate_prompt(self, trajectory: str, regenerate: bool = False) -> str:
@@ -174,9 +180,13 @@ class ModuleManager:
         cursor = conn.cursor()
 
         # 1. 读取两个模块的 prompt
-        cursor.execute("SELECT name, prompt_text FROM evolution_modules WHERE id = ?", (module_a_id,))
+        cursor.execute(
+            "SELECT name, prompt_text FROM evolution_modules WHERE id = ?", (module_a_id,)
+        )
         a = cursor.fetchone()
-        cursor.execute("SELECT name, prompt_text FROM evolution_modules WHERE id = ?", (module_b_id,))
+        cursor.execute(
+            "SELECT name, prompt_text FROM evolution_modules WHERE id = ?", (module_b_id,)
+        )
         b = cursor.fetchone()
 
         if not a or not b:
@@ -278,7 +288,9 @@ class ModuleManager:
         conn.row_factory = sqlite3.Row
         cursor = conn.cursor()
 
-        cursor.execute("SELECT * FROM evolution_modules WHERE status = 'active' ORDER BY created_at DESC")
+        cursor.execute(
+            "SELECT * FROM evolution_modules WHERE status = 'active' ORDER BY created_at DESC"
+        )
         rows = cursor.fetchall()
 
         conn.close()

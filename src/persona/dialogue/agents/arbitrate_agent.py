@@ -18,9 +18,9 @@ from typing import Any, Dict, List, Optional, Tuple
 
 import numpy as np
 
-from .base_agent import AgentConfig, BaseAgent
 from .agent_protocol import AgentMessage, MessageType
-from .review_agent import ConflictDetectionResult, ConflictLevel
+from .base_agent import AgentConfig, BaseAgent
+from .review_agent import ConflictLevel
 
 logger = logging.getLogger(__name__)
 

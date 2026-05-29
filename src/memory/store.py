@@ -74,7 +74,9 @@ class MemoryStore(IMemoryStore):
         self._initialized = True
         logger.info(
             "MemoryStore initialized: db=%s chroma=%s user=%s",
-            self._db_path, self._chroma_path, self._user_id,
+            self._db_path,
+            self._chroma_path,
+            self._user_id,
         )
 
     @property

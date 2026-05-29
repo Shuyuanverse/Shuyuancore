@@ -101,25 +101,21 @@ class StyleEncoder:
         for phrase, freq in __import__("collections").Counter(words).most_common(10):
             catchphrases[phrase] = freq / num_words if num_words else 0
 
-        sentences = [s.strip() for s in text.replace("！", "。").replace("？", "。").split("。") if s.strip()]
+        sentences = [
+            s.strip() for s in text.replace("！", "。").replace("？", "。").split("。") if s.strip()
+        ]
         sentence_patterns: dict[str, float] = {
             "declarative": text.count("。") / num_sentences,
             "interrogative": text.count("？") / num_sentences,
             "exclamatory": text.count("！") / num_sentences,
             "short": (
-                sum(1 for s in sentences if len(s) < 10) / len(sentences)
-                if sentences
-                else 0
+                sum(1 for s in sentences if len(s) < 10) / len(sentences) if sentences else 0
             ),
             "long": (
-                sum(1 for s in sentences if 20 <= len(s) < 40) / len(sentences)
-                if sentences
-                else 0
+                sum(1 for s in sentences if 20 <= len(s) < 40) / len(sentences) if sentences else 0
             ),
             "medium": (
-                sum(1 for s in sentences if 10 <= len(s) < 20) / len(sentences)
-                if sentences
-                else 0
+                sum(1 for s in sentences if 10 <= len(s) < 20) / len(sentences) if sentences else 0
             ),
             "very_long": 0.0,
         }
@@ -134,9 +130,7 @@ class StyleEncoder:
 
         vocab_metrics: dict[str, float] = {
             "ttr": ttr,
-            "hapax_ratio": (
-                len([w for w in words if words.count(w) == 1]) / num_words
-            )
+            "hapax_ratio": (len([w for w in words if words.count(w) == 1]) / num_words)
             if num_words
             else 0,
             "avg_word_length": sum(len(w) for w in words) / num_words if num_words else 0,

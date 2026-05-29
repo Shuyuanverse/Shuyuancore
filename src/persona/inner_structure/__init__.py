@@ -9,6 +9,12 @@
 
 from __future__ import annotations
 
+from .pipeline import (
+    AdjustmentSuggestion,
+    InnerStructureConfig,
+    InnerStructurePipeline,
+    InnerStructureResult,
+)
 from .self_review import (
     ADJUST_THRESHOLD,
     AI_TEMPLATE_PATTERNS,
@@ -18,12 +24,6 @@ from .self_review import (
     WEIGHTS,
     SelfReviewLayer,
     SelfReviewResult,
-)
-from .pipeline import (
-    AdjustmentSuggestion,
-    InnerStructureConfig,
-    InnerStructurePipeline,
-    InnerStructureResult,
 )
 
 __all__ = [
