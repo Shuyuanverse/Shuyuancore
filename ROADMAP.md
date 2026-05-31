@@ -49,8 +49,8 @@
 - **TODO**: colorlog 彩色控制台输出在 structlog 环境下可进一步美化
 
 ### ⚠️ 未实现模块
-- **定时任务系统（src/cron/）**：3 个骨架文件已就位，待实现
-- **预测式建模（src/prediction/）**：3 个骨架文件已就位，待实现
+- **定时任务系统（src/cron/）**：已实现（CronJob/CronScheduler，SQLite 持久化，cron 表达式解析）
+- **预测式建模（src/prediction/）**：已实现（Predictor/FeedbackCollector，规则+LLM 预测）
 - **自演化入口（src/evolution/__init__.py）**：待完善，module_manager 已实现
 
 ---

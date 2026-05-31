@@ -72,7 +72,6 @@ dev = [
     "ruff>=0.1.0",
     "mypy>=1.0",
     "alembic>=1.13",
-    "jieba>=0.42",
 ]
 
 [tool.hatch.build.targets.wheel]

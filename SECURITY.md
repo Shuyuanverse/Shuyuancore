@@ -60,19 +60,19 @@
 
 ShuyuanCore 内置 14 层安全防线：
 
-1. 用户认证和权限分级 [⏳ 待实现 - 骨架文件已就位]
+1. 用户认证和权限分级（ApiKeyAuthProvider / SimpleAuthProvider）[✅ 已实现]
 2. 危险命令审批（`/approve`）[✅ 已实现]
 3. 执行沙箱隔离（Docker 默认）[✅ 已实现]
-4. 行为审计日志 [✅ 已实现]
+4. 行为审计日志（SQLite 持久化 + 自动刷盘）[✅ 已实现]
 5. 供应链安全（技能安装前扫描）[⏳ 待实现 - 骨架文件已就位]
-6. 数据加密存储 [⏳ 待实现 - 骨架文件已就位]
-7. 网络访问白名单 [⏳ 待实现 - 骨架文件已就位]
-8. 隐私脱敏（手机号、身份证、银行卡）[⏳ 待实现 - 骨架文件已就位]
-9. 多用户会话隔离 [⏳ 待实现 - 骨架文件已就位]
-10. 操作回滚（文件级快照）[⏳ 待实现 - 骨架文件已就位]
-11. 速率限制 [⏳ 待实现 - 骨架文件已就位]
-12. 敏感操作二次确认 [⏳ 待实现 - 骨架文件已就位]
-13. 模型输出过滤 [⏳ 待实现 - 骨架文件已就位]
+6. 数据加密存储（Fernet 对称加密 → hashlib 降级）[✅ 已实现]
+7. 网络访问白名单（默认阻止私有 IP，21 个公共域名白名单）[✅ 已实现]
+8. 隐私脱敏（手机号/身份证/银行卡/邮箱/IP/姓名，中英文规则）[✅ 已实现]
+9. 多用户会话隔离（内存存储 + 后台自动清理）[✅ 已实现]
+10. 操作回滚（文件级快照，SQLite 持久化）[✅ 已实现]
+11. 速率限制（令牌桶算法）[✅ 已实现]
+12. 敏感操作二次确认（6 种操作类型，asyncio 同步）[✅ 已实现]
+13. 模型输出过滤（14 条内置正则规则）[✅ 已实现]
 14. 细粒度权限配置 [⏳ 待实现 - 骨架文件已就位]
 
 ---
@@ -85,16 +85,16 @@ ShuyuanCore 内置 14 层安全防线：
 security:
   require_approval: true        # 危险命令审批 [当前生效 ✅]
   sandbox: docker               # 执行沙箱 [当前生效 ✅]
-  audit_log: true               # 审计日志 [当前生效 ✅]
-  data_encryption: true         # 数据加密 [配置就绪，待实现]
-  network_isolation: true       # 网络隔离 [配置就绪，待实现]
-  privacy_desensitize: true     # 隐私脱敏 [配置就绪，待实现]
-  session_isolation: true       # 会话隔离 [配置就绪，待实现]
-  operation_rollback: true      # 操作回滚 [配置就绪，待实现]
-  rate_limit: true              # 速率限制 [配置就绪，待实现]
-  sensitive_confirm: true       # 敏感操作确认 [配置就绪，待实现]
-  output_filter: true           # 输出过滤 [配置就绪，待实现]
-  permission_grading: true      # 权限分级 [配置就绪，待实现]
+  audit_log: true               # 审计日志（SQLite + 自动刷盘）[当前生效 ✅]
+  data_encryption: true         # 数据加密（Fernet 加密）[当前生效 ✅]
+  network_isolation: true       # 网络隔离（白名单 + IP黑名单）[当前生效 ✅]
+  privacy_desensitize: true     # 隐私脱敏（7种规则，中英文）[当前生效 ✅]
+  session_isolation: true       # 会话隔离（TTL + 自动清理）[当前生效 ✅]
+  operation_rollback: true      # 操作回滚（文件/配置快照）[当前生效 ✅]
+  rate_limit: true              # 速率限制（令牌桶算法）[当前生效 ✅]
+  sensitive_confirm: true       # 敏感操作确认（6种操作）[当前生效 ✅]
+  output_filter: true           # 输出过滤（14条正则规则）[当前生效 ✅]
+  permission_grading: true      # 权限分级 [⏳ 骨架文件已就位]
 ```
 
 ---
