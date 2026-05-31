@@ -41,11 +41,19 @@ class WeiBoTool(ITool):
     post search, post detail, user search, user posts listing,
     and comment retrieval. All operations use public web
     interfaces and do not require authentication.
+
+    WARNING / 警告:
+    This tool uses unofficial API interfaces. In production, you
+    MUST use the official Weibo Open Platform API with a valid
+    API Key.
+    本工具使用非官方 API 接口。生产环境中必须使用微博开放平台
+    官方 API，并配置有效的 API Key。
     """
 
     MIN_REQUEST_INTERVAL: float = 1.0
 
     allow_write: bool = False
+    _USE_OFFICIAL_API: bool = False
 
     def __init__(self) -> None:
         self._last_request_time: float = 0.0
@@ -58,7 +66,7 @@ class WeiBoTool(ITool):
                 "comments. Read-only by default."
             ),
             category="social",
-            dangerous=False,
+            dangerous=True,
             parameters=[
                 ToolParameter(
                     name="action",
@@ -180,6 +188,13 @@ class WeiBoTool(ITool):
         Returns:
             ToolResult with the operation outcome.
         """
+        if not self._USE_OFFICIAL_API:
+            return ToolResult(
+                success=False,
+                output="该功能需要配置官方 API Key / This feature requires official API key configuration",
+                error="Official API not configured",
+            )
+
         start = time.time()
         action = params.get("action", "")
         timeout = int(params.get("timeout", 30))

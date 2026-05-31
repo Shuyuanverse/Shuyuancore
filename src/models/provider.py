@@ -1,31 +1,25 @@
+# Copyright 2026 ShuyuanCore contributors
+# SPDX-License-Identifier: Apache-2.0
+
 from __future__ import annotations
 
 import logging
-from typing import Optional
+from typing import Any
 
 from src.config import get_settings
-from src.models.interfaces import IModelProvider
+from src.models.interfaces import IModelProvider, ProviderRegistry
 
 logger = logging.getLogger(__name__)
 
-_provider_cache: Optional[IModelProvider] = None
+_provider_cache: IModelProvider | None = None
 
 
-def get_model_provider() -> IModelProvider:
-    """获取模型提供者实例。
-
-    使用单例模式缓存 provider 实例，避免重复创建。
-
-    Returns:
-        IModelProvider: 模型提供者实例
-
-    Raises:
-        RuntimeError: 当无法创建提供者实例时
-    """
-    global _provider_cache
-
-    if _provider_cache is not None:
+def get_model_provider(config: dict[str, Any] | None = None) -> IModelProvider:
+    if _provider_cache is not None and config is None:
         return _provider_cache
+
+    if config is not None:
+        return create_provider(config.get("provider", ""), config)
 
     cfg = get_settings()
     providers_cfg = cfg.models.providers
@@ -39,51 +33,85 @@ def get_model_provider() -> IModelProvider:
         if not provider_cfg.model and not provider_cfg.api_key:
             continue
 
-        if provider_name == "dashscope":
-            from src.models.dashscope import DashScopeProvider
-
-            provider: IModelProvider = DashScopeProvider(
-                api_key=provider_cfg.api_key,
-                base_url=provider_cfg.base_url,
-                model=provider_cfg.model,
-                embedding_model=provider_cfg.embedding_model,
-            )
-        elif provider_name == "deepseek":
-            from src.models.deepseek import DeepSeekProvider
-
-            provider = DeepSeekProvider(
-                api_key=provider_cfg.api_key,
-                base_url=provider_cfg.base_url,
-                model=provider_cfg.model,
-            )
-        elif provider_name == "ollama":
-            from src.models.openai_compat import OllamaProvider
-
-            provider = OllamaProvider(
-                base_url=provider_cfg.base_url,
-                model=provider_cfg.model,
-            )
-        else:
-            from src.models.openai_compat import OpenAICompatProvider
-
-            provider = OpenAICompatProvider(
-                api_key=provider_cfg.api_key,
-                base_url=provider_cfg.base_url,
-                model=provider_cfg.model,
-            )
-
-        logger.info("Initialized %s provider", provider_name)
+        provider = create_provider(provider_name, provider_cfg.model_dump())
         _provider_cache = provider
         return provider
 
     raise RuntimeError("No usable model provider found")
 
 
-def reset_provider_cache() -> None:
-    """重置 provider 缓存。
+def get_embedding_provider(config: dict[str, Any] | None = None) -> IModelProvider | None:
+    if config is not None:
+        provider_name = config.get("provider", "")
+        return create_provider(provider_name, config)
 
-    用于测试场景，允许重新初始化 provider。
-    """
+    cfg = get_settings()
+    providers_cfg = cfg.models.providers
+
+    if "dashscope" in providers_cfg:
+        return create_provider("dashscope", providers_cfg["dashscope"].model_dump())
+
+    for provider_name, provider_cfg in providers_cfg.items():
+        try:
+            provider = create_provider(provider_name, provider_cfg.model_dump())
+            return provider
+        except Exception:
+            continue
+
+    return None
+
+
+def list_available_providers() -> list[str]:
+    cfg = get_settings()
+    return list(cfg.models.providers.keys())
+
+
+def create_provider(provider_name: str, config: dict[str, Any] | None = None) -> IModelProvider:
+    resolved_name = provider_name.lower().strip()
+
+    cfg = config or {}
+    api_key = cfg.get("api_key", "")
+    base_url = cfg.get("base_url", "")
+    model = cfg.get("model", "")
+    embedding_model = cfg.get("embedding_model", "")
+
+    if resolved_name == "dashscope":
+        from src.models.dashscope import DashScopeProvider
+
+        return DashScopeProvider(
+            api_key=api_key,
+            base_url=base_url,
+            model=model,
+            embedding_model=embedding_model,
+        )
+
+    if resolved_name == "deepseek":
+        from src.models.deepseek import DeepSeekProvider
+
+        return DeepSeekProvider(
+            api_key=api_key,
+            base_url=base_url,
+            model=model,
+        )
+
+    if resolved_name == "ollama":
+        from src.models.openai_compat import OllamaProvider
+
+        return OllamaProvider(
+            base_url=base_url,
+            model=model,
+        )
+
+    from src.models.openai_compat import OpenAICompatProvider
+
+    return OpenAICompatProvider(
+        api_key=api_key,
+        base_url=base_url,
+        model=model,
+    )
+
+
+def reset_provider_cache() -> None:
     global _provider_cache
     _provider_cache = None
     logger.debug("Provider cache reset")

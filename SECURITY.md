@@ -60,20 +60,20 @@
 
 ShuyuanCore 内置 14 层安全防线：
 
-1. 用户认证和权限分级
-2. 危险命令审批（`/approve`）
-3. 执行沙箱隔离（Docker 默认）
-4. 行为审计日志
-5. 供应链安全（技能安装前扫描）
-6. 数据加密存储
-7. 网络访问白名单
-8. 隐私脱敏（手机号、身份证、银行卡）
-9. 多用户会话隔离
-10. 操作回滚（文件级快照）
-11. 速率限制
-12. 敏感操作二次确认
-13. 模型输出过滤
-14. 细粒度权限配置
+1. 用户认证和权限分级 [⏳ 待实现 - 骨架文件已就位]
+2. 危险命令审批（`/approve`）[✅ 已实现]
+3. 执行沙箱隔离（Docker 默认）[✅ 已实现]
+4. 行为审计日志 [✅ 已实现]
+5. 供应链安全（技能安装前扫描）[⏳ 待实现 - 骨架文件已就位]
+6. 数据加密存储 [⏳ 待实现 - 骨架文件已就位]
+7. 网络访问白名单 [⏳ 待实现 - 骨架文件已就位]
+8. 隐私脱敏（手机号、身份证、银行卡）[⏳ 待实现 - 骨架文件已就位]
+9. 多用户会话隔离 [⏳ 待实现 - 骨架文件已就位]
+10. 操作回滚（文件级快照）[⏳ 待实现 - 骨架文件已就位]
+11. 速率限制 [⏳ 待实现 - 骨架文件已就位]
+12. 敏感操作二次确认 [⏳ 待实现 - 骨架文件已就位]
+13. 模型输出过滤 [⏳ 待实现 - 骨架文件已就位]
+14. 细粒度权限配置 [⏳ 待实现 - 骨架文件已就位]
 
 ---
 
@@ -83,18 +83,18 @@ ShuyuanCore 内置 14 层安全防线：
 
 ```yaml
 security:
-  require_approval: true        # 危险命令审批
-  sandbox: docker               # 执行沙箱
-  audit_log: true               # 审计日志
-  data_encryption: true         # 数据加密
-  network_isolation: true       # 网络隔离
-  privacy_desensitize: true     # 隐私脱敏
-  session_isolation: true       # 会话隔离
-  operation_rollback: true      # 操作回滚
-  rate_limit: true              # 速率限制
-  sensitive_confirm: true       # 敏感操作确认
-  output_filter: true           # 输出过滤
-  permission_grading: true      # 权限分级
+  require_approval: true        # 危险命令审批 [当前生效 ✅]
+  sandbox: docker               # 执行沙箱 [当前生效 ✅]
+  audit_log: true               # 审计日志 [当前生效 ✅]
+  data_encryption: true         # 数据加密 [配置就绪，待实现]
+  network_isolation: true       # 网络隔离 [配置就绪，待实现]
+  privacy_desensitize: true     # 隐私脱敏 [配置就绪，待实现]
+  session_isolation: true       # 会话隔离 [配置就绪，待实现]
+  operation_rollback: true      # 操作回滚 [配置就绪，待实现]
+  rate_limit: true              # 速率限制 [配置就绪，待实现]
+  sensitive_confirm: true       # 敏感操作确认 [配置就绪，待实现]
+  output_filter: true           # 输出过滤 [配置就绪，待实现]
+  permission_grading: true      # 权限分级 [配置就绪，待实现]
 ```
 
 ---

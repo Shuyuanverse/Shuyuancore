@@ -21,7 +21,6 @@ adjustment_records:
 from __future__ import annotations
 
 import json
-import sqlite3
 import time
 import uuid
 from dataclasses import dataclass, field
@@ -29,23 +28,24 @@ from enum import Enum
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
+import aiosqlite
 import numpy as np
 
 
 class TriggerType(str, Enum):
     """调整触发类型"""
 
-    USER_FEEDBACK = "user_feedback"  # 用户反馈
-    SELF_REFLECTION = "self_reflection"  # 自我反思
-    INTERACTION_ACCUMULATION = "interaction_accumulation"  # 交互积累
+    USER_FEEDBACK = "user_feedback"
+    SELF_REFLECTION = "self_reflection"
+    INTERACTION_ACCUMULATION = "interaction_accumulation"
 
 
 class ReviewResult(str, Enum):
     """审查结果"""
 
-    APPROVED = "approved"  # 批准
-    MODIFIED = "modified"  # 修改
-    REJECTED = "rejected"  # 拒绝
+    APPROVED = "approved"
+    MODIFIED = "modified"
+    REJECTED = "rejected"
 
 
 @dataclass
@@ -157,31 +157,33 @@ class AdjustmentHistory:
         self.db_path = Path(db_path)
         self.db_path.parent.mkdir(parents=True, exist_ok=True)
 
-        self._conn: Optional[sqlite3.Connection] = None
-        self._init_db()
+        self._conn: Optional[aiosqlite.Connection] = None
 
-    def _init_db(self) -> None:
+    async def _init_db(self) -> None:
         """初始化数据库。"""
-        self._conn = sqlite3.connect(str(self.db_path))
-        self._conn.execute("PRAGMA journal_mode = WAL")
-        self._conn.execute("PRAGMA foreign_keys = ON")
+        self._conn = await aiosqlite.connect(str(self.db_path))
+        await self._conn.execute("PRAGMA journal_mode = WAL")
+        await self._conn.execute("PRAGMA foreign_keys = ON")
 
-        cursor = self._conn.cursor()
-        cursor.execute(self.CREATE_TABLE_SQL)
-        cursor.execute(self.INDEX_SQL)
-        self._conn.commit()
+        cursor = await self._conn.cursor()
+        await cursor.execute(self.CREATE_TABLE_SQL)
+        for statement in self.INDEX_SQL.strip().split(";"):
+            stmt = statement.strip()
+            if stmt:
+                await cursor.execute(stmt)
+        await self._conn.commit()
 
-    def _get_connection(self) -> sqlite3.Connection:
+    async def _get_connection(self) -> aiosqlite.Connection:
         """获取数据库连接。
 
         Returns:
-            sqlite3.Connection: 连接对象
+            aiosqlite.Connection: 连接对象
         """
         if self._conn is None:
-            self._init_db()
+            await self._init_db()
         return self._conn
 
-    def record(
+    async def record(
         self,
         anchor_id: str,
         trigger_type: TriggerType,
@@ -219,10 +221,10 @@ class AdjustmentHistory:
             drift_score_after=drift_after,
         )
 
-        conn = self._get_connection()
-        cursor = conn.cursor()
+        conn = await self._get_connection()
+        cursor = await conn.cursor()
 
-        cursor.execute(
+        await cursor.execute(
             """
             INSERT INTO adjustment_records
             (id, anchor_id, trigger_type, adjustment_vector, values_before, values_after,
@@ -243,11 +245,11 @@ class AdjustmentHistory:
             ),
         )
 
-        conn.commit()
+        await conn.commit()
 
         return record
 
-    def get_history(
+    async def get_history(
         self,
         anchor_id: str,
         limit: int = 100,
@@ -261,10 +263,10 @@ class AdjustmentHistory:
         Returns:
             List[AdjustmentRecord]: 记录列表
         """
-        conn = self._get_connection()
-        cursor = conn.cursor()
+        conn = await self._get_connection()
+        cursor = await conn.cursor()
 
-        cursor.execute(
+        await cursor.execute(
             """
             SELECT id, anchor_id, trigger_type, adjustment_vector, values_before, values_after,
                    review_result, drift_score_before, drift_score_after, created_at
@@ -276,7 +278,7 @@ class AdjustmentHistory:
             (anchor_id, limit),
         )
 
-        rows = cursor.fetchall()
+        rows = await cursor.fetchall()
         records = []
 
         for row in rows:
@@ -296,7 +298,7 @@ class AdjustmentHistory:
 
         return records
 
-    def get_cumulative_adjustment(self, anchor_id: str) -> float:
+    async def get_cumulative_adjustment(self, anchor_id: str) -> float:
         """获取累计调整量。
 
         Args:
@@ -305,7 +307,7 @@ class AdjustmentHistory:
         Returns:
             float: 累计调整量（向量范数之和）
         """
-        records = self.get_history(anchor_id, limit=1000)
+        records = await self.get_history(anchor_id, limit=1000)
 
         total = 0.0
         for record in records:
@@ -313,7 +315,7 @@ class AdjustmentHistory:
 
         return total
 
-    def get_approval_rate(self, anchor_id: str) -> float:
+    async def get_approval_rate(self, anchor_id: str) -> float:
         """获取批准率。
 
         Args:
@@ -322,10 +324,10 @@ class AdjustmentHistory:
         Returns:
             float: 批准率 (0-1)
         """
-        conn = self._get_connection()
-        cursor = conn.cursor()
+        conn = await self._get_connection()
+        cursor = await conn.cursor()
 
-        cursor.execute(
+        await cursor.execute(
             """
             SELECT COUNT(*) as total,
                    SUM(CASE WHEN review_result = 'approved' THEN 1 ELSE 0 END) as approved
@@ -335,14 +337,14 @@ class AdjustmentHistory:
             (anchor_id,),
         )
 
-        row = cursor.fetchone()
+        row = await cursor.fetchone()
 
         if row is None or row[0] == 0:
             return 0.0
 
         return row[1] / row[0]
 
-    def cleanup_old_records(
+    async def cleanup_old_records(
         self,
         anchor_id: Optional[str] = None,
         max_age_days: int = 90,
@@ -356,40 +358,40 @@ class AdjustmentHistory:
         Returns:
             int: 清理的记录数
         """
-        conn = self._get_connection()
-        cursor = conn.cursor()
+        conn = await self._get_connection()
+        cursor = await conn.cursor()
 
         cutoff_time = time.time() - (max_age_days * 24 * 60 * 60)
 
         if anchor_id:
-            cursor.execute(
+            await cursor.execute(
                 "SELECT COUNT(*) FROM adjustment_records WHERE anchor_id = ? AND created_at < ?",
                 (anchor_id, cutoff_time),
             )
         else:
-            cursor.execute(
+            await cursor.execute(
                 "SELECT COUNT(*) FROM adjustment_records WHERE created_at < ?",
                 (cutoff_time,),
             )
 
-        count = cursor.fetchone()[0]
+        count = (await cursor.fetchone())[0]
 
         if anchor_id:
-            cursor.execute(
+            await cursor.execute(
                 "DELETE FROM adjustment_records WHERE anchor_id = ? AND created_at < ?",
                 (anchor_id, cutoff_time),
             )
         else:
-            cursor.execute(
+            await cursor.execute(
                 "DELETE FROM adjustment_records WHERE created_at < ?",
                 (cutoff_time,),
             )
 
-        conn.commit()
+        await conn.commit()
 
         return count
 
-    def get_statistics(self, anchor_id: Optional[str] = None) -> Dict[str, Any]:
+    async def get_statistics(self, anchor_id: Optional[str] = None) -> Dict[str, Any]:
         """获取统计信息。
 
         Args:
@@ -398,11 +400,11 @@ class AdjustmentHistory:
         Returns:
             Dict[str, Any]: 统计信息
         """
-        conn = self._get_connection()
-        cursor = conn.cursor()
+        conn = await self._get_connection()
+        cursor = await conn.cursor()
 
         if anchor_id:
-            cursor.execute(
+            await cursor.execute(
                 """
                 SELECT COUNT(*) as total,
                        AVG(drift_score_after) as avg_drift,
@@ -413,7 +415,7 @@ class AdjustmentHistory:
                 (anchor_id,),
             )
         else:
-            cursor.execute(
+            await cursor.execute(
                 """
                 SELECT COUNT(*) as total,
                        AVG(drift_score_after) as avg_drift,
@@ -422,11 +424,10 @@ class AdjustmentHistory:
                 """
             )
 
-        row = cursor.fetchone()
+        row = await cursor.fetchone()
 
-        # 按触发类型统计
         if anchor_id:
-            cursor.execute(
+            await cursor.execute(
                 """
                 SELECT trigger_type, COUNT(*) as count
                 FROM adjustment_records
@@ -436,7 +437,7 @@ class AdjustmentHistory:
                 (anchor_id,),
             )
         else:
-            cursor.execute(
+            await cursor.execute(
                 """
                 SELECT trigger_type, COUNT(*) as count
                 FROM adjustment_records
@@ -444,11 +445,11 @@ class AdjustmentHistory:
                 """
             )
 
-        type_counts = {row[0]: row[1] for row in cursor.fetchall()}
+        type_rows = await cursor.fetchall()
+        type_counts = {r[0]: r[1] for r in type_rows}
 
-        # 按审查结果统计
         if anchor_id:
-            cursor.execute(
+            await cursor.execute(
                 """
                 SELECT review_result, COUNT(*) as count
                 FROM adjustment_records
@@ -458,7 +459,7 @@ class AdjustmentHistory:
                 (anchor_id,),
             )
         else:
-            cursor.execute(
+            await cursor.execute(
                 """
                 SELECT review_result, COUNT(*) as count
                 FROM adjustment_records
@@ -467,7 +468,8 @@ class AdjustmentHistory:
                 """
             )
 
-        result_counts = {row[0]: row[1] for row in cursor.fetchall()}
+        result_rows = await cursor.fetchall()
+        result_counts = {r[0]: r[1] for r in result_rows}
 
         return {
             "total_records": row[0],
@@ -477,12 +479,17 @@ class AdjustmentHistory:
             "by_review_result": result_counts,
         }
 
-    def close(self) -> None:
+    async def close(self) -> None:
         """关闭数据库连接。"""
         if self._conn:
-            self._conn.close()
+            await self._conn.close()
             self._conn = None
 
     def __del__(self) -> None:
         """析构函数。"""
-        self.close()
+        if self._conn is not None:
+            import warnings
+            warnings.warn(
+                "AdjustmentHistory connection was not closed explicitly. "
+                "Call await adjustment_history.close() to ensure proper cleanup."
+            )

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 import time
 from typing import Any, AsyncIterator
 
@@ -11,6 +12,8 @@ from src.models.interfaces import (
     HealthStatus,
     IModelProvider,
 )
+
+logger = logging.getLogger(__name__)
 
 _DEFAULT_BASE_URL = "https://api.openai.com/v1"
 _DEFAULT_MODEL = "gpt-4o"
@@ -27,6 +30,11 @@ class OpenAICompatProvider(IModelProvider):
         max_retries: int = 3,
     ) -> None:
         self._api_key = api_key
+        if not api_key:
+            logger.warning(
+                "OpenAI API key is empty. Set OPENAI_API_KEY or pass api_key to the constructor. / "
+                "OpenAI API Key 为空，请设置 OPENAI_API_KEY 或传入 api_key 参数。"
+            )
         self._base_url = base_url
         self._model = model
         self._embedding_model = embedding_model

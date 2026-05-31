@@ -48,6 +48,11 @@
 - **TODO**: 签名 `_setup_logging` 参数与环境配置解耦，后续若新增 `DeployConfig.environment` 字段可切换 dev/prod 模式
 - **TODO**: colorlog 彩色控制台输出在 structlog 环境下可进一步美化
 
+### ⚠️ 未实现模块
+- **定时任务系统（src/cron/）**：3 个骨架文件已就位，待实现
+- **预测式建模（src/prediction/）**：3 个骨架文件已就位，待实现
+- **自演化入口（src/evolution/__init__.py）**：待完善，module_manager 已实现
+
 ---
 
 ## Phase 2: 模型层（Models）— ✅ 已完成

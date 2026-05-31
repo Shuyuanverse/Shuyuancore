@@ -19,10 +19,18 @@ class DouYinTool(ITool):
 
     Future extension: set `allow_write = True` to enable write
     operations (requires platform API credentials).
+
+    WARNING / 警告:
+    This tool uses unofficial API interfaces. In production, you
+    MUST use the official Douyin Open Platform API with a valid
+    API Key.
+    本工具使用非官方 API 接口。生产环境中必须使用抖音开放平台
+    官方 API，并配置有效的 API Key。
     """
 
     allow_write: bool = False
     MIN_REQUEST_INTERVAL: float = 1.0
+    _USE_OFFICIAL_API: bool = False
 
     def __init__(self) -> None:
         self._spec = ToolSpec(
@@ -33,7 +41,7 @@ class DouYinTool(ITool):
                 "user videos. Read-only by default."
             ),
             category="social",
-            dangerous=False,
+            dangerous=True,
             parameters=[
                 ToolParameter(
                     name="action",
@@ -161,6 +169,13 @@ class DouYinTool(ITool):
         Returns:
             ToolResult with the requested data or error information.
         """
+        if not self._USE_OFFICIAL_API:
+            return ToolResult(
+                success=False,
+                output="该功能需要配置官方 API Key / This feature requires official API key configuration",
+                error="Official API not configured",
+            )
+
         action = params.get("action", "")
         limit = int(params.get("limit", 10))
         timeout = int(params.get("timeout", 30))

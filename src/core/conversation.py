@@ -1,48 +1,114 @@
 # Copyright 2026 ShuyuanCore contributors
 # SPDX-License-Identifier: Apache-2.0
 
-"""对话管理模块 — 独立于 Agent 的对话生命周期管理。
-
-功能：
-- 创建对话（生成唯一 ID）
-- 添加消息（存储到 beliefs 表）
-- 获取消息历史（支持游标分页）
-- 列表用户对话（按最后消息时间排序）
-- 删除对话（级联删除所有消息）
-"""
-
 from __future__ import annotations
 
+import json
 import logging
+import time
 import uuid
 from typing import Any
 
-from src.core.interfaces import Belief, IBeliefStore, IConversationManager
-from src.memory.decay import current_time_ms
+import aiosqlite
+
+from src.core.interfaces import IConversationManager
+from src.gateway.utils import decode_cursor, encode_cursor
 
 logger = logging.getLogger(__name__)
 
+_DB_PATH: str = "data/state.db"
+_DEFAULT_PAGE_SIZE: int = 20
+_MAX_PAGE_SIZE: int = 100
+_MAX_MESSAGES: int = 200
+
 
 class ConversationManager(IConversationManager):
-    """对话管理器实现。
+    def __init__(self, db_path: str = _DB_PATH) -> None:
+        self._db_path: str = db_path
+        self._conn: aiosqlite.Connection | None = None
 
-    使用 beliefs 表存储对话消息：
-    - layer=3（长期记忆层）
-    - memory_type='conversation'
-    - conversation_id 作为索引
-    """
+    async def _get_conn(self) -> aiosqlite.Connection:
+        if self._conn is None:
+            self._conn = await aiosqlite.connect(self._db_path)
+            self._conn.row_factory = aiosqlite.Row
+            await self._conn.execute("PRAGMA journal_mode = WAL;")
+            await self._conn.execute("PRAGMA foreign_keys = ON;")
+            await self._conn.execute("PRAGMA busy_timeout = 5000;")
+            await self._init_tables()
+        return self._conn
 
-    def __init__(self, belief_store: IBeliefStore) -> None:
-        """初始化对话管理器。
+    async def _init_tables(self) -> None:
+        conn = await self._get_conn()
 
-        Args:
-            belief_store: 信念存储后端
-        """
-        self._belief_store = belief_store
+        await conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS conversations (
+                id TEXT PRIMARY KEY,
+                user_id TEXT NOT NULL,
+                title TEXT NOT NULL DEFAULT '',
+                created_at INTEGER NOT NULL,
+                updated_at INTEGER NOT NULL,
+                is_deleted INTEGER NOT NULL DEFAULT 0
+            );
+            """
+        )
+
+        await conn.execute(
+            """
+            CREATE INDEX IF NOT EXISTS idx_conv_user
+            ON conversations(user_id, updated_at DESC);
+            """
+        )
+
+        await conn.execute(
+            """
+            CREATE INDEX IF NOT EXISTS idx_conv_deleted
+            ON conversations(is_deleted);
+            """
+        )
+
+        await conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS messages (
+                id TEXT PRIMARY KEY,
+                conversation_id TEXT NOT NULL,
+                role TEXT NOT NULL,
+                content TEXT NOT NULL,
+                metadata_json TEXT NOT NULL DEFAULT '{}',
+                created_at INTEGER NOT NULL,
+                FOREIGN KEY (conversation_id) REFERENCES conversations(id) ON DELETE CASCADE
+            );
+            """
+        )
+
+        await conn.execute(
+            """
+            CREATE INDEX IF NOT EXISTS idx_msg_conv
+            ON messages(conversation_id, created_at DESC, id DESC);
+            """
+        )
+
+        await conn.commit()
 
     async def create_conversation(self, user_id: str, title: str = "") -> str:
+        conn = await self._get_conn()
         conversation_id = str(uuid.uuid4())
-        logger.info("Created conversation: %s (user=%s, title=%s)", conversation_id, user_id, title)
+        now = int(time.time() * 1000)
+
+        await conn.execute(
+            """
+            INSERT INTO conversations (id, user_id, title, created_at, updated_at)
+            VALUES (?, ?, ?, ?, ?)
+            """,
+            (conversation_id, user_id, title, now, now),
+        )
+        await conn.commit()
+        logger.info(
+            "Conversation created: id=%s user=%s title=%s",
+            conversation_id,
+            user_id,
+            title,
+        )
         return conversation_id
 
     async def add_message(
@@ -52,19 +118,24 @@ class ConversationManager(IConversationManager):
         content: str,
         metadata: dict[str, Any] | None = None,
     ) -> None:
-        belief = Belief(
-            id=str(uuid.uuid4()),
-            content=content,
-            source=role,
-            memory_type="conversation",
-            layer=3,
-            timestamp=current_time_ms(),
-            last_accessed=current_time_ms(),
-            metadata=metadata or {},
+        conn = await self._get_conn()
+        message_id = str(uuid.uuid4())
+        now = int(time.time() * 1000)
+        metadata_json = json.dumps(metadata or {}, ensure_ascii=False)
+
+        await conn.execute(
+            """
+            INSERT INTO messages (id, conversation_id, role, content, metadata_json, created_at)
+            VALUES (?, ?, ?, ?, ?, ?)
+            """,
+            (message_id, conversation_id, role, content, metadata_json, now),
         )
 
-        await self._belief_store.add(conversation_id, belief)
-        logger.debug("Added message to conversation %s: role=%s", conversation_id, role)
+        await conn.execute(
+            "UPDATE conversations SET updated_at = ? WHERE id = ?",
+            (now, conversation_id),
+        )
+        await conn.commit()
 
     async def get_messages(
         self,
@@ -72,32 +143,69 @@ class ConversationManager(IConversationManager):
         limit: int = 50,
         before: str | None = None,
     ) -> list[dict[str, Any]]:
-        beliefs = await self._belief_store.get(conversation_id, limit=limit)
+        conn = await self._get_conn()
+        effective_limit = min(max(limit, 1), _MAX_MESSAGES)
 
-        messages = []
-        for belief in beliefs:
-            msg = {
-                "id": belief.id,
-                "role": belief.source,
-                "content": belief.content,
-                "timestamp": belief.timestamp,
-                "metadata": belief.metadata,
-            }
-            messages.append(msg)
-
-        messages.sort(key=lambda m: m["timestamp"])
-
+        params: list[Any]
         if before is not None:
-            try:
-                before_ts, before_id = before.rsplit("_", 1)
-                before_timestamp = int(before_ts)
-                messages = [
-                    m for m in messages if (m["timestamp"], m["id"]) < (before_timestamp, before_id)
-                ]
-            except (ValueError, AttributeError):
+            decoded = decode_cursor(before)
+            if decoded is None:
                 logger.warning("Invalid before cursor: %s", before)
+                decoded = None
+            if decoded is not None:
+                cursor_ts, cursor_id = decoded
+                query = """
+                    SELECT id, conversation_id, role, content, metadata_json, created_at
+                    FROM messages
+                    WHERE conversation_id = ?
+                      AND (created_at < ? OR (created_at = ? AND id < ?))
+                    ORDER BY created_at DESC, id DESC
+                    LIMIT ?
+                """
+                params = [conversation_id, cursor_ts, cursor_ts, cursor_id, effective_limit]
+            else:
+                query = """
+                    SELECT id, conversation_id, role, content, metadata_json, created_at
+                    FROM messages
+                    WHERE conversation_id = ?
+                    ORDER BY created_at DESC, id DESC
+                    LIMIT ?
+                """
+                params = [conversation_id, effective_limit]
+        else:
+            query = """
+                SELECT id, conversation_id, role, content, metadata_json, created_at
+                FROM messages
+                WHERE conversation_id = ?
+                ORDER BY created_at DESC, id DESC
+                LIMIT ?
+            """
+            params = [conversation_id, effective_limit]
 
-        return messages[:limit]
+        cursor = await conn.execute(query, params)
+        rows = await cursor.fetchall()
+
+        messages: list[dict[str, Any]] = []
+        for row in reversed(rows):
+            metadata = {}
+            raw_meta = row["metadata_json"]
+            if raw_meta and raw_meta != "{}":
+                try:
+                    metadata = json.loads(raw_meta)
+                except json.JSONDecodeError:
+                    metadata = {}
+
+            messages.append(
+                {
+                    "id": row["id"],
+                    "role": row["role"],
+                    "content": row["content"],
+                    "created_at": row["created_at"],
+                    "metadata": metadata,
+                }
+            )
+
+        return messages
 
     async def list_conversations(
         self,
@@ -105,9 +213,70 @@ class ConversationManager(IConversationManager):
         limit: int = 20,
         cursor: str | None = None,
     ) -> tuple[list[dict[str, Any]], str | None, bool]:
-        logger.info("Listing conversations for user %s (limit=%d)", user_id, limit)
-        return [], None, False
+        conn = await self._get_conn()
+        effective_limit = min(max(limit, 1), _MAX_PAGE_SIZE) + 1
+
+        params: list[Any]
+        if cursor is not None:
+            decoded = decode_cursor(cursor)
+            if decoded is None:
+                return [], None, False
+            cursor_ts, cursor_id = decoded
+            query = """
+                SELECT id, user_id, title, created_at, updated_at
+                FROM conversations
+                WHERE user_id = ? AND is_deleted = 0
+                  AND (updated_at < ? OR (updated_at = ? AND id < ?))
+                ORDER BY updated_at DESC, id DESC
+                LIMIT ?
+            """
+            params = [user_id, cursor_ts, cursor_ts, cursor_id, effective_limit]
+        else:
+            query = """
+                SELECT id, user_id, title, created_at, updated_at
+                FROM conversations
+                WHERE user_id = ? AND is_deleted = 0
+                ORDER BY updated_at DESC, id DESC
+                LIMIT ?
+            """
+            params = [user_id, effective_limit]
+
+        db_cursor = await conn.execute(query, params)
+        rows = list(await db_cursor.fetchall())
+        has_more = len(rows) > limit
+        rows = rows[:limit]
+
+        items: list[dict[str, Any]] = []
+        for row in rows:
+            items.append(
+                {
+                    "id": row["id"],
+                    "user_id": row["user_id"],
+                    "title": row["title"],
+                    "created_at": row["created_at"],
+                    "updated_at": row["updated_at"],
+                }
+            )
+
+        next_cursor: str | None = None
+        if has_more and rows:
+            last = rows[-1]
+            next_cursor = encode_cursor(last["updated_at"], last["id"])
+
+        return items, next_cursor, has_more
 
     async def delete_conversation(self, conversation_id: str) -> None:
-        await self._belief_store.clear(conversation_id)
-        logger.info("Deleted conversation: %s", conversation_id)
+        conn = await self._get_conn()
+        now = int(time.time() * 1000)
+
+        await conn.execute(
+            "UPDATE conversations SET is_deleted = 1, updated_at = ? WHERE id = ?",
+            (now, conversation_id),
+        )
+        await conn.commit()
+        logger.info("Conversation deleted (soft): id=%s", conversation_id)
+
+    async def close(self) -> None:
+        if self._conn is not None:
+            await self._conn.close()
+            self._conn = None
