@@ -323,6 +323,7 @@ class Agent:
 
                     result = await self._tool_registry.execute(tool_name, arguments)
                 except Exception as exc:
+                    logger.exception("Tool execution failed: tool=%s args=%s", tool_name, arguments)
                     result = f"error: {exc}"
 
                 tool_results.append(
@@ -332,19 +333,6 @@ class Agent:
                         "content": result,
                     }
                 )
-
-                # 记录模块协作（如果当前有活跃模块）
-                # 简化实现：假设工具调用本身就是模块协作
-                # 实际场景中可以从上下文获取当前模块 ID
-                try:
-                    # 这里记录一个虚拟的协作，实际使用时需要从上下文中获取模块 ID
-                    # await self._module_manager.record_collaboration(
-                    #     from_module=current_module_id,
-                    #     to_module=tool_name,
-                    # )
-                    pass
-                except Exception:
-                    logger.debug("Failed to record module collaboration")
 
                 tool_belief = Belief(
                     content=result,

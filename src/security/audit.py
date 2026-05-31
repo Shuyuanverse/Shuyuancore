@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import json
 import logging
 import time
@@ -27,11 +28,14 @@ class AuditEntry:
 
 
 class AuditLogger:
-    def __init__(self, db_path: str = "data/state.db") -> None:
+    def __init__(self, db_path: str = "data/state.db", auto_flush_interval: float = 5.0) -> None:
         self._db_path: str = db_path
         self._cache: list[AuditEntry] = []
         self._conn: aiosqlite.Connection | None = None
         self._max_entries: int = 10000
+        self._auto_flush_interval: float = auto_flush_interval
+        self._flush_task: asyncio.Task[None] | None = None
+        self._flush_event: asyncio.Event = asyncio.Event()
 
     async def _get_conn(self) -> aiosqlite.Connection:
         if self._conn is None:
@@ -64,6 +68,31 @@ class AuditLogger:
             """
         )
         await conn.commit()
+
+    def start_auto_flush(self) -> None:
+        if self._flush_task is None:
+            self._flush_task = asyncio.create_task(self._auto_flush_loop())
+
+    async def stop_auto_flush(self) -> None:
+        if self._flush_task is not None:
+            self._flush_task.cancel()
+            try:
+                await self._flush_task
+            except asyncio.CancelledError:
+                pass
+            self._flush_task = None
+        await self.flush_all()
+
+    async def _auto_flush_loop(self) -> None:
+        while True:
+            try:
+                await asyncio.sleep(self._auto_flush_interval)
+                if self._cache:
+                    await self.flush_all()
+            except asyncio.CancelledError:
+                break
+            except Exception:
+                logger.exception("auto_flush_error")
 
     def log(
         self,

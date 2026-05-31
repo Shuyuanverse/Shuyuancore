@@ -1,11 +1,16 @@
 from __future__ import annotations
 
+import json
 import time
 import uuid
 from typing import Any
 
+import aiosqlite
+
 from src.security.audit import get_audit_logger
 from src.tools.interfaces import ITool, ToolParameter, ToolResult, ToolSpec
+
+_DB_PATH: str = "data/state.db"
 
 _ACTION_REQUIRED_PARAMS: dict[str, set[str]] = {
     "delegate": {"task_description"},
@@ -23,8 +28,10 @@ _VALID_ACTIONS: frozenset[str] = frozenset(
 
 
 class DelegationTool(ITool):
-    def __init__(self) -> None:
+    def __init__(self, db_path: str = _DB_PATH) -> None:
+        self._db_path: str = db_path
         self._tasks: dict[str, dict[str, Any]] = {}
+        self._conn: aiosqlite.Connection | None = None
         self._spec = ToolSpec(
             name="delegation",
             description=("子代理委托工具，支持创建子代理任务、检查任务状态和取消任务。"),
@@ -73,6 +80,54 @@ class DelegationTool(ITool):
 
     def get_spec(self) -> ToolSpec:
         return self._spec
+
+    async def _get_conn(self) -> aiosqlite.Connection:
+        if self._conn is None:
+            self._conn = await aiosqlite.connect(self._db_path)
+            self._conn.row_factory = aiosqlite.Row
+            await self._conn.execute("PRAGMA journal_mode = WAL;")
+            await self._conn.execute("PRAGMA busy_timeout = 5000;")
+            await self._init_tables()
+            await self._load_tasks()
+        return self._conn
+
+    async def _init_tables(self) -> None:
+        conn = await self._get_conn()
+        await conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS delegated_tasks (
+                task_id TEXT PRIMARY KEY,
+                data_json TEXT NOT NULL
+            );
+            """
+        )
+        await conn.commit()
+
+    async def _load_tasks(self) -> None:
+        try:
+            conn = await self._get_conn()
+            cursor = await conn.execute("SELECT task_id, data_json FROM delegated_tasks")
+            rows = await cursor.fetchall()
+            for row in rows:
+                self._tasks[row["task_id"]] = json.loads(row["data_json"])
+        except Exception:
+            self._tasks.clear()
+
+    async def _persist_task(self, task: dict[str, Any]) -> None:
+        conn = await self._get_conn()
+        await conn.execute(
+            "INSERT OR REPLACE INTO delegated_tasks (task_id, data_json) VALUES (?, ?)",
+            (task["task_id"], json.dumps(task, ensure_ascii=False)),
+        )
+        await conn.commit()
+
+    async def _remove_task(self, task_id: str) -> None:
+        conn = await self._get_conn()
+        await conn.execute(
+            "DELETE FROM delegated_tasks WHERE task_id = ?",
+            (task_id,),
+        )
+        await conn.commit()
 
     async def validate(self, params: dict[str, Any]) -> list[str]:
         errors: list[str] = []
@@ -164,6 +219,7 @@ class DelegationTool(ITool):
             "sub_agents": [],
         }
         self._tasks[task_id] = task
+        await self._persist_task(task)
 
         duration_ms = (time.time() - start) * 1000
         audit.log(
@@ -264,6 +320,7 @@ class DelegationTool(ITool):
 
         task["status"] = "cancelled"
         task["cancelled_at"] = time.time()
+        await self._persist_task(task)
 
         duration_ms = (time.time() - start) * 1000
         audit.log(

@@ -1,11 +1,14 @@
 from __future__ import annotations
 
+import logging
 import time
 from typing import Any
 
 from src.security.audit import get_audit_logger
 from src.skills.interfaces import ISkillStore
 from src.tools.interfaces import ITool, ToolParameter, ToolResult, ToolSpec
+
+logger = logging.getLogger(__name__)
 
 
 class SkillsTool(ITool):
@@ -144,6 +147,7 @@ class SkillsTool(ITool):
                 duration_ms=duration_ms,
             )
         except Exception as e:
+            logger.exception("skills.list failed: %s", e)
             duration_ms = (time.time() - start) * 1000
             audit.log(
                 user_id=user_id,
@@ -205,6 +209,7 @@ class SkillsTool(ITool):
                 duration_ms=duration_ms,
             )
         except Exception as e:
+            logger.exception("skills.get failed: name=%s", name)
             duration_ms = (time.time() - start) * 1000
             audit.log(
                 user_id=user_id,
@@ -273,6 +278,7 @@ class SkillsTool(ITool):
                 duration_ms=duration_ms,
             )
         except Exception as e:
+            logger.exception("skills.create failed: name=%s", name)
             duration_ms = (time.time() - start) * 1000
             audit.log(
                 user_id=user_id,
@@ -340,6 +346,7 @@ class SkillsTool(ITool):
                 duration_ms=duration_ms,
             )
         except Exception as e:
+            logger.exception("skills.update failed: name=%s", name)
             duration_ms = (time.time() - start) * 1000
             audit.log(
                 user_id=user_id,
@@ -403,6 +410,7 @@ class SkillsTool(ITool):
                 duration_ms=duration_ms,
             )
         except Exception as e:
+            logger.exception("skills.delete failed: name=%s", name)
             duration_ms = (time.time() - start) * 1000
             audit.log(
                 user_id=user_id,
@@ -487,6 +495,7 @@ class SkillsTool(ITool):
                 duration_ms=duration_ms,
             )
         except Exception as e:
+            logger.exception("skills.execute failed: name=%s", name)
             duration_ms = (time.time() - start) * 1000
             audit.log(
                 user_id=user_id,

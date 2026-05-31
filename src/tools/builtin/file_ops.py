@@ -285,7 +285,7 @@ class FileOpsTool(ITool):
         try:
             content = await asyncio.to_thread(path.read_text, encoding=encoding)
             return ToolResult(success=True, data=content)
-        except Exception as e:
+        except (OSError, PermissionError) as e:
             return ToolResult(
                 success=False,
                 error=f"Failed to read file: {e}",
@@ -312,7 +312,7 @@ class FileOpsTool(ITool):
                 success=True,
                 data=f"Written {len(content)} bytes to {path}",
             )
-        except Exception as e:
+        except (OSError, PermissionError) as e:
             return ToolResult(
                 success=False,
                 error=f"Failed to write file: {e}",
@@ -358,7 +358,7 @@ class FileOpsTool(ITool):
                 success=True,
                 data=f"Replaced {count} occurrence(s) in {path}",
             )
-        except Exception as e:
+        except (OSError, PermissionError) as e:
             return ToolResult(
                 success=False,
                 error=f"Failed to edit file: {e}",
@@ -395,7 +395,7 @@ class FileOpsTool(ITool):
                     continue
                 try:
                     content = await asyncio.to_thread(file_path.read_text, errors="replace")
-                except Exception:
+                except (OSError, PermissionError):
                     continue
                 for line_num, line in enumerate(content.splitlines(), 1):
                     if pattern in line:
@@ -409,7 +409,7 @@ class FileOpsTool(ITool):
                     "count": len(matches),
                 },
             )
-        except Exception as e:
+        except (OSError, PermissionError) as e:
             return ToolResult(
                 success=False,
                 error=f"Failed to search: {e}",
@@ -504,7 +504,7 @@ class FileOpsTool(ITool):
                 success=False,
                 error=f"Permission denied: {e}",
             )
-        except Exception as e:
+        except OSError as e:
             return ToolResult(
                 success=False,
                 error=f"Failed to list directory: {e}",

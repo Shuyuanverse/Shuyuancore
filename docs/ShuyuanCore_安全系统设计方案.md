@@ -1,5 +1,13 @@
 # ShuyuanCore 安全系统设计方案
 
+> **状态说明 / Status Note**
+> 本文档为设计初稿。当前实现进度参见 README.md 及代码注释。
+> - cron 模块：已实现（src/cron/）
+> - evolution 模块：部分实现（module_manager 可用）
+> - prediction 模块：已实现（src/prediction/）
+> - 安全子系统：9/12 模块已实现（auth/confirm/encryption/network_isolation/output_filter/privacy/rate_limit/rollback/session_isolation）
+> - 网关适配器：已实现 BaseAdapter/Gateway/API/CLI/OpenAIProxy/WechatWork，其余待社区贡献
+
 ## 1. 概述
 
 安全系统是 ShuyuanCore 的多层纵深防御体系，覆盖身份认证、访问控制、审批流程、审计追溯、数据加密、沙箱隔离、隐私保护、速率限制等全链路安全能力。系统采用**可插拔策略模式**，每项安全能力可通过配置独立开关。

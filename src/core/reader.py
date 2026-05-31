@@ -1,3 +1,11 @@
+"""基于 BeliefStore 的对话读取器 — 简单实现。
+
+职责区分：
+- Reader：从 IBeliefStore 获取 belief，按时间逆序组装为对话消息列表
+- 与 src/memory/reader.py 的 BeliefReader 不同，这里仅做简单的时间排序组装
+- BeliefReader 支持分层优先级检索和查询相关性排序
+"""
+
 from __future__ import annotations
 
 import logging

@@ -1,6 +1,15 @@
 # Copyright 2026 ShuyuanCore contributors
 # SPDX-License-Identifier: Apache-2.0
 
+"""统一记忆存储外观 — 组合 LongTermMemory + VectorStore + PersistentBeliefStore。
+
+使用指引：
+- MemoryStore 是统一入口，将多层级记忆子系统组合为一个外观
+- 通过 get_memory_store() 工厂函数创建
+- 支持分层检索（按 layer 过滤）
+- 依赖 LongTermMemory、VectorStore、PersistentBeliefStore
+"""
+
 from __future__ import annotations
 
 import logging

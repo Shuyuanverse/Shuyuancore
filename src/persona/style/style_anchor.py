@@ -10,15 +10,14 @@ from typing import Any, Dict, List, Optional
 
 import numpy as np
 
-try:
+from src.persona._torch_compat import TORCH_AVAILABLE
+
+if TORCH_AVAILABLE:
     import torch
     import torch.nn as nn
-
-    TORCH_AVAILABLE = True
-except ImportError:
+else:
     torch = None
     nn = object
-    TORCH_AVAILABLE = False
 
 
 @dataclass
@@ -55,7 +54,9 @@ if not TORCH_AVAILABLE:
 
         def encode_deterministic(self, style_features: Dict) -> np.ndarray:
             """始终可用的确定性编码"""
-            raise NotImplementedError
+            raise NotImplementedError(
+                "PyTorch not available and no deterministic fallback implemented"
+            )
 else:
 
     class _StyleEncoderBase(nn.Module):  # type: ignore

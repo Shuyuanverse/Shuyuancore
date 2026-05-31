@@ -275,7 +275,7 @@ class KnowledgeBaseTool(ITool):
                     "count": len(files),
                 },
             )
-        except Exception as e:
+        except (OSError, PermissionError) as e:
             return ToolResult(
                 success=False,
                 error=f"Failed to list local knowledge base: {e}",
@@ -326,7 +326,7 @@ class KnowledgeBaseTool(ITool):
                     "content": content,
                 },
             )
-        except Exception as e:
+        except (OSError, PermissionError) as e:
             return ToolResult(
                 success=False,
                 error=f"Failed to read file: {e}",
@@ -360,7 +360,7 @@ class KnowledgeBaseTool(ITool):
                     continue
                 try:
                     content = await asyncio.to_thread(file_path.read_text, errors="replace")
-                except Exception:
+                except (OSError, PermissionError):
                     continue
                 line_matches: list[dict[str, Any]] = []
                 for line_num, line in enumerate(content.splitlines(), 1):
@@ -388,7 +388,7 @@ class KnowledgeBaseTool(ITool):
                     "total_matches": sum(m["count"] for m in matches),
                 },
             )
-        except Exception as e:
+        except (OSError, PermissionError) as e:
             return ToolResult(
                 success=False,
                 error=f"Failed to search local knowledge base: {e}",
@@ -441,7 +441,7 @@ class KnowledgeBaseTool(ITool):
                     "size": len(body),
                 },
             )
-        except Exception as e:
+        except (OSError, PermissionError) as e:
             return ToolResult(
                 success=False,
                 error=f"Failed to write file: {e}",
@@ -705,7 +705,7 @@ class KnowledgeBaseTool(ITool):
                 resp.raise_for_status()
                 data = resp.json()
             return data.get("data", {}).get("login")
-        except Exception:
+        except (httpx.HTTPError, json.JSONDecodeError, ValueError):
             return None
 
     async def _yuque_list(
@@ -941,7 +941,7 @@ class KnowledgeBaseTool(ITool):
                     "count": len(files),
                 },
             )
-        except Exception as e:
+        except (OSError, PermissionError) as e:
             return ToolResult(
                 success=False,
                 error=f"Failed to list Obsidian vault: {e}",
@@ -992,7 +992,7 @@ class KnowledgeBaseTool(ITool):
                     "content": content,
                 },
             )
-        except Exception as e:
+        except (OSError, PermissionError) as e:
             return ToolResult(
                 success=False,
                 error=f"Failed to read file: {e}",
@@ -1026,7 +1026,7 @@ class KnowledgeBaseTool(ITool):
                     continue
                 try:
                     content = await asyncio.to_thread(file_path.read_text, errors="replace")
-                except Exception:
+                except (OSError, PermissionError):
                     continue
                 line_matches: list[dict[str, Any]] = []
                 for line_num, line in enumerate(content.splitlines(), 1):
@@ -1054,7 +1054,7 @@ class KnowledgeBaseTool(ITool):
                     "total_matches": sum(m["count"] for m in matches),
                 },
             )
-        except Exception as e:
+        except (OSError, PermissionError) as e:
             return ToolResult(
                 success=False,
                 error=f"Failed to search Obsidian vault: {e}",

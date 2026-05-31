@@ -1,3 +1,11 @@
+"""基于 BeliefStore 的分层读取器 — 支持按层优先级和查询相关性排序。
+
+职责区分：
+- BeliefReader：从 IBeliefStore 读取 belief，按 layer 分层（L1 > L2 > 查询匹配 > 其余）
+- 与 src/core/reader.py 的 Reader 不同，这里实现分层优先级检索
+- Reader 是简单的时间逆序组装，适用于简单场景
+"""
+
 from __future__ import annotations
 
 import logging

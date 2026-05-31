@@ -99,7 +99,7 @@ class StateHandler:
         Returns:
             DialogState: 下一状态
         """
-        raise NotImplementedError
+        raise NotImplementedError("Subclasses must implement handle()")
 
 
 class InitHandler(StateHandler):

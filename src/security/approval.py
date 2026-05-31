@@ -302,12 +302,12 @@ class ApprovalManager:
         expired_rows = await cursor.fetchall()
         expired_ids = [row["approval_id"] for row in expired_rows]
 
+        # 使用参数化查询批量删除
         if expired_ids:
-            placeholders = ",".join("?" for _ in expired_ids)
-            await conn.execute(
-                f"DELETE FROM approvals WHERE approval_id IN ({placeholders})",
-                expired_ids,
+            query = "DELETE FROM approvals WHERE approval_id IN ({})".format(
+                ",".join("?" for _ in expired_ids)
             )
+            await conn.execute(query, expired_ids)
             await conn.commit()
             async with self._lock:
                 for aid in expired_ids:

@@ -14,15 +14,14 @@ from typing import Any, Dict, List, Optional
 
 import numpy as np
 
-try:
+from src.persona._torch_compat import TORCH_AVAILABLE
+
+if TORCH_AVAILABLE:
     import torch
     import torch.nn as nn
-
-    TORCH_AVAILABLE = True
-except ImportError:
+else:
     torch = None
     nn = object
-    TORCH_AVAILABLE = False
 
 from .base import AnchorConfig, AnchorType, DecisionAnchor, generate_anchor_id
 
@@ -39,7 +38,9 @@ if not TORCH_AVAILABLE:
 
         def encode(self, decision_anchor: DecisionAnchor) -> np.ndarray:
             """编码决策锚点"""
-            raise NotImplementedError
+            raise NotImplementedError(
+                "PyTorch not available, use encode_deterministic() instead"
+            )
 else:
 
     class _DecisionEncoderBase(nn.Module):

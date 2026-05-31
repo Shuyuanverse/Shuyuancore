@@ -1,5 +1,14 @@
 # ShuyuanCore API 接口文档
 版本：v1.0-rev3 | 日期：2026-05-27
+
+> **状态说明 / Status Note**
+> 本文档为设计初稿。当前实现进度参见 README.md 及代码注释。
+> - cron 模块：已实现（src/cron/）
+> - evolution 模块：部分实现（module_manager 可用）
+> - prediction 模块：已实现（src/prediction/）
+> - 安全子系统：9/12 模块已实现（auth/confirm/encryption/network_isolation/output_filter/privacy/rate_limit/rollback/session_isolation）
+> - 网关适配器：已实现 BaseAdapter/Gateway/API/CLI/OpenAIProxy/WechatWork，其余待社区贡献
+
 ## 一、通用规范
 ### 1.1 基础信息
 - **Base URL**：`https://agentx.example.com/api/v1`

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 import os
 import subprocess
 import time
@@ -8,6 +9,8 @@ from typing import Any
 from src.security.approval import get_approval_manager
 from src.security.audit import get_audit_logger
 from src.tools.interfaces import ITool, ToolParameter, ToolResult, ToolSpec
+
+logger = logging.getLogger(__name__)
 
 
 class GitTool(ITool):
@@ -228,7 +231,13 @@ class GitTool(ITool):
                 error="git command not found. Please install git.",
                 duration_ms=(time.time() - start) * 1000,
             )
-        except Exception as e:
+        except subprocess.CalledProcessError as e:
+            return ToolResult(
+                success=False,
+                error=str(e),
+                duration_ms=(time.time() - start) * 1000,
+            )
+        except OSError as e:
             return ToolResult(
                 success=False,
                 error=str(e),
@@ -296,7 +305,7 @@ class GitTool(ITool):
                 error="Git clone timed out after 300 seconds",
                 duration_ms=(time.time() - start) * 1000,
             )
-        except Exception as e:
+        except (subprocess.CalledProcessError, OSError) as e:
             return ToolResult(
                 success=False,
                 error=str(e),
@@ -374,7 +383,7 @@ class GitTool(ITool):
                 error="Git commit timed out after 60 seconds",
                 duration_ms=(time.time() - start) * 1000,
             )
-        except Exception as e:
+        except (subprocess.CalledProcessError, OSError) as e:
             return ToolResult(
                 success=False,
                 error=str(e),
@@ -462,7 +471,7 @@ class GitTool(ITool):
                 error="Git push timed out after 120 seconds",
                 duration_ms=(time.time() - start) * 1000,
             )
-        except Exception as e:
+        except (subprocess.CalledProcessError, OSError) as e:
             return ToolResult(
                 success=False,
                 error=str(e),
@@ -606,7 +615,7 @@ class GitTool(ITool):
                 error="PR creation timed out after 120 seconds",
                 duration_ms=(time.time() - start) * 1000,
             )
-        except Exception as e:
+        except (subprocess.CalledProcessError, OSError) as e:
             return ToolResult(
                 success=False,
                 error=str(e),
@@ -638,6 +647,6 @@ class GitTool(ITool):
             )
             if result.returncode == 0:
                 return result.stdout.strip()
-        except Exception:
-            pass
+        except (subprocess.CalledProcessError, OSError):
+            logger.warning("Failed to get remote url for repo: %s", repo_path)
         return "unknown"

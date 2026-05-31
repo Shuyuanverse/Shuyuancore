@@ -1,3 +1,5 @@
+"""该模块仅服务于 persona 模块，提供特性标志（feature flags）的查询接口。"""
+
 from __future__ import annotations
 
 import logging

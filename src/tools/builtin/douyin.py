@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import logging
 import time
 from typing import Any
 
@@ -8,6 +9,8 @@ import httpx
 
 from src.security.audit import get_audit_logger
 from src.tools.interfaces import ITool, ToolParameter, ToolResult, ToolSpec
+
+logger = logging.getLogger(__name__)
 
 
 class DouYinTool(ITool):
@@ -236,6 +239,7 @@ class DouYinTool(ITool):
             return result
 
         except Exception as e:
+            logger.exception("douyin operation failed: action=%s", action)
             duration_ms = (time.time() - start_time) * 1000
             audit = get_audit_logger()
             audit.log(
@@ -326,6 +330,7 @@ class DouYinTool(ITool):
         except httpx.RequestError:
             return self._mock_search_videos(keyword, limit)
         except Exception:
+            logger.exception("Unexpected error in search_videos, falling back to mock")
             return self._mock_search_videos(keyword, limit)
 
     def _mock_search_videos(
@@ -439,6 +444,7 @@ class DouYinTool(ITool):
         except httpx.RequestError:
             return self._mock_get_video(video_id)
         except Exception:
+            logger.exception("Unexpected error in get_video, falling back to mock")
             return self._mock_get_video(video_id)
 
     def _mock_get_video(
@@ -535,6 +541,7 @@ class DouYinTool(ITool):
         except httpx.RequestError:
             return self._mock_search_users(keyword, limit)
         except Exception:
+            logger.exception("Unexpected error in search_users, falling back to mock")
             return self._mock_search_users(keyword, limit)
 
     def _mock_search_users(
@@ -653,6 +660,7 @@ class DouYinTool(ITool):
         except httpx.RequestError:
             return self._mock_get_user_videos(user_id, limit)
         except Exception:
+            logger.exception("Unexpected error in get_user_videos, falling back to mock")
             return self._mock_get_user_videos(user_id, limit)
 
     def _mock_get_user_videos(

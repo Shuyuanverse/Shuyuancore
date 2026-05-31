@@ -1,6 +1,15 @@
 # Copyright 2026 ShuyuanCore contributors
 # SPDX-License-Identifier: Apache-2.0
 
+"""SQLite 持久化长时记忆存储 — 支持 FTS5 全文检索和分层管理。
+
+使用指引：
+- LongTermMemory 是生产级实现，适合大规模场景
+- 自动建表、FTS5 索引、WAL 模式
+- 提供 store_entry / retrieve_similar / consolidate / cleanup 等完整接口
+- 轻量测试请使用 src.core.belief_store.BeliefStore
+"""
+
 from __future__ import annotations
 
 import json

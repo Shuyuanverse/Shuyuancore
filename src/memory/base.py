@@ -1,6 +1,17 @@
 # Copyright 2026 ShuyuanCore contributors
 # SPDX-License-Identifier: Apache-2.0
 
+"""记忆系统基础定义 — 抽象基类与数据类。
+
+使用指引：
+- MemoryBase：所有记忆存储后端的抽象基类
+- MemoryEntry：记忆条目数据类，包含 id/content/memory_type/layer 等字段
+- MemoryStats：统计信息数据类
+
+具体实现参见 LongTermMemory (long_term.py)、VectorStore (vector_store.py)、
+PersistentBeliefStore (belief_store.py)。
+"""
+
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
@@ -33,20 +44,20 @@ class MemoryStats:
 class MemoryBase(ABC):
     @abstractmethod
     async def store(self, entry: MemoryEntry) -> str:
-        raise NotImplementedError
+        raise NotImplementedError("Subclasses must implement store()")
 
     @abstractmethod
     async def retrieve(self, query: str, limit: int = 10) -> list[MemoryEntry]:
-        raise NotImplementedError
+        raise NotImplementedError("Subclasses must implement retrieve()")
 
     @abstractmethod
     async def update(self, entry: MemoryEntry) -> None:
-        raise NotImplementedError
+        raise NotImplementedError("Subclasses must implement update()")
 
     @abstractmethod
     async def delete(self, entry_id: str) -> None:
-        raise NotImplementedError
+        raise NotImplementedError("Subclasses must implement delete()")
 
     @abstractmethod
     async def clear(self) -> None:
-        raise NotImplementedError
+        raise NotImplementedError("Subclasses must implement clear()")

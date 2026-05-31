@@ -1,5 +1,13 @@
 # ShuyuanCore 主动预测系统设计方案
 
+> **状态说明 / Status Note**
+> 本文档为设计初稿。当前实现进度参见 README.md 及代码注释。
+> - cron 模块：已实现（src/cron/）
+> - evolution 模块：部分实现（module_manager 可用）
+> - prediction 模块：已实现（src/prediction/）
+> - 安全子系统：9/12 模块已实现（auth/confirm/encryption/network_isolation/output_filter/privacy/rate_limit/rollback/session_isolation）
+> - 网关适配器：已实现 BaseAdapter/Gateway/API/CLI/OpenAIProxy/WechatWork，其余待社区贡献
+
 ## 1. 概述
 
 主动预测系统赋予 ShuyuanCore 在对话空闲期主动发起交互的能力。系统通过分析对话上下文和用户行为模式，预测用户可能的下一步需求，并在适当时机主动提供帮助。
