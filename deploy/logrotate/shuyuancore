@@ -1,0 +1,13 @@
+/opt/shuyuancore/data/logs/*.log {
+    daily
+    rotate 7
+    compress
+    delaycompress
+    missingok
+    notifempty
+    create 0640 shuyuancore shuyuancore
+    sharedscripts
+    postrotate
+        systemctl kill -s USR1 shuyuancore 2>/dev/null || true
+    endscript
+}

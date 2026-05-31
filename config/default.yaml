@@ -1,0 +1,254 @@
+agent:
+  name: ShuyuanCore
+  mode: general
+
+models:
+  default: dashscope/qwen-max
+  embedding: dashscope/text-embedding-v2
+  embedding_dimensions: 1536
+  routing:
+    code: deepseek/deepseek-chat
+    chat: dashscope/qwen-max
+    math: dashscope/qwen-max
+    embedding: dashscope/text-embedding-v2
+    tool: dashscope/qwen-turbo
+    review: deepseek/deepseek-chat
+  providers:
+    dashscope:
+      api_key: ${DASHSCOPE_API_KEY}
+      base_url: https://dashscope.aliyuncs.com/compatible-mode/v1
+      model: qwen-max
+      embedding_model: text-embedding-v2
+    deepseek:
+      api_key: ${DEEPSEEK_API_KEY}
+      base_url: https://api.deepseek.com/v1
+      model: deepseek-chat
+    openai:
+      api_key: ${OPENAI_API_KEY}
+      base_url: https://api.openai.com/v1
+    ollama:
+      base_url: http://localhost:11434
+
+memory:
+  core_memory_limit: 2200
+  user_model_limit: 1375
+  consolidation_threshold: 0.8
+  fts5_search_limit: 10
+  vector_search_limit: 5
+  decay_rates:
+    layer_1: 0.0005
+    layer_2: 0.005
+    layer_3: 0.01
+    layer_4: 0.015
+    layer_5: 0.01
+    layer_6: 0.0
+  confidence_floor: 0.1
+  wake_threshold: 0.6
+  readiness_threshold: 0.5
+  max_wakeups_per_belief_per_day: 2
+  max_wakeups_per_session: 5
+  cooldown_base_minutes: 30
+  ai_importance_threshold: 0.6
+  ai_importance_working: 0.5
+  composite_min_rounds: 3
+  composite_confidence: 0.8
+
+skills:
+  auto_extract: true
+  progressive_disclosure: true
+  curator_interval_days: 7
+  curator_max_iterations: 3
+  stale_days: 30
+  archive_days: 90
+  difficulty_driven: true
+  matching_timeout_ms: 200
+  value_score_threshold: 0.7
+  correction_keywords:
+    - "不对"
+    - "错了"
+    - "不是"
+    - "改一下"
+    - "重新"
+    - "错了错了"
+    - "我意思是"
+    - "你理解错了"
+  refinement_keywords:
+    - "再加"
+    - "补充"
+    - "注意"
+    - "别忘了"
+    - "也要"
+    - "同时"
+    - "顺便"
+
+persona:
+  feature_flags:
+    enable_persona_system: true
+    enable_style_protection: true
+    enable_identity_injection: true
+    enable_perception: true
+    enable_self_review: true
+    enable_adjustment: true
+    enable_autonomous_evolution: false
+    enable_inner_reaction: false
+    enable_hard_fact_guard: true
+  style:
+    style_dimensions: 7
+    anchor_dimensions: 128
+    decision_anchor_dimensions: 256
+    drift_threshold: 0.25
+    review_drift_threshold: 0.15
+    enable_proactive: false
+    bound_components: true
+  hard_fact:
+    confidence: 0.99
+    memory_type: identity
+    layer: 1
+    categories:
+      - identity
+      - knowledge_boundary
+      - relation
+      - bottom_line
+  compiler:
+    min_input_chars: 100
+    max_input_chars: 1000000
+    language_samples_min: 500
+    language_samples_max: 1000
+    embedding_model: dashscope/text-embedding-v2
+    embedding_dimensions: 1536
+  autonomous:
+    consistency_reject_threshold: 0.3
+    consistency_auto_threshold: 0.7
+    trigger_days: 7
+    max_proposals: 5
+  identity_file: CORE.md
+  identity:
+    max_identities: 5
+    switch_methods:
+      - natural_language
+      - slash_command
+    shared_layers: [L3, L4]
+    independent_layers: [L1, L6]
+
+prediction:
+  enable_proactive: false
+  idle_timeout_seconds: 30
+  confidence_threshold: 0.7
+  max_idle_checks_per_conversation: 3
+  feedback_loop: true
+
+evolution:
+  birth_threshold: 40
+  birth_window_days: 7
+  fusion_threshold: 3
+  fusion_window_days: 3
+  death_inactive_days: 14
+  enable_auto_evolution: true
+
+security:
+  allowed_origins:
+    - "http://localhost:3000"
+    - "http://localhost:5173"
+  require_approval: true
+  sandbox: docker
+  audit_log: true
+  ip_whitelist: []
+  env_expose: false
+  data_encryption: true
+  network_isolation: true
+  privacy_desensitize: true
+  session_isolation: true
+  operation_rollback: true
+  rate_limit: true
+  sensitive_confirm: true
+  output_filter: true
+  permission_grading: true
+
+tools:
+  sandbox: docker
+  default_timeout: 60
+  approval_timeout: 300
+  terminal_whitelist:
+    - ls
+    - pwd
+    - echo
+    - cat
+    - head
+    - tail
+    - grep
+    - which
+    - whoami
+    - date
+  code_exec_timeout: 30
+  code_exec_memory_limit: 256
+  web_timeout: 30
+  web_user_agent: ShuyuanCore/1.0
+  respect_robots: true
+  database_readonly: true
+
+agents:
+  updaters_enabled:
+    - evidence
+    - risk
+    - innovation
+  perturbation_threshold_low: 0.3
+  perturbation_threshold_high: 0.7
+  sub_agent_max_concurrent: 5
+  sub_agent_max_total: 10
+  sub_agent_timeout_seconds: 30
+  coordinator_timeout_seconds: 30
+  user_preference_weights:
+    evidence: 1.0
+    risk: 1.0
+    innovation: 1.0
+
+gateway:
+  platforms:
+    cli:
+      enabled: true
+    api:
+      enabled: true
+      port: 8005
+    telegram:
+      enabled: false
+      token: ${TELEGRAM_BOT_TOKEN}
+    wechat:
+      enabled: false
+    wechat_work:
+      enabled: false
+    feishu:
+      enabled: false
+    dingtalk:
+      enabled: false
+    qq:
+      enabled: false
+  history:
+    per_page: 50
+    max_per_page: 200
+    cache_recent: 20
+
+cron:
+  enabled: true
+  check_interval: 60
+  condition_trigger: true
+  task_chain: true
+
+deploy:
+  host: 0.0.0.0
+  port: 8005
+  workers: 1
+  log_level: info
+  log_rotation:
+    max_size: 50MB
+    backup_count: 5
+  health_check:
+    enabled: true
+    endpoint: /health
+    interval: 30
+  methods:
+    - curl_bash
+    - pip
+    - homebrew
+    - docker
+    - source
+    - cloud_one_click

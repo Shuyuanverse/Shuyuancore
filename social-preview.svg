@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="640" viewBox="0 0 1280 640">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0a0a1a"/>
+      <stop offset="50%" style="stop-color:#1a1a3e"/>
+      <stop offset="100%" style="stop-color:#0d2137"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#4facfe"/>
+      <stop offset="100%" style="stop-color:#00f2fe"/>
+    </linearGradient>
+    <linearGradient id="accent2" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#a18cd1"/>
+      <stop offset="100%" style="stop-color:#fbc2eb"/>
+    </linearGradient>
+  </defs>
+  <rect width="1280" height="640" fill="url(#bg)"/>
+  <line x1="80" y1="0" x2="80" y2="640" stroke="#4facfe" stroke-width="2" opacity="0.3"/>
+  <line x1="1200" y1="0" x2="1200" y2="640" stroke="#a18cd1" stroke-width="2" opacity="0.3"/>
+  <circle cx="1100" cy="120" r="180" fill="#4facfe" opacity="0.04"/>
+  <circle cx="200" cy="480" r="150" fill="#a18cd1" opacity="0.04"/>
+  <text x="640" y="220" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="80" font-weight="800" fill="#ffffff" text-anchor="middle" letter-spacing="2">ShuyuanCore</text>
+  <text x="640" y="305" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="42" fill="url(#accent)" text-anchor="middle" letter-spacing="4">数 元 体</text>
+  <rect x="540" y="340" width="200" height="3" rx="2" fill="url(#accent)"/>
+  <text x="640" y="400" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="26" fill="#8888bb" text-anchor="middle" letter-spacing="3">智能进化 · 风格一致 · 深度记忆 · 自主行动</text>
+  <rect x="440" y="470" width="400" height="50" rx="25" fill="none" stroke="url(#accent2)" stroke-width="2" opacity="0.6"/>
+  <text x="640" y="502" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="18" fill="#a18cd1" text-anchor="middle" letter-spacing="1" opacity="0.8">Open Source AI Agent · Apache 2.0</text>
+</svg>
