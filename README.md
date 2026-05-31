@@ -2,7 +2,6 @@
 
 [![Python](https://img.shields.io/badge/Python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![License](https://img.shields.io/badge/License-Apache%202.0-green.svg)](LICENSE)
-[![CI](https://github.com/Shuyuanverse/Shuyuancore/actions/workflows/ci.yml/badge.svg)](https://github.com/Shuyuanverse/Shuyuancore/actions/workflows/ci.yml)
 
 **智能进化、风格一致、深度记忆、自主行动的开源 AI Agent。**
 
