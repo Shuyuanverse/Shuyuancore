@@ -115,13 +115,13 @@ ShuyuanCore：用户要查数据 → 先查记忆：上次做过类似的吗？�
 • Kubernetes（企业级集群部署）
 命令审批机制：危险命令需用户 /approve 确认
 #### 3.5 部署与安装
-• 一键安装：curl | bash 或 pip install agentx
-• Homebrew安装：brew install agentx（macOS用户）
-• Docker一键部署：docker run agentx/agentx
-• 源码部署：git clone && pip install && agentx
+• 一键安装：curl | bash 或 pip install shuyuancore
+• Homebrew安装：brew install shuyuancore（macOS用户）
+• Docker一键部署：docker run shuyuancore/shuyuancore
+• 源码部署：git clone && pip install && shuyuancore
 • 云端一键部署：一键部署到阿里云/腾讯云/AWS
 • $5 VPS即可运行
-• 零配置起步，agentx setup 向导引导
+• 零配置起步，shuyuancore setup 向导引导
 #### 3.6 安全体系
 十三层安全防线：
 1. 用户授权：管理员/普通用户权限分区

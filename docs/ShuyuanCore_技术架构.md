@@ -151,9 +151,9 @@ ShuyuanCore/
 │
 ├── deploy/                    # 部署配置
 │ ├── systemd/
-│ │ └── agentx.service        # ShuyuanCore systemd服务
+│ │ └── shuyuancore.service        # ShuyuanCore systemd服务
 │ ├── nginx/
-│ │ └── agentx.conf           # Nginx反向代理配置
+│ │ └── shuyuancore.conf           # Nginx反向代理配置
 │ ├── docker-compose.yaml     # Docker Compose一键部署
 │ ├── Dockerfile              # Docker镜像构建
 │ ├── install.sh              # 一键安装脚本（curl | bash）
@@ -902,11 +902,11 @@ ECS实战补充：
 | --- | --- |
 | **方式** | **命令/操作** |
 | 一键安装 | `curl \
-| Homebrew | brew install agentx（macOS用户） |
-| Docker一键 | docker run agentx/agentx |
-| 源码部署 | git clone && pip install && agentx |
+| Homebrew | brew install shuyuancore（macOS用户） |
+| Docker一键 | docker run shuyuancore/shuyuancore |
+| 源码部署 | git clone && pip install && shuyuancore |
 | 云端一键 | 一键部署到阿里云/腾讯云/AWS |
-| 零配置起步 | agentx setup 向导引导 |
+| 零配置起步 | shuyuancore setup 向导引导 |
 $5 VPS即可运行
 ### 2.12 预测式用户建模（prediction/）
 **动态心理模型**（见L5记忆层）：每次交互后自动推理更新
@@ -1198,26 +1198,26 @@ methods: # 部署方式
 - source
 - cloud\_one\_click
 ## 七、CLI命令设计
-**// bash**agentx run # 启动交互式CLI对话
-agentx serve # 启动API服务器
-agentx gateway # 启动消息平台Gateway
-agentx setup # 首次设置向导
-agentx model # 配置/切换模型
-agentx tools # 配置工具集
-agentx skills list # 列出技能
-agentx skills search # 搜索技能（含社区市场）
-agentx skills create # 手动创建技能
-agentx skills install # 安装社区技能
-agentx persona compile # 编译数字人格（100字~100万字输入）
-agentx persona export # 导出人格档案
-agentx profile # 切换身份（自然语言或名称）
-agentx migrate # 从Hermes/OpenClaw/ShuyuanVerse迁移
-agentx doctor # 诊断问题（含ChromaDB健康检查）
-agentx update # 更新版本
-agentx deploy # 部署管理
-agentx memory stats # 记忆系统统计
-agentx memory reindex # 重建ChromaDB索引
-agentx memory backfill # 从SQLite历史数据回填ChromaDB
+**// bash**shuyuancore run # 启动交互式CLI对话
+shuyuancore serve # 启动API服务器
+shuyuancore gateway # 启动消息平台Gateway
+shuyuancore setup # 首次设置向导
+shuyuancore model # 配置/切换模型
+shuyuancore tools # 配置工具集
+shuyuancore skills list # 列出技能
+shuyuancore skills search # 搜索技能（含社区市场）
+shuyuancore skills create # 手动创建技能
+shuyuancore skills install # 安装社区技能
+shuyuancore persona compile # 编译数字人格（100字~100万字输入）
+shuyuancore persona export # 导出人格档案
+shuyuancore profile # 切换身份（自然语言或名称）
+shuyuancore migrate # 从Hermes/OpenClaw/ShuyuanVerse迁移
+shuyuancore doctor # 诊断问题（含ChromaDB健康检查）
+shuyuancore update # 更新版本
+shuyuancore deploy # 部署管理
+shuyuancore memory stats # 记忆系统统计
+shuyuancore memory reindex # 重建ChromaDB索引
+shuyuancore memory backfill # 从SQLite历史数据回填ChromaDB
 ## 八、开发路线
 **起飞阶段**：完整实现所有能力，不分Phase，不设时间表。
 所有模块一次性完整实现，不做MVP，不分阶段交付。
@@ -1282,45 +1282,45 @@ ECS侦查实测数据（2026-05-24）：
 │ (state.db) │ │(持久化) │ │(记忆/技能) │
 └───────────────┘ └──────────┘ └─────────────┘
 ### 10.2 systemd服务管理
-ShuyuanCore的systemd服务（deploy/systemd/agentx.service）：
+ShuyuanCore的systemd服务（deploy/systemd/shuyuancore.service）：
 **// ini**[Unit]
 Description=ShuyuanCore Server
 After=network.target
 [Service]
 Type=simple
-User=agentx
-Group=agentx
-WorkingDirectory=/opt/agentx
-ExecStart=/opt/agentx/venv/bin/python3 -m uvicorn app.main:app --host 0.0.0.0 --port 8005 --workers 1
+User=shuyuancore
+Group=shuyuancore
+WorkingDirectory=/opt/shuyuancore
+ExecStart=/opt/shuyuancore/venv/bin/python3 -m uvicorn app.main:app --host 0.0.0.0 --port 8005 --workers 1
 Restart=always
 RestartSec=5
 Environment=PYTHONUNBUFFERED=1
-EnvironmentFile=/opt/agentx/.env
+EnvironmentFile=/opt/shuyuancore/.env
 # 安全限制
 NoNewPrivileges=true
 ProtectSystem=strict
-ReadWritePaths=/opt/agentx/data /opt/agentx/logs
+ReadWritePaths=/opt/shuyuancore/data /opt/shuyuancore/logs
 [Install]
 WantedBy=multi-user.target
 ### 10.3 Nginx反向代理 + HTTPS
-ShuyuanCore的Nginx配置（deploy/nginx/agentx.conf）：
+ShuyuanCore的Nginx配置（deploy/nginx/shuyuancore.conf）：
 **// nginx**# HTTP → HTTPS 重定向
 server {
 listen 80;
-server\_name agentx.example.com;
+server\_name shuyuancore.example.com;
 return 301 https://$server\_name$request\_uri;
 }
 # HTTPS 主配置
 server {
 listen 443 ssl http2;
-server\_name agentx.example.com;
+server\_name shuyuancore.example.com;
 # Let's Encrypt SSL
-ssl\_certificate /etc/letsencrypt/live/agentx.example.com/fullchain.pem;
-ssl\_certificate\_key /etc/letsencrypt/live/agentx.example.com/privkey.pem;
+ssl\_certificate /etc/letsencrypt/live/shuyuancore.example.com/fullchain.pem;
+ssl\_certificate\_key /etc/letsencrypt/live/shuyuancore.example.com/privkey.pem;
 ssl\_protocols TLSv1.2 TLSv1.3;
 # 前端静态文件
 location / {
-root /opt/agentx/frontend/dist;
+root /opt/shuyuancore/frontend/dist;
 try\_files $uri $uri/ /index.html;
 }
 # API反向代理
@@ -1343,7 +1343,7 @@ proxy\_pass http://127.0.0.1:8005/health;
 ### 10.4 Docker Compose一键部署
 **// yaml**version: '3.8'
 services:
-agentx:
+shuyuancore:
 build:
 context: ..
 dockerfile: deploy/Dockerfile
@@ -1367,11 +1367,11 @@ ports:
 - "80:80"
 - "443:443"
 volumes:
-- ./nginx/agentx.conf:/etc/nginx/conf.d/default.conf
+- ./nginx/shuyuancore.conf:/etc/nginx/conf.d/default.conf
 - /etc/letsencrypt:/etc/letsencrypt
 - ../frontend/dist:/usr/share/nginx/html
 depends\_on:
-agentx:
+shuyuancore:
 condition: service\_healthy
 restart: always
 ### 10.5 健康检查端点
@@ -1399,8 +1399,8 @@ checks["status"] = "unhealthy"
 status\_code = 200 if checks["status"] != "unhealthy" else 503
 return JSONResponse(content=checks, status\_code=status\_code)
 ### 10.6 日志轮转
-ShuyuanCore日志配置（/etc/logrotate.d/agentx）：
-/opt/agentx/data/logs/\*.log {
+ShuyuanCore日志配置（/etc/logrotate.d/shuyuancore）：
+/opt/shuyuancore/data/logs/\*.log {
 daily
 rotate 7
 compress

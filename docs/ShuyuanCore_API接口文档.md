@@ -11,7 +11,7 @@
 
 ## 一、通用规范
 ### 1.1 基础信息
-- **Base URL**：`https://agentx.example.com/api/v1`
+- **Base URL**：`https://shuyuancore.example.com/api/v1`
 - **认证方式**：`Authorization: Bearer <token>`（JWT Token）
 - **Content-Type**：`application/json`
 - **统一响应格式**：
@@ -62,7 +62,7 @@
 | 11002 | 配置持久化失败 | 500 | 写入default.yaml失败 |
 ### 1.3 认证说明
 **// http**Authorization: Bearer eyJhbGciOiJIUzI1NiIs...
-Token获取：通过CLI `agentx auth login` 或 首次setup生成
+Token获取：通过CLI `shuyuancore auth login` 或 首次setup生成
 用户数据隔离原则（v1.0-rev2补充）：每个用户的对话历史、记忆（L1-L6）、技能、人格档案、身份完全隔离。user_id 是隔离的标识符，API所有查询必须带 user_id 过滤（从JWT Token解析）。不存在跨用户数据共享，admin角色只用于系统管理操作，不访问用户数据。
 ### 1.4 分页规范
 **游标分页**（v1.0-rev2补充cursor编码格式）：
@@ -85,9 +85,9 @@ POST请求支持幂等（v1.0-rev2补充，approve/deny专用）：
 ### 1.6 WebSocket 实时推送（计划中）
 > **技术债务**：WebSocket 端点尚未在后端实现。当前 SSE 已满足流式通信需求，WebSocket 将在后续版本补充。
 
-**// ws**wss://agentx.example.com/ws/v1
+**// ws**wss://shuyuancore.example.com/ws/v1
 连接时需在query参数中携带token：
-`wss://agentx.example.com/ws/v1?token=<jwt_token>`
+`wss://shuyuancore.example.com/ws/v1?token=<jwt_token>`
 消息格式：
 **// json**{
 "type": "message",      // message/typing/tool_call/error
