@@ -44,7 +44,7 @@ class DatabaseTool(ITool):
                     type="string",
                     description="数据库文件路径",
                     required=False,
-                    default="data/state.db",
+                    default=None,
                 ),
             ],
         )
@@ -64,7 +64,7 @@ class DatabaseTool(ITool):
         query: str = params["query"]
         query_params: list[Any] | None = params.get("params")
         timeout: int = params.get("timeout", 30)
-        db_path: str = params.get("db_path", "data/state.db")
+        db_path: str = params.get("db_path") or get_settings().database.db_path
         start = time.time()
         audit = get_audit_logger()
 

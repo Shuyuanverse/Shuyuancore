@@ -40,12 +40,13 @@ _LLM_REVIEW_PROMPT = (
 
 
 async def run_curation(
-    db_path: str = "data/state.db",
+    db_path: str | None = None,
     router: Any | None = None,
 ) -> dict[str, int]:
     from src.memory.decay import current_time_ms
 
     settings = get_settings()
+    effective_db_path = db_path or settings.database.db_path
     now_ts = current_time_ms()
     now = datetime.now(timezone.utc)
 
@@ -54,7 +55,7 @@ async def run_curation(
     stale_threshold_ms = int(now.timestamp() - stale_days * 86400) * 1000
     archive_threshold_ms = int(now.timestamp() - archive_days * 86400) * 1000
 
-    conn = await aiosqlite.connect(db_path)
+    conn = await aiosqlite.connect(effective_db_path)
     conn.row_factory = aiosqlite.Row
     await conn.execute("PRAGMA journal_mode = WAL;")
     await conn.execute("PRAGMA foreign_keys = ON;")

@@ -201,12 +201,77 @@ class IToolRegistry(ABC):
 
 
 class IMemoryStore(ABC):
-    pass
+    """通用记忆存储接口。
+
+    用于存储和检索与信念无关的持久化记忆数据，
+    例如用户偏好、会话上下文、行为模式等。
+    """
+
+    @abstractmethod
+    async def store(self, key: str, value: Any, ttl: int | None = None) -> None: ...
+
+    @abstractmethod
+    async def retrieve(self, key: str) -> Any | None: ...
+
+    @abstractmethod
+    async def delete(self, key: str) -> bool: ...
+
+    @abstractmethod
+    async def search(self, query: str, top_k: int = 10) -> list[tuple[str, Any, float]]: ...
 
 
 class IPersonaGuard(ABC):
-    pass
+    """人格守卫接口。
+
+    负责检测人格漂移、验证输出一致性，
+    并在必要时提供约束提示以维持人格稳定性。
+    """
+
+    @abstractmethod
+    async def validate(
+        self,
+        user_id: str,
+        persona_id: str,
+        output: str,
+    ) -> tuple[bool, float]: ...
+
+    @abstractmethod
+    async def check_drift(
+        self,
+        user_id: str,
+        persona_id: str,
+    ) -> dict[str, Any]: ...
+
+    @abstractmethod
+    async def get_guard_prompt(
+        self,
+        user_id: str,
+        persona_id: str,
+    ) -> str: ...
 
 
 class ISkillEngine(ABC):
-    pass
+    """技能引擎接口。
+
+    负责技能的注册、执行、发现与生命周期管理。
+    """
+
+    @abstractmethod
+    async def execute_skill(
+        self,
+        skill_name: str,
+        params: dict[str, Any],
+        user_id: str = "default",
+    ) -> Any: ...
+
+    @abstractmethod
+    async def list_skills(
+        self,
+        category: str | None = None,
+    ) -> list[dict[str, Any]]: ...
+
+    @abstractmethod
+    async def get_skill_spec(
+        self,
+        skill_name: str,
+    ) -> dict[str, Any] | None: ...

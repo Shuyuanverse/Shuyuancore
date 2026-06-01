@@ -4,7 +4,8 @@ import logging
 import threading
 from typing import Any
 
-from src.tools.interfaces import ITool, ToolResult
+from src.tools.interfaces import ToolResult
+from src.tools.registry import get_tool_registry
 
 logger = logging.getLogger(__name__)
 
@@ -14,15 +15,17 @@ class MCPServer:
 
     Hosts tools and exposes them via HTTP for remote MCP clients.
     Uses FastAPI + uvicorn for the HTTP layer.
+    All tool executions go through ToolRegistry for validation,
+    approval gating, and audit logging.
     """
 
     def __init__(self) -> None:
-        self._tools: dict[str, ITool] = {}
+        self._tools: dict[str, object] = {}
         self._app: Any = None
         self._server: Any = None
         self._thread: threading.Thread | None = None
 
-    def register_tool(self, tool: ITool) -> None:
+    def register_tool(self, tool: object) -> None:
         """注册工具。
 
         Registers an ITool-compatible tool with the MCP server,
@@ -41,6 +44,8 @@ class MCPServer:
                 f"工具 '{spec.name}' 已注册"
             )
         self._tools[spec.name] = tool
+        registry = get_tool_registry()
+        registry.register(tool)
         logger.info(
             "MCP tool registered: %s (category: %s)",
             spec.name,
@@ -62,6 +67,7 @@ class MCPServer:
                 "description": spec.description,
                 "category": spec.category,
                 "dangerous": spec.dangerous,
+                "require_approval": spec.require_approval,
                 "parameters": [
                     {
                         "name": p.name,
@@ -73,18 +79,23 @@ class MCPServer:
                     for p in spec.parameters
                 ],
             }
-            for spec in (t.get_spec() for t in self._tools.values())
+            for spec in get_tool_registry().list_tools()
         ]
 
-    async def handle_request(self, request: dict[str, Any]) -> ToolResult:
+    async def handle_request(
+        self,
+        request: dict[str, Any],
+        user_id: str = "mcp-client",
+    ) -> ToolResult:
         """处理工具调用请求。
 
-        Routes an incoming MCP request to the appropriate
-        registered tool and executes it.
+        Routes an incoming MCP request through the ToolRegistry
+        for validation, approval gating, and audit logging.
 
         Args:
             request: A dictionary containing 'tool' (the tool name)
                      and optionally 'arguments' (dict of parameters).
+            user_id: The user ID for approval and audit context.
 
         Returns:
             ToolResult from the executed tool.
@@ -95,8 +106,8 @@ class MCPServer:
         tool_name = request.get("tool", "")
         arguments = request.get("arguments", {})
 
-        tool = self._tools.get(tool_name)
-        if tool is None:
+        registry = get_tool_registry()
+        if registry.get_tool(tool_name) is None:
             raise ValueError(
                 f"Tool '{tool_name}' not found / 工具 '{tool_name}' 未注册"
             )
@@ -106,7 +117,7 @@ class MCPServer:
             tool_name,
             arguments,
         )
-        return await tool.execute(params=arguments)
+        return await registry.execute_tool(tool_name, arguments, user_id)
 
     async def start(self, host: str = "127.0.0.1", port: int = 8000) -> None:
         """启动 HTTP 服务器。

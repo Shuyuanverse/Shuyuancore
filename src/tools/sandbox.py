@@ -28,20 +28,13 @@ class ToolSandbox:
         timeout: int = 30,
         memory_limit: str = "256m",
     ) -> SandboxResult:
-        if language == "python":
-            cmd = ["python3", "-c", code]
-        elif language == "javascript":
-            cmd = ["node", "-e", code]
-        else:
-            return SandboxResult(
-                success=False,
-                error=f"不支持的语言: {language} / Unsupported language: {language}",
-                exit_code=-1,
-            )
         return await self._executor.execute(
-            command=cmd,
+            command=["python3", "-"] if language == "python" else (
+                ["node", "-"] if language == "javascript" else [""]
+            ),
             timeout=timeout,
             memory_limit=memory_limit,
+            stdin_data=code,
         )
 
     async def check_available(self) -> bool:

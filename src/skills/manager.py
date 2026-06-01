@@ -8,6 +8,7 @@ from typing import Any
 
 import aiosqlite
 
+from src.config import get_settings
 from src.core.interfaces import Belief, IBeliefStore
 from src.exceptions import SkillNotFoundError
 from src.memory.decay import current_time_ms
@@ -29,10 +30,10 @@ class PersistentSkillStore(ISkillStore):
     def __init__(
         self,
         belief_store: IBeliefStore | None = None,
-        db_path: str = "data/state.db",
+        db_path: str | None = None,
     ) -> None:
         self._belief_store = belief_store
-        self._db_path = db_path
+        self._db_path = db_path or get_settings().database.db_path
         self._conn: aiosqlite.Connection | None = None
 
     async def _get_conn(self) -> aiosqlite.Connection:
@@ -352,8 +353,8 @@ class PersistentSkillStore(ISkillStore):
 
 
 class PersistentSkillGraph(ISkillGraph):
-    def __init__(self, db_path: str = "data/state.db") -> None:
-        self._db_path = db_path
+    def __init__(self, db_path: str | None = None) -> None:
+        self._db_path = db_path or get_settings().database.db_path
         self._conn: aiosqlite.Connection | None = None
 
     async def _get_conn(self) -> aiosqlite.Connection:

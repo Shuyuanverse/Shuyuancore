@@ -13,8 +13,8 @@
 from __future__ import annotations
 
 import logging
-from typing import Any
 
+from src.config import get_settings
 from src.core.interfaces import IMemoryStore
 from src.memory.base import MemoryEntry, MemoryStats
 from src.memory.belief_store import PersistentBeliefStore
@@ -94,22 +94,23 @@ class MemoryStore(IMemoryStore):
 
 
 def get_memory_store(
-    db_path: str = "data/state.db",
+    db_path: str | None = None,
     chroma_path: str = "data/chroma",
     embedding_service: EmbeddingService | None = None,
 ) -> MemoryStore:
+    effective_db_path = db_path or get_settings().database.db_path
     vector_store: VectorStore | None = None
     if embedding_service is not None:
         vector_store = VectorStore(persist_dir=chroma_path)
 
     belief_store = PersistentBeliefStore(
-        db_path=db_path,
+        db_path=effective_db_path,
         embedding_service=embedding_service,
         vector_store=vector_store,
     )
 
     long_term = LongTermMemory(
-        db_path=db_path,
+        db_path=effective_db_path,
         embedding_service=embedding_service,
     )
 

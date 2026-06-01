@@ -22,11 +22,10 @@ from typing import Any
 
 import aiosqlite
 
+from src.config import get_settings
 from src.memory.decay import current_time_ms
 
 logger = logging.getLogger(__name__)
-
-_DB_PATH: str = "data/state.db"
 
 # 用于规则预测的关键词 -> 预测动作映射
 _KEYWORD_ACTION_MAP: dict[str, str] = {
@@ -141,7 +140,7 @@ class Predictor:
 
     def __init__(
         self,
-        db_path: str = _DB_PATH,
+        db_path: str | None = None,
         model_provider: Any | None = None,
         belief_store: Any | None = None,
     ) -> None:
@@ -152,7 +151,7 @@ class Predictor:
             model_provider: 可选的 LLM 提供者，用于增强预测
             belief_store: 可选的信念存储，用于读取用户记忆
         """
-        self._db_path: str = db_path
+        self._db_path: str = db_path or get_settings().database.db_path
         self._model_provider = model_provider
         self._belief_store = belief_store
         self._conn: aiosqlite.Connection | None = None

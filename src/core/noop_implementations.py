@@ -60,15 +60,63 @@ class NoOpBeliefStore(IBeliefStore):
 
 
 class NoOpMemoryStore(IMemoryStore):
-    pass
+    async def store(self, key: str, value: Any, ttl: int | None = None) -> None:
+        pass
+
+    async def retrieve(self, key: str) -> Any | None:
+        return None
+
+    async def delete(self, key: str) -> bool:
+        return False
+
+    async def search(self, query: str, top_k: int = 10) -> list[tuple[str, Any, float]]:
+        return []
 
 
 class NoOpPersonaGuard(IPersonaGuard):
-    pass
+    async def validate(
+        self,
+        user_id: str,
+        persona_id: str,
+        output: str,
+    ) -> tuple[bool, float]:
+        return True, 1.0
+
+    async def check_drift(
+        self,
+        user_id: str,
+        persona_id: str,
+    ) -> dict[str, Any]:
+        return {"drift_score": 0.0, "is_drifted": False}
+
+    async def get_guard_prompt(
+        self,
+        user_id: str,
+        persona_id: str,
+    ) -> str:
+        return ""
 
 
 class NoOpSkillEngine(ISkillEngine):
-    pass
+    async def execute_skill(
+        self,
+        skill_name: str,
+        params: dict[str, Any],
+        user_id: str = "default",
+    ) -> Any:
+        return {"error": f"skill '{skill_name}' not available"}
+
+    async def list_skills(
+        self,
+        category: str | None = None,
+    ) -> list[dict[str, Any]]:
+        return []
+
+    async def get_skill_spec(
+        self,
+        skill_name: str,
+    ) -> dict[str, Any] | None:
+        return None
 
 
 class MockToolRegistry(IToolRegistry):

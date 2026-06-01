@@ -7,10 +7,9 @@ from typing import Any
 
 import aiosqlite
 
+from src.config import get_settings
 from src.security.audit import get_audit_logger
 from src.tools.interfaces import ITool, ToolParameter, ToolResult, ToolSpec
-
-_DB_PATH: str = "data/state.db"
 
 _ACTION_REQUIRED_PARAMS: dict[str, set[str]] = {
     "delegate": {"task_description"},
@@ -28,8 +27,8 @@ _VALID_ACTIONS: frozenset[str] = frozenset(
 
 
 class DelegationTool(ITool):
-    def __init__(self, db_path: str = _DB_PATH) -> None:
-        self._db_path: str = db_path
+    def __init__(self, db_path: str | None = None) -> None:
+        self._db_path: str = db_path or get_settings().database.db_path
         self._tasks: dict[str, dict[str, Any]] = {}
         self._conn: aiosqlite.Connection | None = None
         self._spec = ToolSpec(

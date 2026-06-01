@@ -252,3 +252,6 @@ deploy:
     - docker
     - source
     - cloud_one_click
+
+database:
+  db_path: data/state.db

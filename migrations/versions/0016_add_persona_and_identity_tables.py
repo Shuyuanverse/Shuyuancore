@@ -1,5 +1,10 @@
 """add personas, identities, and curator_runs tables
 
+NOTE: These tables are reserved for future functionality.
+No code currently writes to personas, identities, or curator_runs tables.
+The migration remains in the chain to preserve schema consistency but should
+be considered a placeholder.
+
 Revision ID: 0016
 Revises: 0015
 Create Date: 2026-05-29 12:45:00.000000

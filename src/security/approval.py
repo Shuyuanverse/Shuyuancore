@@ -9,7 +9,7 @@ from typing import Any
 
 import aiosqlite
 
-_DB_PATH: str = "data/state.db"
+from src.config import get_settings
 
 
 @dataclass
@@ -30,8 +30,8 @@ class ApprovalRequest:
 
 
 class ApprovalManager:
-    def __init__(self, db_path: str = _DB_PATH) -> None:
-        self._db_path: str = db_path
+    def __init__(self, db_path: str | None = None) -> None:
+        self._db_path: str = db_path or get_settings().database.db_path
         self._conn: aiosqlite.Connection | None = None
         self._events: dict[str, asyncio.Event] = {}
         self._lock: asyncio.Lock = asyncio.Lock()
@@ -328,7 +328,7 @@ _manager_lock = asyncio.Lock()
 
 
 async def get_approval_manager(db_path: str | None = None) -> ApprovalManager:
-    path = _DB_PATH if db_path is None else db_path
+    path = db_path or get_settings().database.db_path
     async with _manager_lock:
         if path not in _managers:
             mgr = ApprovalManager(db_path=path)
@@ -337,5 +337,5 @@ async def get_approval_manager(db_path: str | None = None) -> ApprovalManager:
         return _managers[path]
 
 
-def get_approval_manager_sync(db_path: str = _DB_PATH) -> ApprovalManager:
+def get_approval_manager_sync(db_path: str | None = None) -> ApprovalManager:
     return ApprovalManager(db_path=db_path)

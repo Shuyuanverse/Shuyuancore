@@ -72,10 +72,15 @@ class SandboxExecutor:
         cwd: str | None = None,
         memory_limit: str = "256m",
         image: str = "ubuntu:22.04",
+        stdin_data: str | None = None,
     ) -> SandboxResult:
         if self._sandbox_mode == "docker" and await self.check_docker():
-            return await self._execute_docker(command, timeout, env, memory_limit, image)
-        return await self._execute_local(command, timeout, env, cwd)
+            return await self._execute_docker(
+                command, timeout, env, memory_limit, image, stdin_data
+            )
+        return await self._execute_local(
+            command, timeout, env, cwd, stdin_data
+        )
 
     async def _execute_docker(
         self,
@@ -84,6 +89,7 @@ class SandboxExecutor:
         env: dict[str, str] | None = None,
         memory_limit: str = "256m",
         image: str = "ubuntu:22.04",
+        stdin_data: str | None = None,
     ) -> SandboxResult:
         cmd = [
             "docker",
@@ -103,12 +109,21 @@ class SandboxExecutor:
         cmd.extend(command)
 
         try:
+            stdin_pipe = (
+                asyncio.subprocess.PIPE if stdin_data else None
+            )
             proc = await asyncio.create_subprocess_exec(
                 *cmd,
+                stdin=stdin_pipe,
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE,
             )
-            stdout_bytes, stderr_bytes = await asyncio.wait_for(proc.communicate(), timeout=timeout)
+            input_bytes = (
+                stdin_data.encode("utf-8") if stdin_data else None
+            )
+            stdout_bytes, stderr_bytes = await asyncio.wait_for(
+                proc.communicate(input=input_bytes), timeout=timeout
+            )
             stdout = stdout_bytes.decode("utf-8", errors="replace")
             stderr = stderr_bytes.decode("utf-8", errors="replace")
             success = proc.returncode == 0
@@ -137,19 +152,29 @@ class SandboxExecutor:
         timeout: int = 60,
         env: dict[str, str] | None = None,
         cwd: str | None = None,
+        stdin_data: str | None = None,
     ) -> SandboxResult:
         env_full = os.environ.copy()
         if env:
             env_full.update(env)
         try:
+            stdin_pipe = (
+                asyncio.subprocess.PIPE if stdin_data else None
+            )
             proc = await asyncio.create_subprocess_exec(
                 *command,
+                stdin=stdin_pipe,
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE,
                 env=env_full,
                 cwd=cwd,
             )
-            stdout_bytes, stderr_bytes = await asyncio.wait_for(proc.communicate(), timeout=timeout)
+            input_bytes = (
+                stdin_data.encode("utf-8") if stdin_data else None
+            )
+            stdout_bytes, stderr_bytes = await asyncio.wait_for(
+                proc.communicate(input=input_bytes), timeout=timeout
+            )
             stdout = stdout_bytes.decode("utf-8", errors="replace")
             stderr = stderr_bytes.decode("utf-8", errors="replace")
             success = proc.returncode == 0

@@ -43,6 +43,13 @@ class CryptoTool(ITool):
                     required=True,
                 ),
                 ToolParameter(
+                    name="signature",
+                    type="string",
+                    description="Expected signature to verify against (required for verify action)",
+                    required=False,
+                    default=None,
+                ),
+                ToolParameter(
                     name="key",
                     type="string",
                     description="Encryption or signing key (optional, uses MASTER_KEY by default)",
@@ -75,6 +82,8 @@ class CryptoTool(ITool):
             return errors
         if not params.get("data"):
             errors.append("data parameter is required and must not be empty")
+        if action == "verify" and not params.get("signature"):
+            errors.append("signature parameter is required for verify action")
         if action in ("encrypt", "decrypt") and not _HAS_FERNET:
             errors.append(
                 "cryptography is not installed. Install it with: pip install cryptography"
@@ -114,7 +123,12 @@ class CryptoTool(ITool):
             return await self._decrypt(data, key, start)
         elif action == "sign":
             return await self._sign(data, key, start)
-        else:
+        elif action == "verify":
+            provided_signature: str | None = params.get("signature")
+            if provided_signature and key:
+                return await self._verify_with_signature(
+                    data, key, provided_signature, start
+                )
             return await self._verify(data, key, start)
 
     async def _encrypt(
@@ -214,10 +228,38 @@ class CryptoTool(ITool):
             return ToolResult(
                 success=True,
                 data={
-                    "signature": expected_signature,
+                    "computed_signature": expected_signature,
                     "algorithm": "HMAC-SHA256",
                     "verified": True,
-                    "note": "Verify by comparing this signature with your reference signature",
+                },
+                duration_ms=(time.time() - start) * 1000,
+            )
+        except (ValueError, TypeError) as e:
+            return ToolResult(
+                success=False,
+                error=f"Verification failed: {e}",
+                duration_ms=(time.time() - start) * 1000,
+            )
+
+    async def _verify_with_signature(
+        self,
+        data: str,
+        key: str,
+        provided_signature: str,
+        start: float,
+    ) -> ToolResult:
+        try:
+            computed_signature = hmac.new(
+                key.encode("utf-8"),
+                data.encode("utf-8"),
+                hashlib.sha256,
+            ).hexdigest()
+            is_valid = hmac.compare_digest(computed_signature, provided_signature)
+            return ToolResult(
+                success=True,
+                data={
+                    "verified": is_valid,
+                    "algorithm": "HMAC-SHA256",
                 },
                 duration_ms=(time.time() - start) * 1000,
             )

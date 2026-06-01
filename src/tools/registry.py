@@ -61,7 +61,7 @@ class ToolRegistry(IToolRegistry):
                 error="; ".join(validation_errors),
             )
 
-        needs_approval = spec.dangerous
+        needs_approval = spec.dangerous or spec.require_approval
         approval_id = ""
 
         if needs_approval:

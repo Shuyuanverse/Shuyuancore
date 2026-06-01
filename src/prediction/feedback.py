@@ -20,11 +20,10 @@ from typing import Any
 
 import aiosqlite
 
+from src.config import get_settings
 from src.memory.decay import current_time_ms
 
 logger = logging.getLogger(__name__)
-
-_DB_PATH: str = "data/state.db"
 
 
 @dataclass
@@ -120,13 +119,13 @@ class FeedbackCollector:
     CREATE INDEX IF NOT EXISTS idx_prediction_feedback_action ON prediction_feedback(action);
     """
 
-    def __init__(self, db_path: str = _DB_PATH) -> None:
+    def __init__(self, db_path: str | None = None) -> None:
         """初始化反馈收集器。
 
         Args:
             db_path: SQLite 数据库路径
         """
-        self._db_path: str = db_path
+        self._db_path: str = db_path or get_settings().database.db_path
         self._conn: aiosqlite.Connection | None = None
 
     async def _get_conn(self) -> aiosqlite.Connection:

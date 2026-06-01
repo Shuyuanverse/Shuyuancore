@@ -7,9 +7,8 @@ Create Date: 2026-05-29 10:05:00.000000
 """
 from typing import Sequence, Union
 
-from alembic import op
 import sqlalchemy as sa
-
+from alembic import op
 
 revision: str = "0010"
 down_revision: Union[str, None] = "0009"
@@ -51,11 +50,12 @@ def upgrade() -> None:
     )
 
     # 用户偏好表
+    # 复合主键 (user_id, category, key) 匹配 relational.py 的 DDL 定义
     op.create_table(
         "user_preferences",
-        sa.Column("user_id", sa.String(64), primary_key=False),
-        sa.Column("category", sa.String(64), primary_key=True),
-        sa.Column("key", sa.String(255), primary_key=True),
+        sa.Column("user_id", sa.String(64), nullable=False, primary_key=True),
+        sa.Column("category", sa.String(64), nullable=False, primary_key=True),
+        sa.Column("key", sa.String(255), nullable=False, primary_key=True),
         sa.Column("value", sa.Text, nullable=False),
         sa.Column("confidence", sa.Float, nullable=False, server_default="0.5"),
         sa.Column("source", sa.String(64), nullable=False, server_default="inferred"),

@@ -1,8 +1,8 @@
 from __future__ import annotations
 
+import asyncio
 import logging
 import os
-import subprocess
 import time
 from typing import Any
 
@@ -11,6 +11,66 @@ from src.security.audit import get_audit_logger
 from src.tools.interfaces import ITool, ToolParameter, ToolResult, ToolSpec
 
 logger = logging.getLogger(__name__)
+
+
+class _SubprocessResult:
+    """Lightweight result holder for async subprocess execution."""
+
+    def __init__(
+        self,
+        returncode: int,
+        stdout: str,
+        stderr: str,
+    ) -> None:
+        self.returncode = returncode
+        self.stdout = stdout
+        self.stderr = stderr
+
+
+async def _run_subprocess(
+    cmd: list[str],
+    *,
+    cwd: str = ".",
+    timeout: int = 60,
+    env: dict[str, str] | None = None,
+) -> _SubprocessResult:
+    """Execute a subprocess asynchronously.
+
+    Args:
+        cmd: Command and arguments as a list of strings.
+        cwd: Working directory for the command.
+        timeout: Maximum execution time in seconds.
+        env: Optional environment variables (defaults to current env).
+
+    Returns:
+        A _SubprocessResult with returncode, stdout, and stderr.
+
+    Raises:
+        asyncio.TimeoutError: If execution exceeds the timeout.
+        FileNotFoundError: If the command executable is not found.
+    """
+    process = await asyncio.create_subprocess_exec(
+        *cmd,
+        cwd=cwd,
+        env=env or os.environ.copy(),
+        stdout=asyncio.subprocess.PIPE,
+        stderr=asyncio.subprocess.PIPE,
+    )
+
+    try:
+        stdout_bytes, stderr_bytes = await asyncio.wait_for(
+            process.communicate(), timeout=timeout
+        )
+    except asyncio.TimeoutError:
+        process.kill()
+        await process.wait()
+        raise
+
+    return _SubprocessResult(
+        returncode=process.returncode or 0,
+        stdout=stdout_bytes.decode("utf-8", errors="replace"),
+        stderr=stderr_bytes.decode("utf-8", errors="replace"),
+    )
 
 
 class GitTool(ITool):
@@ -179,11 +239,9 @@ class GitTool(ITool):
     ) -> ToolResult:
         try:
             cmd = ["git"] + args
-            result = subprocess.run(
+            result = await _run_subprocess(
                 cmd,
                 cwd=repo_path,
-                capture_output=True,
-                text=True,
                 timeout=60,
             )
             duration_ms = (time.time() - start) * 1000
@@ -219,7 +277,7 @@ class GitTool(ITool):
                     error=result.stderr,
                     duration_ms=duration_ms,
                 )
-        except subprocess.TimeoutExpired:
+        except asyncio.TimeoutError:
             return ToolResult(
                 success=False,
                 error="Git command timed out after 60 seconds",
@@ -229,12 +287,6 @@ class GitTool(ITool):
             return ToolResult(
                 success=False,
                 error="git command not found. Please install git.",
-                duration_ms=(time.time() - start) * 1000,
-            )
-        except subprocess.CalledProcessError as e:
-            return ToolResult(
-                success=False,
-                error=str(e),
                 duration_ms=(time.time() - start) * 1000,
             )
         except OSError as e:
@@ -260,10 +312,9 @@ class GitTool(ITool):
             cmd.append(target_dir)
 
         try:
-            result = subprocess.run(
+            result = await _run_subprocess(
                 cmd,
-                capture_output=True,
-                text=True,
+                cwd=repo_path,
                 timeout=300,
             )
             duration_ms = (time.time() - start) * 1000
@@ -299,13 +350,13 @@ class GitTool(ITool):
                     error=result.stderr,
                     duration_ms=duration_ms,
                 )
-        except subprocess.TimeoutExpired:
+        except asyncio.TimeoutError:
             return ToolResult(
                 success=False,
                 error="Git clone timed out after 300 seconds",
                 duration_ms=(time.time() - start) * 1000,
             )
-        except (subprocess.CalledProcessError, OSError) as e:
+        except (FileNotFoundError, OSError) as e:
             return ToolResult(
                 success=False,
                 error=str(e),
@@ -323,11 +374,9 @@ class GitTool(ITool):
         message: str = params["message"]
 
         try:
-            add_result = subprocess.run(
+            add_result = await _run_subprocess(
                 ["git", "add", "."],
                 cwd=repo_path,
-                capture_output=True,
-                text=True,
                 timeout=60,
             )
             if add_result.returncode != 0:
@@ -337,11 +386,9 @@ class GitTool(ITool):
                     duration_ms=(time.time() - start) * 1000,
                 )
 
-            commit_result = subprocess.run(
+            commit_result = await _run_subprocess(
                 ["git", "commit", "-m", message],
                 cwd=repo_path,
-                capture_output=True,
-                text=True,
                 timeout=60,
             )
             duration_ms = (time.time() - start) * 1000
@@ -377,13 +424,13 @@ class GitTool(ITool):
                     error=commit_result.stderr,
                     duration_ms=duration_ms,
                 )
-        except subprocess.TimeoutExpired:
+        except asyncio.TimeoutError:
             return ToolResult(
                 success=False,
                 error="Git commit timed out after 60 seconds",
                 duration_ms=(time.time() - start) * 1000,
             )
-        except (subprocess.CalledProcessError, OSError) as e:
+        except (FileNotFoundError, OSError) as e:
             return ToolResult(
                 success=False,
                 error=str(e),
@@ -428,11 +475,9 @@ class GitTool(ITool):
             cmd.extend(["origin", branch])
 
         try:
-            result = subprocess.run(
+            result = await _run_subprocess(
                 cmd,
                 cwd=repo_path,
-                capture_output=True,
-                text=True,
                 timeout=120,
             )
             duration_ms = (time.time() - start) * 1000
@@ -465,13 +510,13 @@ class GitTool(ITool):
                     error=result.stderr,
                     duration_ms=duration_ms,
                 )
-        except subprocess.TimeoutExpired:
+        except asyncio.TimeoutError:
             return ToolResult(
                 success=False,
                 error="Git push timed out after 120 seconds",
                 duration_ms=(time.time() - start) * 1000,
             )
-        except (subprocess.CalledProcessError, OSError) as e:
+        except (FileNotFoundError, OSError) as e:
             return ToolResult(
                 success=False,
                 error=str(e),
@@ -519,7 +564,7 @@ class GitTool(ITool):
             env["GH_TOKEN"] = token
 
         try:
-            if self._has_gh_cli():
+            if await self._has_gh_cli():
                 cmd = [
                     "gh",
                     "pr",
@@ -532,25 +577,14 @@ class GitTool(ITool):
                 branch: str | None = params.get("branch")
                 if branch:
                     cmd.extend(["--base", branch])
-                result = subprocess.run(
+                result = await _run_subprocess(
                     cmd,
                     cwd=repo_path,
-                    capture_output=True,
-                    text=True,
                     timeout=120,
                     env=env,
                 )
             else:
-                remote_url = self._get_remote_url(repo_path)
-                result = subprocess.run(
-                    ["git", "remote", "get-url", "origin"],
-                    cwd=repo_path,
-                    capture_output=True,
-                    text=True,
-                    timeout=30,
-                )
-                if result.returncode == 0:
-                    remote_url = result.stdout.strip()
+                remote_url = await self._get_remote_url(repo_path)
 
                 pr_data = (
                     f"PR: {pr_title}\n\n{pr_body}\n\n"
@@ -609,13 +643,13 @@ class GitTool(ITool):
                     error=result.stderr,
                     duration_ms=duration_ms,
                 )
-        except subprocess.TimeoutExpired:
+        except asyncio.TimeoutError:
             return ToolResult(
                 success=False,
                 error="PR creation timed out after 120 seconds",
                 duration_ms=(time.time() - start) * 1000,
             )
-        except (subprocess.CalledProcessError, OSError) as e:
+        except (FileNotFoundError, OSError) as e:
             return ToolResult(
                 success=False,
                 error=str(e),
@@ -623,30 +657,26 @@ class GitTool(ITool):
             )
 
     @staticmethod
-    def _has_gh_cli() -> bool:
+    async def _has_gh_cli() -> bool:
         try:
-            result = subprocess.run(
+            result = await _run_subprocess(
                 ["gh", "--version"],
-                capture_output=True,
-                text=True,
                 timeout=10,
             )
             return result.returncode == 0
-        except (FileNotFoundError, subprocess.TimeoutExpired):
+        except (FileNotFoundError, asyncio.TimeoutError, OSError):
             return False
 
     @staticmethod
-    def _get_remote_url(repo_path: str) -> str:
+    async def _get_remote_url(repo_path: str) -> str:
         try:
-            result = subprocess.run(
+            result = await _run_subprocess(
                 ["git", "remote", "get-url", "origin"],
                 cwd=repo_path,
-                capture_output=True,
-                text=True,
                 timeout=30,
             )
             if result.returncode == 0:
                 return result.stdout.strip()
-        except (subprocess.CalledProcessError, OSError):
+        except (asyncio.TimeoutError, OSError):
             logger.warning("Failed to get remote url for repo: %s", repo_path)
         return "unknown"

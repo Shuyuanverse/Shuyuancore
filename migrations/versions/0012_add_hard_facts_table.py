@@ -1,5 +1,9 @@
 """add_hard_facts_table
 
+NOTE: This table is reserved for future functionality.
+No code currently writes to this table. The migration remains in the chain
+to preserve schema consistency but should be considered a placeholder.
+
 Revision ID: 0012
 Revises: 0011
 Create Date: 2026-05-29 10:15:00.000000

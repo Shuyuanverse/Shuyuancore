@@ -148,13 +148,19 @@ class TestWakeFrequencyTracker:
     def test_tracks_per_belief_calls(self) -> None:
         tracker = WakeFrequencyTracker(session_window_ms=300000)
         tracker.record_belief_wake("b1")
+        tracker.record_belief_wake("b1")
+        tracker.record_belief_wake("b1")
 
         count = tracker.belief_wake_count("b1", window_ms=3600000)
-        assert count == 1
+        assert count == 3
 
     def test_should_suppress_after_limit_exceeded(self) -> None:
         tracker = WakeFrequencyTracker(session_window_ms=300000)
-        tracker._max_per_belief = 1
+        tracker._max_per_belief = 4
+
+        for _ in range(3):
+            tracker.record_belief_wake("b1")
+        assert not tracker.should_suppress("b1")
 
         tracker.record_belief_wake("b1")
         assert tracker.should_suppress("b1")

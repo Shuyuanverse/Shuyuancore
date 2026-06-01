@@ -7,6 +7,7 @@ import uuid
 
 import aiosqlite
 
+from src.config import get_settings
 from src.core.interfaces import Belief, IBeliefStore
 from src.memory.decay import current_time_ms
 from src.memory.embedding import EmbeddingService
@@ -15,8 +16,6 @@ from src.memory.propagation import propagate_confidence as propagation_propagate
 from src.memory.vector_store import VectorStore
 
 logger = logging.getLogger(__name__)
-
-_DB_PATH: str = "data/state.db"
 
 _CHINESE_PATTERN = None
 
@@ -82,14 +81,16 @@ def _belief_from_row(row: aiosqlite.Row) -> Belief:
 class PersistentBeliefStore(IBeliefStore):
     def __init__(
         self,
-        db_path: str = _DB_PATH,
+        db_path: str | None = None,
         embedding_service: EmbeddingService | None = None,
         vector_store: VectorStore | None = None,
+        max_beliefs: int = 10000,
     ) -> None:
-        self._db_path: str = db_path
+        self._db_path: str = db_path or get_settings().database.db_path
         self._embedding_service: EmbeddingService | None = embedding_service
         self._vector_store: VectorStore | None = vector_store
         self._conn: aiosqlite.Connection | None = None
+        self._max_beliefs: int = max_beliefs
 
     async def _get_conn(self) -> aiosqlite.Connection:
         if self._conn is None:
@@ -98,11 +99,11 @@ class PersistentBeliefStore(IBeliefStore):
             await self._conn.execute("PRAGMA journal_mode = WAL;")
             await self._conn.execute("PRAGMA foreign_keys = ON;")
             await self._conn.execute("PRAGMA busy_timeout = 5000;")
-            await self._init_tables()
+            await self._create_tables()
         return self._conn
 
-    async def _init_tables(self) -> None:
-        conn = await self._get_conn()
+    async def _create_tables(self) -> None:
+        conn = self._conn
 
         await conn.execute(
             """
@@ -191,7 +192,7 @@ class PersistentBeliefStore(IBeliefStore):
 
         belief_id = belief.id or str(uuid.uuid4())
 
-        await conn.execute(
+        row = await conn.execute(
             """
             INSERT INTO beliefs (
                 id, conversation_id, user_id, content, source,
@@ -201,6 +202,7 @@ class PersistentBeliefStore(IBeliefStore):
                 status, is_composite, timestamp, conversation_date,
                 metadata_json, created_at, updated_at
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            RETURNING rowid
             """,
             (
                 belief_id,
@@ -227,14 +229,18 @@ class PersistentBeliefStore(IBeliefStore):
                 now_ms,
             ),
         )
+        inserted = await row.fetchone()
+        inserted_rowid = inserted[0]
 
         await conn.execute(
-            "INSERT INTO beliefs_fts(rowid, content) VALUES (last_insert_rowid(), ?);",
-            (belief.content,),
+            "INSERT INTO beliefs_fts(rowid, content) VALUES (?, ?);",
+            (inserted_rowid, belief.content),
         )
 
         await conn.commit()
         logger.debug("Belief added: %s -> %s", belief_id, belief.content[:60])
+
+        await self._enforce_belief_cap()
 
         if self._embedding_service and self._vector_store:
             try:
@@ -723,6 +729,49 @@ class PersistentBeliefStore(IBeliefStore):
             next_cursor = encode_cursor(last[3], last[0])
 
         return items, next_cursor, has_more
+
+    async def _enforce_belief_cap(self) -> None:
+        """当信念总数超过 max_beliefs 时，淘汰最旧的信念。
+
+        按 timestamp ASC 排序，删除超出部分中最旧的记录。
+        """
+        conn = await self._get_conn()
+        cursor = await conn.execute("SELECT COUNT(*) AS cnt FROM beliefs WHERE status = 'active'")
+        row = await cursor.fetchone()
+        total = row["cnt"] if row else 0
+
+        if total <= self._max_beliefs:
+            return
+
+        excess = total - self._max_beliefs
+
+        cursor = await conn.execute(
+            """
+            SELECT id FROM beliefs
+            WHERE status = 'active'
+            ORDER BY timestamp ASC
+            LIMIT ?
+            """,
+            (excess,),
+        )
+        rows = await cursor.fetchall()
+        ids_to_delete = [r["id"] for r in rows]
+
+        if not ids_to_delete:
+            return
+
+        placeholders = ",".join("?" for _ in ids_to_delete)
+        await conn.execute(
+            f"DELETE FROM beliefs WHERE id IN ({placeholders})", ids_to_delete
+        )
+        await conn.execute(
+            "DELETE FROM beliefs_fts WHERE rowid IN ("
+            "SELECT rowid FROM beliefs WHERE id IN ({})"
+            ")".format(placeholders),
+            ids_to_delete,
+        )
+        await conn.commit()
+        logger.info("Evicted %d old beliefs to enforce max_beliefs=%d", len(ids_to_delete), self._max_beliefs)
 
     async def close(self) -> None:
         if self._conn is not None:

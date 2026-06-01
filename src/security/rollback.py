@@ -15,9 +15,9 @@ from typing import Any
 
 import aiosqlite
 
-logger = logging.getLogger(__name__)
+from src.config import get_settings
 
-_DB_PATH: str = "data/state.db"
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -53,8 +53,8 @@ class RollbackManager:
     使用 aiosqlite 持久化存储。
     """
 
-    def __init__(self, db_path: str = _DB_PATH) -> None:
-        self._db_path: str = db_path
+    def __init__(self, db_path: str | None = None) -> None:
+        self._db_path: str = db_path or get_settings().database.db_path
         self._conn: aiosqlite.Connection | None = None
         self._lock: asyncio.Lock = asyncio.Lock()
 
@@ -210,7 +210,7 @@ class RollbackManager:
                 logger.info("回滚成功: %s / Rollback succeeded: %s", rollback_id, rollback_id)
             else:
                 logger.error("回滚失败: %s / Rollback failed: %s", rollback_id, rollback_id)
-        except Exception as e:
+        except Exception:
             logger.exception("回滚异常: %s / Rollback error: %s", rollback_id, rollback_id)
             raise
 
@@ -396,7 +396,7 @@ async def get_rollback_manager(db_path: str | None = None) -> RollbackManager:
     Returns:
         RollbackManager 实例
     """
-    path = _DB_PATH if db_path is None else db_path
+    path = db_path or get_settings().database.db_path
     async with _manager_lock:
         if path not in _managers:
             mgr = RollbackManager(db_path=path)

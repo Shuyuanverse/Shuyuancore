@@ -82,9 +82,13 @@ class Agent:
         self._pending_resume_event: asyncio.Event | None = None
         self._approval_approved: bool = True
 
+        # TaskGroup 管理后台任务生命周期
+        self._task_group: asyncio.TaskGroup | None = None
+        self._background_tasks: list[asyncio.Task] = []
+
         # 预测式建模集成
         self._settings = get_settings()
-        self.user_model = RelationalMemory(db_path="data/state.db")
+        self.user_model = RelationalMemory(db_path=self._settings.database.db_path)
         self._last_activity_time: float = time.time()
         self._idle_monitor_task: Optional[asyncio.Task] = None
         self._proactive_count: int = 0
@@ -96,7 +100,7 @@ class Agent:
         # 自演化架构集成
         self._review_agent = ReviewAgent()
         self._module_manager = ModuleManager(
-            db_path="data/state.db",
+            db_path=self._settings.database.db_path,
             belief_store=self._belief_store,
             review_agent=self._review_agent,
             llm=model_provider,
@@ -110,7 +114,9 @@ class Agent:
             except RuntimeError:
                 loop = None
             if loop is not None:
-                self._fusion_check_task = loop.create_task(self._periodic_evolution_scan())
+                task = loop.create_task(self._periodic_evolution_scan())
+                self._background_tasks.append(task)
+                self._fusion_check_task = task
 
     def set_dangerous_tools(self, tool_names: list[str]) -> None:
         self._dangerous_tools = set(tool_names)
@@ -138,7 +144,7 @@ class Agent:
                 pass
 
         if self._settings.prediction.enable_proactive:
-            self._idle_monitor_task = asyncio.create_task(self._idle_monitor())
+            self._idle_monitor_task = await self._spawn_background_task(self._idle_monitor())
 
         conversation_date = datetime.now(timezone.utc).date().isoformat()
 
@@ -363,13 +369,68 @@ class Agent:
             yield full_response
 
         if full_response:
-            asyncio.create_task(
+            await self._spawn_background_task(
                 self._background_update(
                     message=message,
                     response=full_response,
                     conversation_id=conversation_id,
                 )
             )
+
+    async def _spawn_background_task(self, coro) -> asyncio.Task:
+        """通过 TaskGroup 或 fallback 创建后台任务，确保 Agent 销毁时可正确取消。
+
+        Args:
+            coro: 协程对象
+
+        Returns:
+            asyncio.Task: 创建的任务
+        """
+        if self._task_group is not None:
+            task = self._task_group.create_task(coro)
+        else:
+            task = asyncio.create_task(coro)
+            self._background_tasks.append(task)
+            task.add_done_callback(lambda t: self._background_tasks.remove(t) if t in self._background_tasks else None)
+        return task
+
+    async def shutdown(self) -> None:
+        """取消所有后台任务并等待清理完成。
+
+        应在 Agent 被 GC 之前显式调用，确保无任务泄漏。
+        """
+        # 取消 TaskGroup 内的任务
+        if self._task_group is not None:
+            logger.info("Shutting down Agent TaskGroup, cancelling %d tasks", len(self._background_tasks))
+            for task in list(self._background_tasks):
+                if not task.done():
+                    task.cancel()
+            try:
+                await asyncio.gather(*self._background_tasks, return_exceptions=True)
+            except Exception:
+                pass
+            self._background_tasks.clear()
+
+        # 取消独立的长周期任务
+        for task_attr in ("_idle_monitor_task", "_fusion_check_task"):
+            task = getattr(self, task_attr, None)
+            if task is not None and not task.done():
+                task.cancel()
+                try:
+                    await task
+                except asyncio.CancelledError:
+                    pass
+                setattr(self, task_attr, None)
+
+        # 取消剩余的 fallback 任务
+        for task in list(self._background_tasks):
+            if not task.done():
+                task.cancel()
+        if self._background_tasks:
+            await asyncio.gather(*self._background_tasks, return_exceptions=True)
+        self._background_tasks.clear()
+
+        logger.info("Agent shutdown complete")
 
     async def _background_update(
         self,

@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "shuyuancore"
-version = "1.0.0"
+version = "1.2.0"
 description = "ShuyuanCore - 智能进化、风格一致、深度记忆、自主行动的开源AI Agent"
 requires-python = ">=3.10"
 authors = [{name = "山野 (Shuyuanverse)", email = "fenghuazongjuelun@qq.com"}]

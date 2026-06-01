@@ -11,19 +11,28 @@ from src.memory.interfaces import IEmotionAnalyzer, IEntityExtractor
 
 logger = logging.getLogger(__name__)
 
+try:
+    import jieba
+
+    HAS_JIEBA = True
+except ImportError:
+    HAS_JIEBA = False
+    logger.warning("jieba not installed; falling back to whitespace tokenization for wake system")
+
 _SEMANTIC_WEIGHT: float = 0.5
 _FTS5_WEIGHT: float = 0.2
 _ENTITY_WEIGHT: float = 0.15
 _EMOTION_WEIGHT: float = 0.1
 _EMOTION_FLOOR: float = 0.5
 
-_NUMERIC_PATTERN = re.compile(r"\d+")
-
 
 def _tokenize(text: str) -> set[str]:
     lower = text.lower()
-    tokens = set(_NUMERIC_PATTERN.sub("", lower).split())
-    return {t for t in tokens if len(t) > 1}
+    if HAS_JIEBA:
+        tokens = set(jieba.lcut(lower))
+    else:
+        tokens = set(lower.split())
+    return {t for t in tokens if len(t) > 1 and not t.isdigit()}
 
 
 def _jaccard(a: set[str], b: set[str]) -> float:
@@ -113,7 +122,7 @@ def wake_readiness(user_msg: str, consecutive_tech_rounds: int = 0) -> float:
 
 class WakeFrequencyTracker:
     def __init__(self, session_window_ms: int = 300000) -> None:
-        self._belief_tracker: dict[str, int] = {}
+        self._belief_tracker: dict[str, list[int]] = {}
         self._session_tracker: dict[str, int] = {}
         self._session_window_ms: int = session_window_ms
         self._last_reset: int = 0
@@ -123,7 +132,9 @@ class WakeFrequencyTracker:
 
     def record_belief_wake(self, belief_id: str) -> None:
         now_ms = int(time.time() * 1000)
-        self._belief_tracker[belief_id] = now_ms
+        if belief_id not in self._belief_tracker:
+            self._belief_tracker[belief_id] = []
+        self._belief_tracker[belief_id].append(now_ms)
 
     def record_session_wake(self, session_id: str) -> None:
         now_ms = int(time.time() * 1000)
@@ -134,8 +145,8 @@ class WakeFrequencyTracker:
 
     def belief_wake_count(self, belief_id: str, window_ms: int = 3600000) -> int:
         cutoff = int(time.time() * 1000) - window_ms
-        ts = self._belief_tracker.get(belief_id, 0)
-        return 1 if ts >= cutoff else 0
+        timestamps = self._belief_tracker.get(belief_id, [])
+        return sum(1 for ts in timestamps if ts >= cutoff)
 
     def session_wake_count(self, session_id: str, window_ms: int = 3600000) -> int:
         return self._session_tracker.get(session_id, 0)

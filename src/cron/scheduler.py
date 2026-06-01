@@ -8,12 +8,11 @@ from typing import Any
 
 import aiosqlite
 
+from src.config import get_settings
 from src.cron.job import CronJob, JobPriority, JobStatus, RecurringJob
 from src.exceptions import CronError, ResourceNotFoundError
 
 logger = logging.getLogger(__name__)
-
-_DB_PATH: str = "data/state.db"
 
 _SCHEDULER_INSTANCE: CronScheduler | None = None
 
@@ -92,8 +91,8 @@ class CronScheduler:
         db_path: SQLite 数据库文件路径 / SQLite database file path.
     """
 
-    def __init__(self, db_path: str = _DB_PATH) -> None:
-        self._db_path: str = db_path
+    def __init__(self, db_path: str | None = None) -> None:
+        self._db_path: str = db_path or get_settings().database.db_path
         self._conn: aiosqlite.Connection | None = None
 
     async def _get_conn(self) -> aiosqlite.Connection:
@@ -727,7 +726,7 @@ class CronScheduler:
         return None
 
 
-def get_scheduler(db_path: str = _DB_PATH) -> CronScheduler:
+def get_scheduler(db_path: str | None = None) -> CronScheduler:
     """获取 CronScheduler 单例 / Get the CronScheduler singleton.
 
     Args:
@@ -738,5 +737,6 @@ def get_scheduler(db_path: str = _DB_PATH) -> CronScheduler:
     """
     global _SCHEDULER_INSTANCE
     if _SCHEDULER_INSTANCE is None:
-        _SCHEDULER_INSTANCE = CronScheduler(db_path=db_path)
+        effective_path = db_path or get_settings().database.db_path
+        _SCHEDULER_INSTANCE = CronScheduler(db_path=effective_path)
     return _SCHEDULER_INSTANCE

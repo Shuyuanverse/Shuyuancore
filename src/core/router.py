@@ -4,14 +4,17 @@
 from __future__ import annotations
 
 import logging
+from enum import StrEnum
 from typing import Any
 
 logger = logging.getLogger(__name__)
 
-_MODE_CHAT = "chat"
-_MODE_AGENT = "agent"
-_MODE_SKILL = "skill"
-_MODE_TOOL = "tool"
+
+class AgentMode(StrEnum):
+    CHAT = "chat"
+    AGENT = "agent"
+    SKILL = "skill"
+    TOOL = "tool"
 
 
 class CoreRouter:
@@ -28,12 +31,12 @@ class CoreRouter:
         context: dict[str, Any] | None = None,
     ) -> str:
         if not message or not message.strip():
-            return _MODE_CHAT
+            return AgentMode.CHAT
 
         ctx = context or {}
 
         if self._agent_mode_enabled:
-            return _MODE_AGENT
+            return AgentMode.AGENT
 
         message_lower = message.strip().lower()
 
@@ -41,13 +44,13 @@ class CoreRouter:
         if trigger_prefixes is not None:
             for prefix in trigger_prefixes:
                 if isinstance(prefix, str) and message_lower.startswith(prefix.lower()):
-                    return _MODE_AGENT
+                    return AgentMode.AGENT
 
         matched_skill = ctx.get("matched_skill", None)
         if matched_skill is not None:
-            return _MODE_SKILL
+            return AgentMode.SKILL
 
-        return _MODE_CHAT
+        return AgentMode.CHAT
 
     async def route_to_agent(
         self,

@@ -7,9 +7,8 @@ Create Date: 2026-05-29 12:30:00.000000
 """
 from typing import Sequence, Union
 
-from alembic import op
 import sqlalchemy as sa
-
+from alembic import op
 
 revision: str = "0013"
 down_revision: Union[str, None] = "0012"
@@ -18,42 +17,27 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
-    # 消息表
+    # 消息表 — schema matches src/core/conversation.py CREATE TABLE IF NOT EXISTS
     op.create_table(
         "messages",
-        sa.Column("id", sa.Integer(), primary_key=True, autoincrement=True),
-        sa.Column("session_id", sa.String(64), nullable=False, index=True),
-        sa.Column("user_id", sa.String(64), nullable=False, index=True),
-        sa.Column("platform", sa.String(32), nullable=False, server_default="cli"),
-        sa.Column("role", sa.String(16), nullable=False),
-        sa.Column("content", sa.Text(), nullable=False),
-        sa.Column("tokens_used", sa.Integer(), nullable=False, server_default="0"),
-        sa.Column("tool_calls", sa.Text(), nullable=True),
-        sa.Column("metadata_json", sa.Text(), nullable=True),
-        sa.Column("temperature", sa.Float(), nullable=False, server_default="0.7"),
-        sa.Column("created_at", sa.BigInteger(), nullable=False),
+        sa.Column("id", sa.Text(), primary_key=True),
+        sa.Column("conversation_id", sa.Text(), nullable=False),
+        sa.Column("role", sa.Text(), nullable=False),
+        sa.Column("content", sa.Text(), nullable=True),
+        sa.Column("metadata_json", sa.Text(), nullable=False, server_default="{}"),
+        sa.Column("created_at", sa.Float(), nullable=False),
+        sa.ForeignKeyConstraint(["conversation_id"], ["conversations.id"]),
     )
 
-    op.create_index("idx_messages_session_created", "messages", ["session_id", "created_at"])
-    op.create_index("idx_messages_user_created", "messages", ["user_id", "created_at"])
+    op.create_index("idx_messages_conversation", "messages", ["conversation_id", "created_at"])
+    op.create_index("idx_messages_role", "messages", ["role"])
 
-    # FTS5 全文检索虚拟表
+    # FTS5 全文检索虚拟表（由 conversation.py 触发器管理，
+    # 此处仅创建结构，INSERT/UPDATE/DELETE 触发器由运行时代码通过
+    # CREATE TRIGGER IF NOT EXISTS 注册，确保不会重复创建）
     op.execute(
         "CREATE VIRTUAL TABLE IF NOT EXISTS messages_fts "
-        "USING fts5(content, content='messages', content_rowid='id')"
-    )
-    op.execute(
-        "CREATE TRIGGER IF NOT EXISTS messages_ai AFTER INSERT ON messages BEGIN "
-        "INSERT INTO messages_fts(rowid, content) VALUES (new.id, new.content); END"
-    )
-    op.execute(
-        "CREATE TRIGGER IF NOT EXISTS messages_ad AFTER DELETE ON messages BEGIN "
-        "INSERT INTO messages_fts(messages_fts, rowid, content) VALUES('delete', old.id, old.content); END"
-    )
-    op.execute(
-        "CREATE TRIGGER IF NOT EXISTS messages_au AFTER UPDATE ON messages BEGIN "
-        "INSERT INTO messages_fts(messages_fts, rowid, content) VALUES('delete', old.id, old.content); "
-        "INSERT INTO messages_fts(rowid, content) VALUES (new.id, new.content); END"
+        "USING fts5(content, content='messages', content_rowid='rowid')"
     )
 
     # 会话表
@@ -78,9 +62,6 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
-    op.execute("DROP TRIGGER IF EXISTS messages_au")
-    op.execute("DROP TRIGGER IF EXISTS messages_ad")
-    op.execute("DROP TRIGGER IF EXISTS messages_ai")
     op.execute("DROP TABLE IF EXISTS messages_fts")
     op.drop_table("messages")
     op.drop_table("sessions")

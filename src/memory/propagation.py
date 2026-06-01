@@ -27,7 +27,6 @@ async def propagate_confidence(
         return
 
     belief.confidence = max(0.0, min(1.0, belief.confidence + delta))
-    belief.base_confidence = belief.confidence
     await store.update(belief)
 
     if belief.depends_on:

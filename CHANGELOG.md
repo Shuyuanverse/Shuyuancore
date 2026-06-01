@@ -2,6 +2,46 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.2.0] - 2026-06-01
+
+### Fixed
+
+- **P0 级 7 项（第一轮）**：
+  - propagation 传播过程中 `base_confidence` 被错误覆盖
+  - wake 中文 tokenization 改为 `jieba.lcut` 分词
+  - `PersistentBeliefStore.add()` FTS5 rowid 并发竞争（改用 `RETURNING rowid`）
+  - `messages` 表 Alembic 迁移 schema 与运行时 DDL 冲突
+  - MCP Server `handle_request` 绕过 `ToolRegistry` 安全校验/审批/审计全流程
+  - crypto tool `verify` 操作假实现（现在使用 `hmac.compare_digest` 做真实签名比较）
+  - `require_approval` 参数在 `register()` 中被忽略
+
+- **P1 级 8 项（第二轮）**：
+  - `get_similar_task_count()` 信念计数增加时间窗口过滤
+  - `persona_memory.py` `deactivate_anchor`/`delete_anchor` 改用 `cursor.rowcount` 替代 `total_changes`
+  - 4 个社交媒体工具（douyin/xiaohongshu/weibo/wechat_mp）`execute()` 签名兼容 `ITool` 接口
+  - git tool 全部 6 处 `subprocess.run` 替换为 `asyncio.create_subprocess_exec`
+  - `user_preferences` 复合主键增加 `user_id`
+  - sandbox 代码执行从 `-c`/`-e` 参数传递改为 stdin 传递防止注入
+  - `WakeFrequencyTracker` 计数从单值改为时间戳列表记录
+  - `evolution/__init__.py` 导入不存在的 `EvolutionTrigger` 阻塞测试执行
+
+- **P0 级 7 项（第三轮）**：
+  - Agent 后台任务使用 `_spawn_background_task()` + `shutdown()` 管理，销毁时无任务泄漏
+  - `BeliefStore` + `PersistentBeliefStore` 添加 `max_beliefs=10000` 上限及 LRU/SQL 淘汰
+  - `drift_history` 从全量 JSON 序列化改为独立表，INSERT INTO 替代，性能不再随记录数劣化
+  - 15+ 文件硬编码数据库路径统一从 `config.database.db_path` 读取
+  - router.py 魔术字符串 `_MODE_CHAT` 等替换为 `class AgentMode(StrEnum)`
+  - 3 个虚假空接口（`IMemoryStore`/`IPersonaGuard`/`ISkillEngine`）充实为有意义的抽象契约
+  - migrations 0012/0014/0016 中 7 张预留表添加 "reserved for future functionality" 注释
+
+### Changed
+
+- **数据库路径统一配置**：新增 `DatabaseConfig` 到 `config.py`，`config/default.yaml` 添加 `database.db_path` 配置项，支持多实例部署
+- **后台任务管理**：Agent 添加 `_spawn_background_task()` 辅助方法和 `shutdown()` 清理方法，所有 `create_task` 统一分发
+- **信念存储内存上限**：`max_beliefs=10000` 默认上限，内存/持久化两层淘汰策略
+- **drift_history 性能优化**：新增 `drift_history` 表（自增 PK + 外键 + 复合索引），`record_drift` INSERT INTO，`get_drift_history` 从表 SELECT
+- **NoOp 实现更新**：`NoOpMemoryStore`/`NoOpPersonaGuard`/`NoOpSkillEngine` 实现新接口方法
+
 ## [1.1.0] - 2026-05-31
 
 ### Added

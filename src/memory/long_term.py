@@ -16,25 +16,23 @@ import json
 import logging
 import time
 import uuid
-from typing import Any
 
 import aiosqlite
 
+from src.config import get_settings
 from src.memory.base import MemoryEntry, MemoryStats
 from src.memory.embedding import EmbeddingService
 
 logger = logging.getLogger(__name__)
 
-_DB_PATH: str = "data/state.db"
-
 
 class LongTermMemory:
     def __init__(
         self,
-        db_path: str = _DB_PATH,
+        db_path: str | None = None,
         embedding_service: EmbeddingService | None = None,
     ) -> None:
-        self._db_path: str = db_path
+        self._db_path: str = db_path or get_settings().database.db_path
         self._embedding_service: EmbeddingService | None = embedding_service
         self._conn: aiosqlite.Connection | None = None
 

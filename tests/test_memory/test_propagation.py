@@ -19,7 +19,7 @@ def mock_store() -> AsyncMock:
 class TestPropagateConfidence:
 
     @pytest.mark.asyncio
-    async def test_propagate_updates_base_confidence(self, mock_store: AsyncMock) -> None:
+    async def test_propagate_updates_confidence_only(self, mock_store: AsyncMock) -> None:
         belief = Belief(
             id="b1", content="test", source="user",
             confidence=0.7, base_confidence=0.7,
@@ -30,7 +30,7 @@ class TestPropagateConfidence:
         await propagate_confidence(mock_store, "b1", 0.1)
 
         assert belief.confidence == pytest.approx(0.8)
-        assert belief.base_confidence == pytest.approx(0.8)
+        assert belief.base_confidence == pytest.approx(0.7)
         mock_store.update.assert_awaited_once_with(belief)
 
     @pytest.mark.asyncio
@@ -93,7 +93,7 @@ class TestPropagateConfidence:
         await propagate_confidence(mock_store, "b1", 0.1)
 
         assert belief.confidence == 1.0
-        assert belief.base_confidence == 1.0
+        assert belief.base_confidence == pytest.approx(0.95)
 
 
 class TestOverthrow:

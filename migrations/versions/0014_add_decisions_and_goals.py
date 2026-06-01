@@ -1,5 +1,10 @@
 """add decisions, decision_patterns, and goals tables
 
+NOTE: These tables are reserved for future functionality.
+No code currently writes to decisions, decision_patterns, or goals tables.
+The migration remains in the chain to preserve schema consistency but should
+be considered a placeholder.
+
 Revision ID: 0014
 Revises: 0013
 Create Date: 2026-05-29 12:35:00.000000

@@ -15,8 +15,6 @@ from src.memory.decay import current_time_ms
 
 logger = logging.getLogger(__name__)
 
-_DB_PATH: str = "data/state.db"
-
 
 @dataclass
 class DriftHistoryEntry:
@@ -43,10 +41,10 @@ class PersonaAnchor:
 class PersonaMemory:
     def __init__(
         self,
-        db_path: str = _DB_PATH,
+        db_path: str | None = None,
         config: PersonaConfig | None = None,
     ) -> None:
-        self._db_path: str = db_path
+        self._db_path: str = db_path or get_settings().database.db_path
         self._config: PersonaConfig = config or get_settings().persona
         self._conn: aiosqlite.Connection | None = None
 
@@ -91,6 +89,29 @@ class PersonaMemory:
             """
             CREATE INDEX IF NOT EXISTS idx_persona_anchors_type
             ON persona_anchors(anchor_type, is_active);
+            """
+        )
+
+        await conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS drift_history (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id TEXT NOT NULL,
+                anchor_type TEXT NOT NULL,
+                timestamp INTEGER NOT NULL,
+                drift_score REAL NOT NULL,
+                action TEXT NOT NULL,
+                dimension_scores_json TEXT,
+                metadata_json TEXT DEFAULT '{}',
+                FOREIGN KEY (user_id, anchor_type) REFERENCES persona_anchors(user_id, anchor_type)
+            );
+            """
+        )
+
+        await conn.execute(
+            """
+            CREATE INDEX IF NOT EXISTS idx_drift_history_user_anchor
+            ON drift_history(user_id, anchor_type, timestamp DESC);
             """
         )
 
@@ -226,36 +247,31 @@ class PersonaMemory:
                 anchor_data={},
             )
 
-        drift_entry = DriftHistoryEntry(
-            timestamp=now_ms,
-            drift_score=drift_score,
-            action=action,
-            dimension_scores=dimension_scores,
-            metadata=metadata or {},
-        )
-
-        drift_history = anchor.drift_history + [drift_entry]
-        drift_history_json = json.dumps(
-            [
-                {
-                    "timestamp": entry.timestamp,
-                    "drift_score": entry.drift_score,
-                    "action": entry.action,
-                    "dimension_scores": entry.dimension_scores,
-                    "metadata": entry.metadata,
-                }
-                for entry in drift_history
-            ],
-            ensure_ascii=False,
+        await conn.execute(
+            """
+            INSERT INTO drift_history
+                (user_id, anchor_type, timestamp, drift_score, action,
+                 dimension_scores_json, metadata_json)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                user_id,
+                anchor_type,
+                now_ms,
+                drift_score,
+                action,
+                json.dumps(dimension_scores, ensure_ascii=False) if dimension_scores else None,
+                json.dumps(metadata or {}, ensure_ascii=False),
+            ),
         )
 
         await conn.execute(
             """
             UPDATE persona_anchors
-            SET drift_history_json = ?, updated_at = ?
+            SET updated_at = ?
             WHERE user_id = ? AND anchor_type = ?
             """,
-            (drift_history_json, now_ms, user_id, anchor_type),
+            (now_ms, user_id, anchor_type),
         )
 
         await conn.commit()
@@ -273,15 +289,57 @@ class PersonaMemory:
         anchor_type: str,
         limit: int | None = None,
     ) -> list[DriftHistoryEntry]:
+        conn = await self._get_conn()
+
         anchor = await self.get_anchor(user_id, anchor_type)
         if anchor is None:
             return []
 
-        drift_history = anchor.drift_history
         if limit is not None:
-            drift_history = drift_history[-limit:]
+            cursor = await conn.execute(
+                """
+                SELECT timestamp, drift_score, action,
+                       dimension_scores_json, metadata_json
+                FROM drift_history
+                WHERE user_id = ? AND anchor_type = ?
+                ORDER BY timestamp DESC
+                LIMIT ?
+                """,
+                (user_id, anchor_type, limit),
+            )
+        else:
+            cursor = await conn.execute(
+                """
+                SELECT timestamp, drift_score, action,
+                       dimension_scores_json, metadata_json
+                FROM drift_history
+                WHERE user_id = ? AND anchor_type = ?
+                ORDER BY timestamp ASC
+                """,
+                (user_id, anchor_type),
+            )
 
-        return drift_history
+        rows = await cursor.fetchall()
+        if not rows:
+            return []
+
+        entries = [
+            DriftHistoryEntry(
+                timestamp=row[0],
+                drift_score=row[1],
+                action=row[2],
+                dimension_scores=(
+                    json.loads(row[3]) if row[3] and row[3] != "null" else None
+                ),
+                metadata=json.loads(row[4]) if row[4] else {},
+            )
+            for row in rows
+        ]
+
+        if limit is not None:
+            entries.reverse()
+
+        return entries
 
     async def get_drift_statistics(
         self,
@@ -340,7 +398,7 @@ class PersonaMemory:
         conn = await self._get_conn()
         now_ms = current_time_ms()
 
-        await conn.execute(
+        cursor = await conn.execute(
             """
             UPDATE persona_anchors
             SET is_active = 0, updated_at = ?
@@ -349,7 +407,7 @@ class PersonaMemory:
             (now_ms, user_id, anchor_type),
         )
 
-        affected = conn.total_changes
+        affected = cursor.rowcount
         await conn.commit()
 
         if affected > 0:
@@ -385,7 +443,7 @@ class PersonaMemory:
     ) -> bool:
         conn = await self._get_conn()
 
-        await conn.execute(
+        cursor = await conn.execute(
             """
             DELETE FROM persona_anchors
             WHERE user_id = ? AND anchor_type = ?
@@ -393,7 +451,7 @@ class PersonaMemory:
             (user_id, anchor_type),
         )
 
-        affected = conn.total_changes
+        affected = cursor.rowcount
         await conn.commit()
 
         if affected > 0:

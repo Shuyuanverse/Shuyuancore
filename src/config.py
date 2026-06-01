@@ -455,6 +455,10 @@ class DeployConfig(BaseModel):
     )
 
 
+class DatabaseConfig(BaseModel):
+    db_path: str = "data/state.db"
+
+
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
         env_nested_delimiter="__",
@@ -474,6 +478,7 @@ class Settings(BaseSettings):
     gateway: GatewayConfig = Field(default_factory=GatewayConfig)
     cron: CronConfig = Field(default_factory=CronConfig)
     deploy: DeployConfig = Field(default_factory=DeployConfig)
+    database: DatabaseConfig = Field(default_factory=DatabaseConfig)
 
 
 _settings: Settings | None = None

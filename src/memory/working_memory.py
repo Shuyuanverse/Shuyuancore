@@ -16,8 +16,6 @@ from src.memory.decay import current_time_ms
 
 logger = logging.getLogger(__name__)
 
-_DB_PATH: str = "data/state.db"
-
 
 @dataclass
 class TodoItem:
@@ -47,10 +45,10 @@ class WorkingMemoryContext:
 class WorkingMemory:
     def __init__(
         self,
-        db_path: str = _DB_PATH,
+        db_path: str | None = None,
         config: WorkingMemoryConfig | None = None,
     ) -> None:
-        self._db_path: str = db_path
+        self._db_path: str = db_path or get_settings().database.db_path
         self._config: WorkingMemoryConfig = config or get_settings().memory.working
         self._conn: aiosqlite.Connection | None = None
 

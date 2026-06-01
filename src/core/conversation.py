@@ -11,20 +11,20 @@ from typing import Any
 
 import aiosqlite
 
+from src.config import get_settings
 from src.core.interfaces import IConversationManager
 from src.gateway.utils import decode_cursor, encode_cursor
 
 logger = logging.getLogger(__name__)
 
-_DB_PATH: str = "data/state.db"
 _DEFAULT_PAGE_SIZE: int = 20
 _MAX_PAGE_SIZE: int = 100
 _MAX_MESSAGES: int = 200
 
 
 class ConversationManager(IConversationManager):
-    def __init__(self, db_path: str = _DB_PATH) -> None:
-        self._db_path: str = db_path
+    def __init__(self, db_path: str | None = None) -> None:
+        self._db_path: str = db_path or get_settings().database.db_path
         self._conn: aiosqlite.Connection | None = None
 
     async def _get_conn(self) -> aiosqlite.Connection:

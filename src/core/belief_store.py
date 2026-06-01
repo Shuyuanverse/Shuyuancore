@@ -11,15 +11,39 @@ from src.memory.decay import current_time_ms
 
 
 class BeliefStore(IBeliefStore):
-    def __init__(self) -> None:
+    def __init__(self, max_beliefs: int = 10000) -> None:
         self._store: dict[str, list[Belief]] = {}
         self._by_id: dict[str, Belief] = {}
+        self._max_beliefs: int = max_beliefs
+
+    def _evict_if_needed(self, reserved_ids: set[str] | None = None) -> None:
+        """当信念总数超过 max_beliefs 时，淘汰最旧的信念。"""
+        reserved = reserved_ids or set()
+        while len(self._by_id) > self._max_beliefs:
+            oldest_belief: Belief | None = None
+            oldest_conv: str | None = None
+            oldest_idx: int | None = None
+            for conv_id, beliefs in self._store.items():
+                for i, b in enumerate(beliefs):
+                    if b.id in reserved:
+                        continue
+                    if oldest_belief is None or b.timestamp < oldest_belief.timestamp:
+                        oldest_belief = b
+                        oldest_conv = conv_id
+                        oldest_idx = i
+            if oldest_belief is None or oldest_conv is None or oldest_idx is None:
+                break
+            self._store[oldest_conv].pop(oldest_idx)
+            if not self._store[oldest_conv]:
+                del self._store[oldest_conv]
+            del self._by_id[oldest_belief.id]
 
     async def add(self, conversation_id: str, belief: Belief) -> str:
         if conversation_id not in self._store:
             self._store[conversation_id] = []
         self._store[conversation_id].append(belief)
         self._by_id[belief.id] = belief
+        self._evict_if_needed(reserved_ids={belief.id})
         return belief.id
 
     async def get(self, conversation_id: str, limit: int = 50) -> list[Belief]:
@@ -103,8 +127,8 @@ class BeliefStore(IBeliefStore):
         similar = await self.search_similar(query, top_k=100, min_confidence=0.1)
         cutoff = current_time_ms() - days * 24 * 60 * 60 * 1000
         count = sum(
-            1 for _, score in similar
-            if score >= similarity_threshold
+            1 for belief, score in similar
+            if score >= similarity_threshold and belief.timestamp >= cutoff
         )
         return count
 

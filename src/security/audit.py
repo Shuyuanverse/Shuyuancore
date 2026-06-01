@@ -9,6 +9,8 @@ from typing import Any
 
 import aiosqlite
 
+from src.config import get_settings
+
 logger = logging.getLogger(__name__)
 
 
@@ -28,8 +30,8 @@ class AuditEntry:
 
 
 class AuditLogger:
-    def __init__(self, db_path: str = "data/state.db", auto_flush_interval: float = 5.0) -> None:
-        self._db_path: str = db_path
+    def __init__(self, db_path: str | None = None, auto_flush_interval: float = 5.0) -> None:
+        self._db_path: str = db_path or get_settings().database.db_path
         self._cache: list[AuditEntry] = []
         self._conn: aiosqlite.Connection | None = None
         self._max_entries: int = 10000
