@@ -108,6 +108,150 @@ class TestPersistentBeliefStore:
         assert results == []
 
     @pytest.mark.asyncio
+    async def test_raw_chat_belief_is_mirrored_to_evidence(
+        self, store: PersistentBeliefStore,
+    ) -> None:
+        belief = Belief(
+            id="raw1",
+            content="Alice moved to Paris on 2024-05-01.",
+            source="user",
+            timestamp=1000,
+            last_accessed=1000,
+            conversation_date="2024-05-01",
+        )
+
+        await store.add("conv_ebl", belief, user_id="user-1")
+
+        stored = await store.get_by_id("raw1")
+        evidence = await store.get_evidence_by_id("E-raw1")
+        assert stored is not None
+        assert stored.metadata["evidence_id"] == "E-raw1"
+        assert evidence is not None
+        assert evidence["content"] == belief.content
+        assert evidence["speaker"] == "user"
+        assert evidence["conversation_date"] == "2024-05-01"
+
+    @pytest.mark.asyncio
+    async def test_structured_belief_infers_recent_evidence_ids(
+        self, store: PersistentBeliefStore,
+    ) -> None:
+        raw = Belief(
+            id="raw2",
+            content="Mira said her preferred coding language is Rust.",
+            source="user",
+            timestamp=1000,
+            last_accessed=1000,
+        )
+        structured = Belief(
+            id="fact1",
+            content="Mira prefers Rust for coding.",
+            source="user",
+            memory_type="preference",
+            layer=1,
+            timestamp=1100,
+            last_accessed=1100,
+        )
+
+        await store.add("conv_ebl", raw)
+        await store.add("conv_ebl", structured)
+
+        saved = await store.get_by_id("fact1")
+        assert saved is not None
+        assert saved.metadata["evidence_ids"] == ["E-raw2"]
+
+    @pytest.mark.asyncio
+    async def test_evidence_belief_context_retrieves_raw_evidence(
+        self, store: PersistentBeliefStore,
+    ) -> None:
+        belief = Belief(
+            id="raw3",
+            content="Mira adopted the codename Solstice on 2025-02-03.",
+            source="user",
+            timestamp=1000,
+            last_accessed=1000,
+            conversation_date="2025-02-03",
+        )
+        await store.add("conv_ebl", belief)
+
+        bundle = await store.retrieve_evidence_belief_context(
+            conversation_id="conv_ebl",
+            query="What codename did Mira adopt on 2025-02-03?",
+        )
+
+        evidence_text = "\n".join(str(item["content"]) for item in bundle["evidence"])
+        assert "Solstice" in evidence_text
+        assert bundle["diagnostics"]["retrieved_evidence_count"] >= 1
+        assert "Evidence Ledger" in bundle["context"]
+
+    @pytest.mark.asyncio
+    async def test_linked_belief_expands_to_evidence(
+        self, store: PersistentBeliefStore,
+    ) -> None:
+        raw = Belief(
+            id="raw4",
+            content="The user prefers jasmine tea during long debugging sessions.",
+            source="user",
+            timestamp=1000,
+            last_accessed=1000,
+        )
+        structured = Belief(
+            id="pref1",
+            content="The user has a jasmine tea preference.",
+            source="user",
+            memory_type="preference",
+            layer=1,
+            timestamp=1100,
+            last_accessed=1100,
+            metadata={"evidence_ids": ["E-raw4"]},
+        )
+
+        await store.add("conv_ebl", raw)
+        await store.add("conv_ebl", structured)
+
+        bundle = await store.retrieve_evidence_belief_context(
+            conversation_id="conv_ebl",
+            query="Which preference mentions jasmine tea?",
+        )
+
+        assert any(item["evidence_id"] == "E-raw4" for item in bundle["evidence"])
+        assert bundle["diagnostics"]["linked_evidence_count"] >= 1
+
+    @pytest.mark.asyncio
+    async def test_temporal_neighbor_evidence_is_included(
+        self, store: PersistentBeliefStore,
+    ) -> None:
+        await store.add("conv_ebl", Belief(
+            id="raw5a",
+            content="Before the appointment, Jordan booked a hotel near the embassy.",
+            source="user",
+            timestamp=1000,
+            last_accessed=1000,
+        ))
+        await store.add("conv_ebl", Belief(
+            id="raw5b",
+            content="Jordan scheduled a visa office appointment for Monday.",
+            source="user",
+            timestamp=2000,
+            last_accessed=2000,
+        ))
+        await store.add("conv_ebl", Belief(
+            id="raw5c",
+            content="After that, Jordan arranged a taxi for the interview day.",
+            source="user",
+            timestamp=3000,
+            last_accessed=3000,
+        ))
+
+        bundle = await store.retrieve_evidence_belief_context(
+            conversation_id="conv_ebl",
+            query="What was Jordan's visa office appointment?",
+        )
+
+        evidence_ids = {item["evidence_id"] for item in bundle["evidence"]}
+        assert "E-raw5b" in evidence_ids
+        assert "E-raw5a" in evidence_ids or "E-raw5c" in evidence_ids
+
+    @pytest.mark.asyncio
     async def test_propagate_confidence_calls_propagation(
         self, store: PersistentBeliefStore,
     ) -> None:

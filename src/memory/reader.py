@@ -12,6 +12,7 @@ import logging
 from typing import Any
 
 from src.core.interfaces import Belief, IBeliefStore, IReader
+from src.core.reader import get_real_callable_attr
 
 logger = logging.getLogger(__name__)
 
@@ -36,6 +37,15 @@ class BeliefReader(IReader):
         user_query: str | None = None,
         max_tokens: int = 4000,
     ) -> list[dict[str, Any]]:
+        if user_query:
+            ebl_messages = await self._read_evidence_belief_context(
+                conversation_id=conversation_id,
+                user_query=user_query,
+                max_tokens=max_tokens,
+            )
+            if ebl_messages:
+                return ebl_messages
+
         all_beliefs = await self._belief_store.get(conversation_id, limit=200)
 
         l1_beliefs: list[Belief] = []
@@ -110,6 +120,60 @@ class BeliefReader(IReader):
         )
 
         return messages
+
+    async def read_rescue(
+        self,
+        conversation_id: str,
+        user_query: str,
+        max_tokens: int = 6000,
+    ) -> list[dict[str, Any]]:
+        ebl_messages = await self._read_evidence_belief_context(
+            conversation_id=conversation_id,
+            user_query=user_query,
+            max_tokens=max_tokens,
+            rescue=True,
+        )
+        if ebl_messages:
+            return ebl_messages
+        return await self.read(conversation_id, user_query=user_query, max_tokens=max_tokens)
+
+    async def _read_evidence_belief_context(
+        self,
+        conversation_id: str,
+        user_query: str,
+        max_tokens: int,
+        rescue: bool = False,
+    ) -> list[dict[str, Any]]:
+        ebl_reader = get_real_callable_attr(
+            self._belief_store,
+            "retrieve_evidence_belief_context",
+        )
+        if ebl_reader is None:
+            return []
+
+        try:
+            bundle = await ebl_reader(
+                conversation_id=conversation_id,
+                query=user_query,
+                max_tokens=max_tokens,
+                rescue=rescue,
+            )
+            context = str(bundle.get("context") or "")
+            if not context:
+                return []
+            diagnostics = bundle.get("diagnostics") or {}
+            return [
+                {
+                    "role": "system",
+                    "content": (
+                        f"{context}\n\n"
+                        f"Retrieval diagnostics: {diagnostics}"
+                    ),
+                }
+            ]
+        except Exception:
+            logger.warning("evidence_belief_reader_failed", exc_info=True)
+            return []
 
 
 def _layer_prefix(layer: int, memory_type: str) -> str:

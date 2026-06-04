@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.3.0] - 2026-06-04
+
+### Added
+
+- Add an Evidence-Belief Lattice retrieval path for long-memory grounding.
+- Add a persistent `memory_evidence` ledger with FTS5 indexing and migration `0017`.
+- Add configurable EBL retrieval limits, rescue multiplier, channel weights, and temporal-neighbor window.
+- Add regression coverage for evidence mirroring, linked evidence expansion, temporal-neighbor recall, and Reader EBL routing.
+
+### Changed
+
+- Prefer grounded Evidence Ledger context in `Reader` and `BeliefReader` when supported by the belief store, while preserving the previous belief-only fallback.
+- Link structured beliefs to nearby raw chat evidence so synthesized memories can be traced back to concrete conversation turns.
+
 ## [1.2.0] - 2026-06-01
 
 ### Fixed

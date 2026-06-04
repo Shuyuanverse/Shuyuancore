@@ -35,6 +35,23 @@ memory:
   consolidation_threshold: 0.8
   fts5_search_limit: 10
   vector_search_limit: 5
+  ebl_enabled: true
+  ebl_belief_top_k: 16
+  ebl_evidence_top_k: 24
+  ebl_rescue_multiplier: 3
+  ebl_belief_vector_weight: 0.2
+  ebl_belief_keyword_weight: 0.2
+  ebl_evidence_vector_weight: 0.2
+  ebl_evidence_keyword_weight: 0.2
+  ebl_linked_evidence_weight: 0.35
+  ebl_temporal_neighbor_weight: 0.12
+  ebl_neighbor_turn_window: 2
+  ebl_belief_entity_overlap_weight: 0.25
+  ebl_belief_date_overlap_weight: 0.2
+  ebl_belief_term_overlap_weight: 0.15
+  ebl_evidence_entity_overlap_weight: 0.28
+  ebl_evidence_date_overlap_weight: 0.22
+  ebl_evidence_term_overlap_weight: 0.18
   decay_rates:
     layer_1: 0.0005
     layer_2: 0.005

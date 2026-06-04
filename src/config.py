@@ -124,6 +124,23 @@ class MemoryConfig(BaseModel):
     consolidation_threshold: float = 0.8
     fts5_search_limit: int = 10
     vector_search_limit: int = 5
+    ebl_enabled: bool = True
+    ebl_belief_top_k: int = 16
+    ebl_evidence_top_k: int = 24
+    ebl_rescue_multiplier: int = 3
+    ebl_belief_vector_weight: float = 0.2
+    ebl_belief_keyword_weight: float = 0.2
+    ebl_evidence_vector_weight: float = 0.2
+    ebl_evidence_keyword_weight: float = 0.2
+    ebl_linked_evidence_weight: float = 0.35
+    ebl_temporal_neighbor_weight: float = 0.12
+    ebl_neighbor_turn_window: int = 2
+    ebl_belief_entity_overlap_weight: float = 0.25
+    ebl_belief_date_overlap_weight: float = 0.2
+    ebl_belief_term_overlap_weight: float = 0.15
+    ebl_evidence_entity_overlap_weight: float = 0.28
+    ebl_evidence_date_overlap_weight: float = 0.22
+    ebl_evidence_term_overlap_weight: float = 0.18
     working: WorkingMemoryConfig = Field(default_factory=WorkingMemoryConfig)
     chroma: ChromaConfig = Field(default_factory=ChromaConfig)
     embedding: EmbeddingConfig = Field(default_factory=EmbeddingConfig)
