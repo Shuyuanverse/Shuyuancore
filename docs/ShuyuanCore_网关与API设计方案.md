@@ -254,7 +254,7 @@ class DeployConfig(BaseModel):
 
 | 方法 | 路径 | 认证要求 | 请求体/参数 | 响应模型 | 说明 |
 |------|------|----------|-------------|----------|------|
-| GET | `/health` | 无（白名单） | — | `HealthResponse` | 健康检查，返回 `{"status":"healthy","version":"1.0.0"}` |
+| GET | `/health` | 无（白名单） | — | `HealthResponse` | 健康检查，返回 `{"status":"healthy","version":"1.3.0"}` |
 | POST | `/api/v1/chat` | Bearer Token 或 X-User-ID | `ChatRequest` | `ChatResponse` | 非流式聊天，等待完整响应后返回 |
 | POST | `/api/v1/chat/stream` | Bearer Token 或 X-User-ID | `StreamChatRequest` | `StreamingResponse` (SSE) | 流式聊天，支持审批阻塞/恢复 |
 | GET | `/api/v1/conversations` | Bearer Token 或 X-User-ID | `cursor` (query), `limit` (query, 1-100) | `PaginatedResponse` | 获取用户会话列表，按最后活跃时间降序 |
@@ -296,7 +296,7 @@ class ApprovalAction(BaseModel):
 **健康检查**：
 ```
 GET /health
-→ 200 {"status": "healthy", "version": "1.0.0"}
+→ 200 {"status": "healthy", "version": "1.3.0"}
 ```
 
 **流式聊天 SSE**：

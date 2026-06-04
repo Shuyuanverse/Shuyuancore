@@ -30,7 +30,7 @@ assignees: ''
 ## 环境信息
 
 - **Python 版本**：（如 3.12.0）
-- **ShuyuanCore 版本**：（如 1.0.0）
+- **ShuyuanCore 版本**：（如 1.3.0）
 - **操作系统**：（如 Ubuntu 22.04 / macOS 14 / Windows 11）
 - **部署方式**：（如 pip / Docker / 源码）
 

@@ -113,7 +113,7 @@ docker-compose logs -f
 
 ```bash
 curl http://localhost:8005/health
-# 预期响应：{"status":"healthy","version":"1.0.0","database":"connected"}
+# 预期响应：{"status":"healthy","version":"1.3.0","database":"connected"}
 ```
 
 ---

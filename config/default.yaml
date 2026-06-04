@@ -199,7 +199,7 @@ tools:
   code_exec_timeout: 30
   code_exec_memory_limit: 256
   web_timeout: 30
-  web_user_agent: ShuyuanCore/1.0
+  web_user_agent: ShuyuanCore/1.3.0
   respect_robots: true
   database_readonly: true
 

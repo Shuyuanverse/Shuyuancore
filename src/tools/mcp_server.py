@@ -4,6 +4,7 @@ import logging
 import threading
 from typing import Any
 
+from src import __version__
 from src.tools.interfaces import ToolResult
 from src.tools.registry import get_tool_registry
 
@@ -138,7 +139,7 @@ class MCPServer:
                 "Install it with: pip install fastapi uvicorn"
             )
 
-        app = FastAPI(title="MCP Server", version="1.0.0")
+        app = FastAPI(title="MCP Server", version=__version__)
         self._app = app
 
         @app.get("/health")

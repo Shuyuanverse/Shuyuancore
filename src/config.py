@@ -382,7 +382,7 @@ class ToolsConfig(BaseModel):
     code_exec_timeout: int = 30
     code_exec_memory_limit: int = 256
     web_timeout: int = 30
-    web_user_agent: str = "ShuyuanCore/1.0"
+    web_user_agent: str = "ShuyuanCore/1.3.0"
     respect_robots: bool = True
     database_readonly: bool = True
 

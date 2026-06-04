@@ -273,7 +273,7 @@ class ToolsConfig(BaseModel):
     code_exec_timeout: int = 30                # 代码执行超时（秒）
     code_exec_memory_limit: int = 256          # 代码执行内存限制（MB）
     web_timeout: int = 30                      # 网络请求超时（秒）
-    web_user_agent: str = "ShuyuanCore/1.0"   # HTTP 请求 User-Agent
+    web_user_agent: str = "ShuyuanCore/1.3.0"   # HTTP 请求 User-Agent
     respect_robots: bool = True                # 是否遵守 robots.txt
     database_readonly: bool = True             # 数据库工具只读模式
 ```
@@ -760,7 +760,7 @@ tools:
   code_exec_timeout: 30
   code_exec_memory_limit: 256
   web_timeout: 30
-  web_user_agent: "ShuyuanCore/1.0"
+  web_user_agent: "ShuyuanCore/1.3.0"
   respect_robots: true
   database_readonly: true
 

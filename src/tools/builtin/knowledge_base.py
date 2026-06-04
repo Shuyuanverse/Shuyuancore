@@ -671,7 +671,7 @@ class KnowledgeBaseTool(ITool):
         headers = {
             "X-Auth-Token": token,
             "Content-Type": "application/json",
-            "User-Agent": "ShuyuanCore/1.0",
+            "User-Agent": "ShuyuanCore/1.3.0",
         }
 
         if action == "list":

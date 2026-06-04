@@ -916,7 +916,7 @@ MCP服务器列表
 **// json**{
 "status": "healthy",
 "app_name": "ShuyuanCore",
-"version": "1.0.0",
+"version": "1.3.0",
 "database": "connected",
 "chromadb": "connected",
 "llm": "configured",
@@ -932,7 +932,7 @@ MCP服务器列表
 "code": 0,
 "message": "success",
 "data": {
-"version": "1.0.0",
+"version": "1.3.0",
 "uptime": 86400,
 "active_conversations": 3,
 "total_messages": 15200,

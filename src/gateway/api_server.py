@@ -12,6 +12,7 @@ from fastapi import FastAPI, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, StreamingResponse
 
+from src import __version__
 from src.config import get_settings
 from src.core.agent import Agent
 from src.core.noop_implementations import (
@@ -203,7 +204,7 @@ def create_app(
             logger.exception("systemd notification failed")
         yield
 
-    app = FastAPI(title="ShuyuanCore", version="1.0.0", lifespan=_lifespan)
+    app = FastAPI(title="ShuyuanCore", version=__version__, lifespan=_lifespan)
 
     settings = get_settings()
     if settings.security.cursor_secret:
@@ -267,7 +268,7 @@ def create_app(
             pass
         return {
             "status": "healthy",
-            "version": "1.0.0",
+            "version": __version__,
             "database": db_status,
         }
 
